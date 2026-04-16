@@ -1,0 +1,42 @@
+import axios from 'axios'
+import { ElMessage } from 'element-plus'
+
+// ⚠️ 注意：Axios 拦截器已解包 response.data
+// 响应拦截器会将 response.data 直接返回
+// 所以 API 调用后 res.data 直接是数据数组/对象
+
+const request = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002',
+  timeout: 30000,
+})
+
+// 请求拦截器
+request.interceptors.request.use(
+  (config) => {
+    // 如果没有指定 Content-Type 且数据不是 FormData/Blob，默认使用 JSON
+    const hasContentType =
+      config.headers['Content-Type'] || config.headers['content-type']
+    if (!hasContentType && !(config.data instanceof FormData) && !(config.data instanceof Blob)) {
+      config.headers['Content-Type'] = 'application/json'
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
+// 响应拦截器 — 已解包 response.data
+request.interceptors.response.use(
+  (response) => {
+    // 返回 response.data 而不是整个 response
+    return response.data
+  },
+  (error) => {
+    const message = error.response?.data?.message || error.message || '请求失败'
+    ElMessage.error(message)
+    return Promise.reject(error)
+  }
+)
+
+export default request

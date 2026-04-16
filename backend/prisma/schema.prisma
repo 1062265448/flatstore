@@ -1,0 +1,123 @@
+// 数据库连接
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Prisma Client 生成器
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 客户
+model Customer {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(100)
+  contact   String?   @db.VarChar(50)
+  phone     String?   @db.VarChar(20)
+  address   String?   @db.VarChar(200)
+  remark    String?   @db.Text
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  orders DistributionOrder[]
+
+  @@map("distribution_customer")
+  @@index([name])
+}
+
+// 库存批次
+model InventoryStock {
+  id              Int       @id @default(autoincrement())
+  packageNo       String?   @map("package_no") @db.VarChar(50)
+  batchNo         String    @map("batch_no") @db.VarChar(50)
+  grade           String    @db.VarChar(20)
+  productType     String?   @map("product_type") @db.VarChar(50)
+  specification   String?   @db.VarChar(50)
+  weight          Decimal   @default(0) @db.Decimal(10, 3)
+  pieceCount      Int       @default(0) @map("piece_count")
+  location        String?   @db.VarChar(100)
+  nickelContent   Decimal?  @map("nickel_content") @db.Decimal(5, 2)
+  impurityContent String?  @map("impurity_content") @db.VarChar(100)
+  status          String    @default("available") @db.VarChar(20)
+  inspectionDate  DateTime? @map("inspection_date") @db.Date
+  certificateNo   String?   @map("certificate_no") @db.VarChar(50)
+  remark          String?   @db.Text
+  sourceType      String?   @map("source_type") @db.VarChar(20)
+  sourceImage     String?   @map("source_image") @db.VarChar(200)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  orderItems DistributionOrderItem[]
+
+  @@map("inventory_stock")
+  @@index([batchNo])
+  @@index([grade])
+  @@index([status])
+  @@index([status, grade])
+}
+
+// 配货单
+model DistributionOrder {
+  id           Int       @id @default(autoincrement())
+  orderNo      String    @unique @map("order_no") @db.VarChar(50)
+  customerId   Int       @map("customer_id")
+  customerName String?   @map("customer_name") @db.VarChar(100)
+  productSpec  String?   @map("product_spec") @db.VarChar(100)
+  targetGrade  String?   @map("target_grade") @db.VarChar(20)
+  totalWeight  Decimal?  @map("total_weight") @db.Decimal(10, 3)
+  totalPieces  Int?      @map("total_pieces")
+  status       String    @default("draft") @db.VarChar(20)
+  shippedAt    DateTime? @map("shipped_at")
+  driverName   String?   @map("driver_name") @db.VarChar(50)
+  vehicleNo    String?   @map("vehicle_no") @db.VarChar(20)
+  remark       String?   @db.Text
+  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  customer Customer                @relation(fields: [customerId], references: [id])
+  items    DistributionOrderItem[]
+
+  @@map("distribution_order")
+  @@index([orderNo])
+  @@index([status])
+  @@index([customerId])
+  @@index([customerId, deletedAt, status])
+}
+
+// 配货单明细
+model DistributionOrderItem {
+  id         Int      @id @default(autoincrement())
+  orderId    Int      @map("order_id")
+  stockId    Int      @map("stock_id")
+  weight     Decimal  @default(0) @db.Decimal(10, 3)
+  pieceCount Int      @default(0) @map("piece_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  order DistributionOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stock InventoryStock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@map("distribution_order_item")
+  @@index([orderId])
+  @@index([stockId])
+}
+
+// AI 识别历史
+model AiRecognitionHistory {
+  id           Int       @id @default(autoincrement())
+  imageUrl     String    @map("image_url") @db.VarChar(200)
+  result       String?   @db.Text
+  itemCount    Int       @map("item_count")
+  status       String    @default("success") @db.VarChar(20)
+  errorMessage String?   @map("error_message") @db.VarChar(500)
+  batchNo      String?   @map("batch_no") @db.VarChar(50)
+  grade        String?   @db.VarChar(20)
+  date         DateTime? @db.Date
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@map("ai_recognition_history")
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+}

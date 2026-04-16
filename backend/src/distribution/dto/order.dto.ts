@@ -1,0 +1,98 @@
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsArray,
+  ValidateNested,
+  Min,
+  MinLength,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class OrderItemDto {
+  @ApiProperty()
+  @IsNumber()
+  stockId: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @Min(0)
+  weight: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @Min(0)
+  pieceCount: number;
+}
+
+export class CreateOrderDto {
+  @ApiProperty()
+  @IsNumber()
+  customerId: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  customerName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  productSpec?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  targetGrade?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  remark?: string;
+
+  @ApiProperty()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemDto)
+  items: OrderItemDto[];
+}
+
+export class UpdateOrderDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  customerId?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  customerName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  productSpec?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  targetGrade?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  remark?: string;
+}
+
+export class ShipOrderDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  driverName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  vehicleNo?: string;
+}
