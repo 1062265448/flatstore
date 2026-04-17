@@ -1,0 +1,419 @@
+// ==============================================
+// 平面库配货系统 - 全局样式
+// ==============================================
+
+// ==================== 基础重置 ====================
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+// ==================== 链接 ====================
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+
+  &:hover {
+    color: var(--color-primary-hover);
+  }
+}
+
+// ==================== 选中文字 ====================
+::selection {
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+// ==================== 滚动条美化 ====================
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 4px;
+
+  &:hover {
+    background: var(--color-text-tertiary);
+  }
+}
+
+// Firefox
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+// ==================== 通用类 ====================
+
+// 卡片样式
+.glass-card {
+  background: var(--glass-bg-solid);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow);
+  transition:
+    transform var(--transition-normal),
+    box-shadow var(--transition-normal);
+
+  &:hover {
+    transform: scale(1.01);
+    box-shadow: var(--glass-shadow-hover);
+  }
+}
+
+// 胶囊按钮
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition-normal);
+  gap: 6px;
+
+  &.btn-primary {
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+
+    &:hover {
+      background: var(--color-primary-hover);
+    }
+
+    &:active {
+      background: var(--color-primary-active);
+    }
+  }
+
+  &.btn-secondary {
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+
+    &:hover {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+    }
+  }
+
+  &.btn-ghost {
+    background: transparent;
+    color: var(--color-text-secondary);
+
+    &:hover {
+      background: var(--color-bg-hover);
+      color: var(--color-text-primary);
+    }
+  }
+
+  &.btn-danger {
+    background: var(--color-danger);
+    color: var(--color-text-inverse);
+
+    &:hover {
+      background: #e63629;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+// 小型胶囊按钮
+.btn-pill-sm {
+  padding: 6px 14px;
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-pill);
+}
+
+// 标签/徽章
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &.tag-success {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  &.tag-warning {
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+  }
+
+  &.tag-danger {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+
+  &.tag-info {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+  }
+
+  &.tag-default {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+  }
+}
+
+// 页面容器
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-2xl);
+}
+
+// 页面标题区
+.page-header {
+  margin-bottom: var(--spacing-xl);
+
+  .page-title {
+    font-size: var(--font-size-3xl);
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .page-subtitle {
+    font-size: var(--font-size-md);
+    color: var(--color-text-secondary);
+  }
+}
+
+// ==================== 动画 ====================
+
+// 淡入动画
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Toast 动画
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+// 页面切换动画
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+// Toast动画
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+}
+
+// 脉冲动画
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+// 骨架屏加载
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-tertiary) 25%,
+    var(--color-bg-hover) 50%,
+    var(--color-bg-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+// ==================== 工具类 ====================
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.gap-sm {
+  gap: var(--spacing-sm);
+}
+
+.gap-md {
+  gap: var(--spacing-md);
+}
+
+.gap-lg {
+  gap: var(--spacing-lg);
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-success {
+  color: var(--color-success);
+}
+
+.text-warning {
+  color: var(--color-warning);
+}
+
+.text-danger {
+  color: var(--color-danger);
+}
+
+// ==================== 响应式 ====================
+@media (max-width: $breakpoint-md) {
+  .page-container {
+    padding: 0 var(--spacing-md);
+  }
+
+  .page-header {
+    .page-title {
+      font-size: var(--font-size-2xl);
+    }
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .page-container {
+    padding: 0 var(--spacing-sm);
+  }
+
+  .hide-mobile {
+    display: none !important;
+  }
+}

@@ -105,11 +105,13 @@ export class UpdateInventoryDto {
   specification?: string;
 
   @ApiPropertyOptional()
+  @IsOptional()
   @IsNumber()
   @Min(0)
   weight?: number;
 
   @ApiPropertyOptional()
+  @IsOptional()
   @IsNumber()
   @Min(0)
   pieceCount?: number;

@@ -1,236 +1,362 @@
 <template>
-  <div class="ai-page">
-    <el-row :gutter="20">
+  <div class="page-container ai-page">
+    <!-- 页面标题 -->
+    <div class="page-header fade-in">
+      <h1 class="page-title">AI 图像识别</h1>
+      <p class="page-subtitle">上传图片自动识别库存信息</p>
+    </div>
+
+    <div class="ai-grid">
       <!-- 上传识别区 -->
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>AI 图像识别</span>
-            </div>
-          </template>
+      <div class="upload-section glass-card fade-in" :style="{ animationDelay: '0.1s' }">
+        <div class="section-header">
+          <h3>
+            <span class="section-icon">🤖</span>
+            图像识别
+          </h3>
+        </div>
 
-          <el-upload
+        <div
+          class="upload-area"
+          :class="{ 'has-image': previewUrl, 'drag-over': isDragOver }"
+          @dragover.prevent="isDragOver = true"
+          @dragleave.prevent="isDragOver = false"
+          @drop.prevent="handleDrop"
+          @click="triggerUpload"
+        >
+          <input
             ref="uploadRef"
-            class="upload-area"
-            drag
-            :auto-upload="false"
-            :show-file-list="false"
-            :on-change="handleFileChange"
+            type="file"
             accept="image/*"
-          >
-            <div v-if="!previewUrl" class="upload-placeholder">
-              <el-icon class="upload-icon"><UploadFilled /></el-icon>
-              <div class="upload-text">拖拽图片到此处或点击上传</div>
-              <div class="upload-hint">支持 JPG、PNG、GIF、WebP 格式，最大 10MB</div>
-            </div>
-            <div v-else class="preview-container">
-              <img :src="previewUrl" alt="预览图片" class="preview-image" />
-              <el-button class="remove-btn" type="danger" circle @click.stop="handleRemove">
-                <el-icon><Delete /></el-icon>
-              </el-button>
-            </div>
-          </el-upload>
+            hidden
+            @change="handleFileChange"
+          />
 
-          <div class="action-buttons">
-            <el-button type="primary" :loading="uploading" :disabled="!selectedFile" @click="handleRecognize">
-              开始识别
-            </el-button>
-            <el-button @click="handleReset">重置</el-button>
+          <div v-if="!previewUrl" class="upload-placeholder">
+            <div class="upload-icon-wrap">
+              <svg class="upload-icon-svg" width="64" height="64" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+                <path d="M21 15L16 10L5 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="upload-text">拖拽图片到此处或点击上传</span>
+            <span class="upload-hint">支持 JPG、PNG、GIF、WebP 格式，最大 10MB</span>
           </div>
 
-          <!-- 识别结果 -->
+          <div v-else class="preview-container">
+            <img :src="previewUrl" alt="预览图片" class="preview-image" />
+            <div class="preview-overlay">
+              <button class="preview-btn" @click.stop="triggerUpload">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M11 4H4A2 2 0 004 6V20A2 2 0 0018 20V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M18.5 2.5A2.12 2.12 0 0121 4.5V8L12 17L3 8V4.5A2.12 2.12 0 014.5 2.5H8L12 6.5L16 2.5H18.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <button class="preview-btn danger" @click.stop="handleRemove">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M19 6V20A2 2 0 01 17 22H7A2 2 0 015 20V6M8 6V4A2 2 0 0110 2H14A2 2 0 0116 4V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button
+            class="btn-pill btn-primary"
+            :class="{ loading: uploading }"
+            :disabled="!selectedFile || uploading"
+            @click="handleRecognize"
+          >
+            <span v-if="uploading" class="btn-spinner"></span>
+            {{ uploading ? '识别中...' : '开始识别' }}
+          </button>
+          <button class="btn-pill btn-ghost" @click="handleReset">重置</button>
+        </div>
+
+        <!-- 识别结果 -->
+        <transition name="slide">
           <div v-if="recognizeResults.length" class="results-section">
-            <el-divider content-position="left">识别结果</el-divider>
-            <el-table :data="recognizeResults" border stripe size="small" max-height="400">
-              <el-table-column prop="batchNo" label="批号" min-width="120" />
-              <el-table-column prop="grade" label="品级" width="100">
-                <template #default="{ row }">
-                  <el-tag>{{ row.grade }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="productType" label="产品类型" min-width="120" />
-              <el-table-column prop="pieceCount" label="片数" width="80" />
-              <el-table-column label="净重(吨)" width="100">
-                <template #default="{ row }">
-                  {{ (row.netWeight || 0).toFixed(3) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="date" label="日期" width="120" />
-            </el-table>
+            <div class="results-header">
+              <h4>
+                <span class="result-icon">✓</span>
+                识别结果
+              </h4>
+              <span class="results-count">{{ recognizeResults.length }} 条记录</span>
+            </div>
+
+            <div class="results-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>批号</th>
+                    <th>品级</th>
+                    <th>产品类型</th>
+                    <th>片数</th>
+                    <th>净重(吨)</th>
+                    <th>日期</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in recognizeResults" :key="index">
+                    <td class="batch-no">{{ item.batchNo || '-' }}</td>
+                    <td><span class="tag tag-info">{{ item.grade || '-' }}</span></td>
+                    <td>{{ item.productType || '-' }}</td>
+                    <td>{{ item.pieceCount || '-' }}</td>
+                    <td class="weight">{{ (item.netWeight || 0).toFixed(3) }}</td>
+                    <td>{{ item.date || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
             <div class="result-actions">
-              <el-button type="success" @click="handleBatchCreate">批量导入库存</el-button>
+              <button class="btn-pill btn-primary" @click="handleBatchCreate">
+                <span class="btn-icon">+</span> 批量导入库存
+              </button>
             </div>
           </div>
-        </el-card>
-      </el-col>
+        </transition>
+      </div>
 
       <!-- 识别历史 -->
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>识别历史</span>
-              <el-button type="danger" size="small" :disabled="!selectedHistory.length" @click="handleBatchDeleteHistory">
-                批量删除
-              </el-button>
-            </div>
-          </template>
-
-          <!-- 筛选 -->
-          <el-form inline class="history-filter">
-            <el-form-item label="状态">
-              <el-select v-model="historyQuery.status" placeholder="全部" clearable>
-                <el-option label="成功" value="success" />
-                <el-option label="失败" value="failed" />
-              </el-select>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="fetchHistory">查询</el-button>
-            </el-form-item>
-          </el-form>
-
-          <el-table
-            v-loading="historyLoading"
-            :data="historyList"
-            @selection-change="handleHistorySelectionChange"
+      <div class="history-section glass-card fade-in" :style="{ animationDelay: '0.2s' }">
+        <div class="section-header">
+          <h3>
+            <span class="section-icon">📋</span>
+            识别历史
+          </h3>
+          <button
+            v-if="selectedHistory.length"
+            class="btn-pill btn-pill-sm btn-danger"
+            @click="handleBatchDeleteHistory"
           >
-            <el-table-column type="selection" width="55" />
-            <el-table-column prop="id" label="ID" width="80" />
-            <el-table-column prop="imageUrl" label="图片" width="80">
-              <template #default="{ row }">
-                <el-image
-                  v-if="row.imageUrl"
-                  :src="row.imageUrl"
-                  :preview-src-list="[row.imageUrl]"
-                  fit="cover"
-                  style="width: 40px; height: 40px"
-                />
-              </template>
-            </el-table-column>
-            <el-table-column prop="itemCount" label="识别数" width="80">
-              <template #default="{ row }">
-                <el-tag :type="row.status === 'success' ? 'success' : 'danger'">
-                  {{ row.itemCount }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="batchNo" label="批号" min-width="120" />
-            <el-table-column prop="grade" label="品级" width="80">
-              <template #default="{ row }">
-                {{ row.grade || '-' }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="status" label="状态" width="80">
-              <template #default="{ row }">
-                <el-tag :type="row.status === 'success' ? 'success' : 'danger'" size="small">
+            批量删除 ({{ selectedHistory.length }})
+          </button>
+        </div>
+
+        <!-- 筛选 -->
+        <div class="filter-bar">
+          <select v-model="historyQuery.status" class="filter-select" @change="fetchHistory">
+            <option value="">全部状态</option>
+            <option value="success">成功</option>
+            <option value="failed">失败</option>
+          </select>
+        </div>
+
+        <div v-if="historyLoading" class="loading-state">
+          <div class="loading-spinner"></div>
+          <span>加载中...</span>
+        </div>
+
+        <div v-else class="history-list">
+          <div
+            v-for="(row, index) in historyList"
+            :key="row.id"
+            class="history-item"
+            :style="{ animationDelay: `${0.3 + index * 0.05}s` }"
+          >
+            <div class="history-thumb-wrap" @click="previewImage(row.imageUrl)">
+              <img v-if="row.imageUrl" :src="row.imageUrl" class="history-thumb" />
+              <span v-else class="history-thumb-placeholder">📷</span>
+            </div>
+            <div class="history-info">
+              <div class="history-meta">
+                <span :class="['tag', row.status === 'success' ? 'tag-success' : 'tag-danger']">
                   {{ row.status === 'success' ? '成功' : '失败' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="createdAt" label="时间" width="160">
-              <template #default="{ row }">
-                {{ formatDate(row.createdAt) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="100" fixed="right">
-              <template #default="{ row }">
-                <el-button link type="primary" @click="handleViewHistory(row)">查看</el-button>
-                <el-button link type="danger" @click="handleDeleteHistory(row.id)">删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <div class="pagination">
-            <el-pagination
-              v-model:current-page="historyQuery.page"
-              v-model:page-size="historyQuery.limit"
-              :total="historyTotal"
-              :page-sizes="[10, 20, 50]"
-              layout="total, sizes, prev, pager, next"
-              @size-change="fetchHistory"
-              @current-change="fetchHistory"
-            />
+                </span>
+                <span class="history-count">{{ row.itemCount }} 条</span>
+              </div>
+              <div class="history-detail">
+                <span v-if="row.batchNo">批号: {{ row.batchNo }}</span>
+                <span v-if="row.grade">品级: {{ row.grade }}</span>
+              </div>
+              <div class="history-time">{{ formatDate(row.createdAt) }}</div>
+            </div>
+            <div class="history-actions">
+              <button class="action-btn" @click="handleViewHistory(row)">查看</button>
+              <button class="action-btn danger" @click="handleDeleteHistory(row.id)">删除</button>
+            </div>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
 
-    <!-- 批量导入对话框 -->
-    <el-dialog v-model="importVisible" title="批量导入库存" width="600px" destroy-on-close>
-      <el-form :model="importForm" label-width="100px">
-        <el-form-item label="统一批号">
-          <el-input v-model="importForm.batchNo" placeholder="为空则使用识别结果中的批号" />
-        </el-form-item>
-        <el-form-item label="统一品级">
-          <el-input v-model="importForm.grade" placeholder="为空则使用识别结果中的品级" />
-        </el-form-item>
-        <el-form-item label="存放位置">
-          <el-input v-model="importForm.location" placeholder="请输入存放位置" />
-        </el-form-item>
-      </el-form>
-      <el-table :data="recognizeResults" border size="small" max-height="300">
-        <el-table-column prop="batchNo" label="批号" />
-        <el-table-column prop="grade" label="品级" />
-        <el-table-column prop="productType" label="产品类型" />
-        <el-table-column prop="pieceCount" label="片数" />
-        <el-table-column label="净重(吨)">
-          <template #default="{ row }">
-            {{ (row.netWeight || 0).toFixed(3) }}
-          </template>
-        </el-table-column>
-      </el-table>
-      <template #footer>
-        <el-button @click="importVisible = false">取消</el-button>
-        <el-button type="primary" :loading="importing" @click="handleImportSubmit">确认导入</el-button>
-      </template>
-    </el-dialog>
+          <div v-if="!historyList.length" class="empty-state">
+            <span class="empty-icon">📋</span>
+            <span class="empty-text">暂无识别历史</span>
+          </div>
+        </div>
 
-    <!-- 历史详情对话框 -->
-    <el-dialog v-model="historyDetailVisible" title="识别详情" width="700px">
-      <el-descriptions v-if="currentHistory" :column="2" border>
-        <el-descriptions-item label="ID">{{ currentHistory.id }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag :type="currentHistory.status === 'success' ? 'success' : 'danger'">
-            {{ currentHistory.status === 'success' ? '成功' : '失败' }}
-          </el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="识别数量">{{ currentHistory.itemCount }}</el-descriptions-item>
-        <el-descriptions-item label="批号">{{ currentHistory.batchNo || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="品级">{{ currentHistory.grade || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="识别时间">
-          {{ formatDate(currentHistory.createdAt) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="错误信息" :span="2" v-if="currentHistory.errorMessage">
-          <span style="color: #f56c6c">{{ currentHistory.errorMessage }}</span>
-        </el-descriptions-item>
-      </el-descriptions>
-
-      <div v-if="currentHistory?.result" class="history-result">
-        <el-divider content-position="left">识别结果</el-divider>
-        <pre>{{ formatJson(currentHistory.result) }}</pre>
+        <!-- 分页 -->
+        <div v-if="historyTotal > 0" class="pagination">
+          <span class="pagination-info">共 {{ historyTotal }} 条记录</span>
+          <div class="pagination-controls">
+            <button
+              class="btn-pill btn-pill-sm btn-ghost"
+              :disabled="historyQuery.page <= 1"
+              @click="goToHistoryPage(historyQuery.page - 1)"
+            >上一页</button>
+            <span class="page-indicator">{{ historyQuery.page }}</span>
+            <button
+              class="btn-pill btn-pill-sm btn-ghost"
+              :disabled="historyQuery.page >= totalHistoryPages"
+              @click="goToHistoryPage(historyQuery.page + 1)"
+            >下一页</button>
+          </div>
+        </div>
       </div>
+    </div>
 
-      <div class="history-image">
-        <el-divider content-position="left">原始图片</el-divider>
-        <el-image v-if="currentHistory?.imageUrl" :src="currentHistory.imageUrl" fit="contain" style="max-height: 300px" />
-      </div>
-    </el-dialog>
+    <!-- 批量导入弹窗 -->
+    <Teleport to="body">
+      <transition name="modal">
+        <div v-if="importVisible" class="modal-overlay" @click.self="importVisible = false">
+          <div class="modal-content modal-lg glass-card">
+            <div class="modal-header">
+              <h3 class="modal-title">批量导入库存</h3>
+              <button class="modal-close" @click="importVisible = false">✕</button>
+            </div>
+
+            <div class="modal-body">
+              <div class="form-grid">
+                <div class="form-item">
+                  <label>统一批号</label>
+                  <input v-model="importForm.batchNo" type="text" placeholder="为空则使用识别结果中的批号" />
+                </div>
+                <div class="form-item">
+                  <label>统一品级</label>
+                  <input v-model="importForm.grade" type="text" placeholder="为空则使用识别结果中的品级" />
+                </div>
+                <div class="form-item full-width">
+                  <label>存放位置</label>
+                  <input v-model="importForm.location" type="text" placeholder="请输入存放位置" />
+                </div>
+              </div>
+
+              <div class="preview-table">
+                <h4>导入预览</h4>
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>批号</th>
+                      <th>品级</th>
+                      <th>产品类型</th>
+                      <th>片数</th>
+                      <th>净重(吨)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(item, index) in recognizeResults" :key="index">
+                      <td>{{ importForm.batchNo || item.batchNo || '-' }}</td>
+                      <td>{{ importForm.grade || item.grade || '-' }}</td>
+                      <td>{{ item.productType || '-' }}</td>
+                      <td>{{ item.pieceCount || '-' }}</td>
+                      <td>{{ (item.netWeight || 0).toFixed(3) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-pill btn-ghost" @click="importVisible = false">取消</button>
+              <button class="btn-pill btn-primary" :disabled="importing" @click="handleImportSubmit">
+                {{ importing ? '导入中...' : '确认导入' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
+
+    <!-- 历史详情弹窗 -->
+    <Teleport to="body">
+      <transition name="modal">
+        <div v-if="historyDetailVisible" class="modal-overlay" @click.self="historyDetailVisible = false">
+          <div class="modal-content modal-lg glass-card">
+            <div class="modal-header">
+              <h3 class="modal-title">识别详情</h3>
+              <button class="modal-close" @click="historyDetailVisible = false">✕</button>
+            </div>
+
+            <div class="modal-body" v-if="currentHistory">
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">ID</span>
+                  <span class="detail-value">{{ currentHistory.id }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">状态</span>
+                  <span :class="['tag', currentHistory.status === 'success' ? 'tag-success' : 'tag-danger']">
+                    {{ currentHistory.status === 'success' ? '成功' : '失败' }}
+                  </span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">识别数量</span>
+                  <span class="detail-value">{{ currentHistory.itemCount }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">批号</span>
+                  <span class="detail-value">{{ currentHistory.batchNo || '-' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">品级</span>
+                  <span class="detail-value">{{ currentHistory.grade || '-' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">识别时间</span>
+                  <span class="detail-value">{{ formatDate(currentHistory.createdAt) }}</span>
+                </div>
+                <div v-if="currentHistory.errorMessage" class="detail-item full-width">
+                  <span class="detail-label">错误信息</span>
+                  <span class="detail-value text-danger">{{ currentHistory.errorMessage }}</span>
+                </div>
+              </div>
+
+              <div v-if="currentHistory.result" class="result-section">
+                <h4>识别结果</h4>
+                <pre class="json-preview">{{ formatJson(currentHistory.result) }}</pre>
+              </div>
+
+              <div v-if="currentHistory.imageUrl" class="image-section">
+                <h4>原始图片</h4>
+                <img :src="currentHistory.imageUrl" class="detail-image" />
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-pill btn-ghost" @click="historyDetailVisible = false">关闭</button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
+
+    <!-- 图片预览 -->
+    <Teleport to="body">
+      <transition name="modal">
+        <div v-if="imagePreviewVisible" class="image-preview-overlay" @click="imagePreviewVisible = false">
+          <img :src="previewImageUrl" class="image-preview" />
+          <button class="preview-close">✕</button>
+        </div>
+      </transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { UploadFilled, Delete } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, reactive, computed, inject, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import { aiRecognize, batchCreateInventory, getRecognitionHistory, deleteRecognitionHistory, batchDeleteRecognitionHistory } from '@/api/distribution'
 import type { AiRecognizeResult, AiRecognitionHistory, CreateInventoryDto } from '@/types'
 
-const uploadRef = ref()
+const showToast = inject('showToast') as (message: string, type?: string) => void
+
+const uploadRef = ref<HTMLInputElement>()
 const selectedFile = ref<File | null>(null)
 const previewUrl = ref<string>('')
 const uploading = ref(false)
+const isDragOver = ref(false)
 const recognizeResults = ref<AiRecognizeResult[]>([])
 
 const historyList = ref<AiRecognitionHistory[]>([])
@@ -254,18 +380,44 @@ const importForm = reactive({
 const historyDetailVisible = ref(false)
 const currentHistory = ref<AiRecognitionHistory | null>(null)
 
-const handleFileChange = (file: any) => {
-  const rawFile = file.raw
-  if (!rawFile) return
+const imagePreviewVisible = ref(false)
+const previewImageUrl = ref('')
 
-  // 限制文件大小 10MB
-  if (rawFile.size > 10 * 1024 * 1024) {
-    ElMessage.error('文件大小不能超过 10MB')
+const totalHistoryPages = computed(() => Math.ceil(historyTotal.value / historyQuery.limit))
+const isAllHistorySelected = computed(() =>
+  historyList.value.length > 0 &&
+  selectedHistory.value.length === historyList.value.length
+)
+
+const isHistorySelected = (id: number) => selectedHistory.value.some(r => r.id === id)
+
+const triggerUpload = () => {
+  uploadRef.value?.click()
+}
+
+const handleDrop = (e: DragEvent) => {
+  isDragOver.value = false
+  const file = e.dataTransfer?.files[0]
+  if (file && file.type.startsWith('image/')) {
+    processFile(file)
+  }
+}
+
+const handleFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    processFile(file)
+  }
+}
+
+const processFile = (file: File) => {
+  if (file.size > 10 * 1024 * 1024) {
+    showToast?.('文件大小不能超过 10MB', 'warning')
     return
   }
-
-  selectedFile.value = rawFile
-  previewUrl.value = URL.createObjectURL(rawFile)
+  selectedFile.value = file
+  previewUrl.value = URL.createObjectURL(file)
   recognizeResults.value = []
 }
 
@@ -275,7 +427,9 @@ const handleRemove = () => {
     URL.revokeObjectURL(previewUrl.value)
     previewUrl.value = ''
   }
-  uploadRef.value?.clearFiles()
+  if (uploadRef.value) {
+    uploadRef.value.value = ''
+  }
 }
 
 const handleReset = () => {
@@ -285,23 +439,21 @@ const handleReset = () => {
 
 const handleRecognize = async () => {
   if (!selectedFile.value) {
-    ElMessage.warning('请先上传图片')
+    showToast?.('请先上传图片', 'warning')
     return
   }
 
   uploading.value = true
   try {
-    // ⚠️ 不手动设置 Content-Type，让浏览器自动添加 boundary
     const res = await aiRecognize(selectedFile.value)
     recognizeResults.value = res as AiRecognizeResult[]
     if (!recognizeResults.value.length) {
-      ElMessage.warning('未识别到任何数据')
+      showToast?.('未识别到任何数据', 'warning')
     } else {
-      ElMessage.success(`成功识别 ${recognizeResults.value.length} 条记录`)
+      showToast?.(`成功识别 ${recognizeResults.value.length} 条记录`, 'success')
     }
-    // 刷新历史
     fetchHistory()
-  } catch (e) {
+  } catch {
     // 错误已在 API 层处理
   } finally {
     uploading.value = false
@@ -331,7 +483,7 @@ const handleImportSubmit = async () => {
     }))
 
     await batchCreateInventory(items)
-    ElMessage.success(`成功导入 ${items.length} 条库存记录`)
+    showToast?.(`成功导入 ${items.length} 条库存记录`, 'success')
     importVisible.value = false
     handleReset()
   } catch {
@@ -356,8 +508,26 @@ const fetchHistory = async () => {
   }
 }
 
-const handleHistorySelectionChange = (rows: AiRecognitionHistory[]) => {
-  selectedHistory.value = rows
+const goToHistoryPage = (page: number) => {
+  historyQuery.page = page
+  fetchHistory()
+}
+
+const toggleSelectHistory = (row: AiRecognitionHistory) => {
+  const index = selectedHistory.value.findIndex(r => r.id === row.id)
+  if (index === -1) {
+    selectedHistory.value.push(row)
+  } else {
+    selectedHistory.value.splice(index, 1)
+  }
+}
+
+const toggleSelectAllHistory = () => {
+  if (isAllHistorySelected.value) {
+    selectedHistory.value = []
+  } else {
+    selectedHistory.value = [...historyList.value]
+  }
 }
 
 const handleViewHistory = (row: AiRecognitionHistory) => {
@@ -367,9 +537,8 @@ const handleViewHistory = (row: AiRecognitionHistory) => {
 
 const handleDeleteHistory = async (id: number) => {
   try {
-    await ElMessageBox.confirm('确定删除该识别记录?', '提示', { type: 'warning' })
     await deleteRecognitionHistory(id)
-    ElMessage.success('删除成功')
+    showToast?.('删除成功', 'success')
     fetchHistory()
   } catch {
     // 用户取消
@@ -378,17 +547,19 @@ const handleDeleteHistory = async (id: number) => {
 
 const handleBatchDeleteHistory = async () => {
   try {
-    await ElMessageBox.confirm(`确定删除选中的 ${selectedHistory.value.length} 条记录?`, '提示', {
-      type: 'warning',
-    })
     const ids = selectedHistory.value.map((r) => r.id)
     await batchDeleteRecognitionHistory(ids)
-    ElMessage.success('批量删除成功')
+    showToast?.('批量删除成功', 'success')
     selectedHistory.value = []
     fetchHistory()
   } catch {
     // 用户取消
   }
+}
+
+const previewImage = (url: string) => {
+  previewImageUrl.value = url
+  imagePreviewVisible.value = true
 }
 
 const formatDate = (dateStr: string) => {
@@ -411,98 +582,818 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .ai-page {
-  .card-header {
+  padding-top: var(--spacing-xl);
+  padding-bottom: var(--spacing-2xl);
+}
+
+// ==================== 布局 ====================
+.ai-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+}
+
+// ==================== 上传区 ====================
+.upload-section,
+.history-section {
+  padding: var(--spacing-lg);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+
+  h3 {
+    font-size: var(--font-size-xl);
+    font-weight: 600;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-  }
-  .upload-area {
-    :deep(.el-upload-dragger) {
-      padding: 40px 20px;
-      background: #fafafa;
-      border: 2px dashed #d9d9d9;
-      border-radius: 8px;
-      transition: border-color 0.3s;
-      &:hover {
-        border-color: #409eff;
-      }
-    }
-    .upload-placeholder {
-      text-align: center;
-      .upload-icon {
-        font-size: 48px;
-        color: #999;
-        margin-bottom: 16px;
-      }
-      .upload-text {
-        font-size: 16px;
-        color: #666;
-        margin-bottom: 8px;
-      }
-      .upload-hint {
-        font-size: 12px;
-        color: #999;
-      }
-    }
-    .preview-container {
-      position: relative;
-      display: flex;
-      justify-content: center;
-      .preview-image {
-        max-width: 100%;
-        max-height: 300px;
-        object-fit: contain;
-      }
-      .remove-btn {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-      }
-    }
-  }
-  .action-buttons {
-    margin-top: 20px;
-    text-align: center;
-  }
-  .results-section {
-    margin-top: 20px;
-    .result-actions {
-      margin-top: 16px;
-      text-align: center;
-    }
-  }
-  .history-filter {
-    margin-bottom: 16px;
-  }
-  .pagination {
-    margin-top: 16px;
-    display: flex;
-    justify-content: flex-end;
-  }
-  .history-result {
-    margin-top: 16px;
-    pre {
-      background: #f5f5f5;
-      padding: 16px;
-      border-radius: 4px;
-      overflow-x: auto;
-      max-height: 200px;
-    }
-  }
-  .history-image {
-    margin-top: 16px;
+    gap: var(--spacing-sm);
   }
 }
 
-html.dark {
-  .ai-page {
-    .upload-area :deep(.el-upload-dragger) {
-      background: #1f1f1f;
-      border-color: #333;
+.section-icon {
+  font-size: 20px;
+}
+
+.upload-area {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  background: var(--color-bg-tertiary);
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    border-color: var(--color-primary);
+    background: var(--color-bg-hover);
+  }
+
+  &.has-image {
+    padding: 0;
+    border-style: solid;
+    background: transparent;
+    min-height: auto;
+  }
+
+  &.drag-over {
+    border-color: var(--color-primary);
+    background: rgba(0, 113, 227, 0.05);
+    transform: scale(1.01);
+  }
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.upload-icon-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--spacing-sm);
+  transition: all var(--transition-normal);
+
+  .upload-area:hover & {
+    transform: scale(1.05);
+    background: var(--color-bg-hover);
+  }
+}
+
+.upload-icon-svg {
+  color: var(--color-primary);
+}
+
+.upload-text {
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.upload-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.preview-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-md);
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+
+.preview-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: var(--spacing-sm);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+
+  .preview-container:hover & {
+    opacity: 1;
+  }
+}
+
+.preview-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  box-shadow: var(--glass-shadow);
+
+  &:hover {
+    transform: scale(1.1);
+    background: var(--color-bg-hover);
+  }
+
+  &.danger:hover {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+// 按钮加载动画
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  margin-right: var(--spacing-xs);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ==================== 识别结果 ====================
+.results-section {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-divider);
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+
+  h4 {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+}
+
+.result-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-success);
+  color: white;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.results-count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.results-table-wrap {
+  max-height: 300px;
+  overflow-y: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-divider);
+}
+
+.result-actions {
+  margin-top: var(--spacing-lg);
+  text-align: center;
+}
+
+// Slide 过渡动画
+.slide-enter-active {
+  animation: slideUp 0.4s ease forwards;
+}
+
+.slide-leave-active {
+  animation: slideDown 0.3s ease forwards;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+// ==================== 历史区 ====================
+.filter-bar {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.filter-select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-sm);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+  animation: fadeIn 0.4s ease forwards;
+  opacity: 0;
+
+  &:hover {
+    background: var(--color-bg-hover);
+    transform: translateX(4px);
+  }
+}
+
+.history-thumb-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.history-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-normal);
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.history-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  font-size: 20px;
+}
+
+.history-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: 2px;
+}
+
+.history-count {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.history-detail {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  display: flex;
+  gap: var(--spacing-sm);
+
+  span {
+    &::after {
+      content: '|';
+      margin-left: var(--spacing-sm);
+      color: var(--color-border);
     }
-    .history-result pre {
-      background: #1f1f1f;
+
+    &:last-child::after {
+      display: none;
     }
+  }
+}
+
+.history-time {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+}
+
+.history-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+// ==================== 表格 ====================
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-divider);
+  }
+
+  th {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--color-bg-tertiary);
+    position: sticky;
+    top: 0;
+  }
+
+  .batch-no {
+    font-weight: 500;
+    font-family: monospace;
+  }
+
+  .weight {
+    font-family: monospace;
+    color: var(--color-text-primary);
+  }
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: rgba(0, 113, 227, 0.1);
+  }
+
+  &.danger {
+    color: var(--color-danger);
+
+    &:hover {
+      background: rgba(255, 59, 48, 0.1);
+    }
+  }
+}
+
+.empty-cell {
+  padding: 40px !important;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xl);
+
+  .empty-icon {
+    font-size: 36px;
+    opacity: 0.5;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .empty-text {
+    color: var(--color-text-secondary);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--color-text-secondary);
+  gap: var(--spacing-md);
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+// ==================== 分页 ====================
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-divider);
+}
+
+.pagination-info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.page-indicator {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: 0 var(--spacing-sm);
+}
+
+// ==================== 弹窗 ====================
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--spacing-lg);
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+
+  &.modal-lg {
+    max-width: 700px;
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.modal-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-bg-tertiary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+    transform: rotate(90deg);
+  }
+}
+
+.modal-body {
+  padding: var(--spacing-lg);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--color-divider);
+}
+
+// 表单
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-item {
+  &.full-width {
+    grid-column: span 2;
+  }
+
+  label {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    transition: all var(--transition-fast);
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+    }
+
+    &::placeholder {
+      color: var(--color-text-tertiary);
+    }
+  }
+}
+
+.preview-table {
+  h4 {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+  }
+}
+
+// 详情
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+
+  &.full-width {
+    grid-column: span 2;
+  }
+
+  .detail-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .detail-value {
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+
+    &.text-danger {
+      color: var(--color-danger);
+    }
+  }
+}
+
+.result-section,
+.image-section {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-divider);
+
+  h4 {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+  }
+}
+
+.json-preview {
+  background: var(--color-bg-tertiary);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  overflow-x: auto;
+  max-height: 200px;
+  font-family: monospace;
+}
+
+.detail-image {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: var(--radius-md);
+}
+
+// 图片预览
+.image-preview-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+.image-preview {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+
+.preview-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+  }
+}
+
+// 弹窗动画
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+
+  .modal-content {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+
+  .modal-content {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+// fadeIn 动画
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// ==================== 响应式 ====================
+@media (max-width: 1024px) {
+  .ai-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-item.full-width {
+    grid-column: span 1;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-item.full-width {
+    grid-column: span 1;
+  }
+
+  .history-item {
+    flex-wrap: wrap;
+  }
+
+  .history-info {
+    width: calc(100% - 64px);
+  }
+
+  .history-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: var(--spacing-xs);
   }
 }
 </style>

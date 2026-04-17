@@ -1,142 +1,229 @@
 <template>
-  <div class="inventory-page">
-    <!-- 搜索筛选 -->
-    <el-card shadow="never" class="search-card">
-      <el-form inline :model="queryForm">
-        <el-form-item label="关键词">
-          <el-input v-model="queryForm.keyword" placeholder="批号/品级/规格" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="品级">
-          <el-input v-model="queryForm.grade" placeholder="品级" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="queryForm.status" placeholder="全部" clearable>
-            <el-option label="可用" value="available" />
-            <el-option label="已预留" value="reserved" />
-            <el-option label="已发货" value="shipped" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+  <div class="page-container inventory-page">
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <h1 class="page-title">库存管理</h1>
+      <p class="page-subtitle">管理仓库中的所有库存批次</p>
+    </div>
 
-    <!-- 操作按钮 -->
-    <el-card shadow="never" class="action-card">
-      <el-button type="primary" @click="handleCreate">新增库存</el-button>
-      <el-button type="danger" :disabled="!selectedRows.length" @click="handleBatchDelete">批量删除</el-button>
-      <span v-if="selectedRows.length" class="selection-info">已选择 {{ selectedRows.length }} 项</span>
-    </el-card>
+    <!-- 搜索和操作区 -->
+    <div class="toolbar glass-card">
+      <div class="search-section">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input
+            v-model="queryForm.keyword"
+            type="text"
+            class="search-input"
+            placeholder="搜索批号、品级、规格..."
+            @keyup.enter="handleSearch"
+          />
+          <button v-if="queryForm.keyword" class="search-clear" @click="clearSearch">✕</button>
+        </div>
 
-    <!-- 表格 -->
-    <el-card shadow="never">
-      <el-table
-        v-loading="inventoryStore.loading"
-        :data="inventoryStore.inventoryList"
-        @selection-change="handleSelectionChange"
-      >
-        <el-table-column type="selection" width="55" />
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="batchNo" label="批号" min-width="120" />
-        <el-table-column prop="grade" label="品级" width="100">
-          <template #default="{ row }">
-            <el-tag>{{ row.grade }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="specification" label="规格" min-width="120" />
-        <el-table-column prop="weight" label="重量(吨)" width="100">
-          <template #default="{ row }">
-            {{ Number(row.weight).toFixed(3) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="pieceCount" label="片数" width="80" />
-        <el-table-column prop="location" label="位置" min-width="120" />
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="statusType[row.status]">{{ statusLabel[row.status] }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="180">
-          <template #default="{ row }">
-            {{ formatDate(row.createdAt) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row.id)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="pagination">
-        <el-pagination
-          v-model:current-page="queryForm.page"
-          v-model:page-size="queryForm.limit"
-          :total="inventoryStore.total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next"
-          @size-change="handleSearch"
-          @current-change="handleSearch"
+        <input
+          v-model="queryForm.grade"
+          type="text"
+          class="filter-input"
+          placeholder="品级"
+          @keyup.enter="handleSearch"
         />
-      </div>
-    </el-card>
 
-    <!-- 新增/编辑对话框 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="700px" destroy-on-close>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <el-form-item prop="batchNo" label="批号">
-          <el-input v-model="form.batchNo" placeholder="请输入批号" />
-        </el-form-item>
-        <el-form-item prop="grade" label="品级">
-          <el-input v-model="form.grade" placeholder="请输入品级" />
-        </el-form-item>
-        <el-form-item prop="specification" label="规格">
-          <el-input v-model="form.specification" placeholder="请输入规格" />
-        </el-form-item>
-        <el-form-item prop="productType" label="产品类型">
-          <el-input v-model="form.productType" placeholder="请输入产品类型" />
-        </el-form-item>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item prop="weight" label="重量(吨)">
-              <el-input-number v-model="form.weight" :min="0" :precision="3" placeholder="重量" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item prop="pieceCount" label="片数">
-              <el-input-number v-model="form.pieceCount" :min="0" placeholder="片数" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item prop="location" label="存放位置">
-          <el-input v-model="form.location" placeholder="请输入存放位置" />
-        </el-form-item>
-        <el-form-item prop="nickelContent" label="镍含量">
-          <el-input v-model="form.nickelContent" placeholder="请输入镍含量" />
-        </el-form-item>
-        <el-form-item prop="remark" label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="备注信息" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
+        <select v-model="queryForm.status" class="filter-select">
+          <option value="">全部状态</option>
+          <option value="available">可用</option>
+          <option value="reserved">已预留</option>
+          <option value="shipped">已发货</option>
+        </select>
+
+        <button class="btn-pill btn-primary" @click="handleSearch">
+          搜索
+        </button>
+        <button class="btn-pill btn-ghost" @click="handleReset">
+          重置
+        </button>
+      </div>
+
+      <div class="action-section">
+        <button class="btn-pill btn-primary" @click="handleCreate">
+          <span>+</span> 新增库存
+        </button>
+        <button
+          v-if="selectedRows.length"
+          class="btn-pill btn-danger"
+          @click="handleBatchDelete"
+        >
+          批量删除 ({{ selectedRows.length }})
+        </button>
+      </div>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="table-card glass-card">
+      <div v-if="inventoryStore.loading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <span>加载中...</span>
+      </div>
+
+      <table v-else class="data-table">
+        <thead>
+          <tr>
+            <th class="checkbox-col">
+              <input
+                type="checkbox"
+                :checked="isAllSelected"
+                :indeterminate="selectedRows.length > 0 && selectedRows.length < inventoryStore.inventoryList.length"
+                @change="toggleSelectAll"
+              />
+            </th>
+            <th>批号</th>
+            <th>品级</th>
+            <th>规格</th>
+            <th>重量(吨)</th>
+            <th>片数</th>
+            <th>位置</th>
+            <th>状态</th>
+            <th>创建时间</th>
+            <th class="action-col">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(row, index) in inventoryStore.inventoryList"
+            :key="row.id"
+            class="table-row"
+            :style="{ animationDelay: `${index * 0.03}s` }"
+          >
+            <td class="checkbox-col">
+              <input
+                type="checkbox"
+                :checked="isSelected(row.id)"
+                @change="toggleSelect(row)"
+              />
+            </td>
+            <td class="batch-no">{{ row.batchNo }}</td>
+            <td><span class="tag tag-info">{{ row.grade }}</span></td>
+            <td>{{ row.specification || '-' }}</td>
+            <td class="weight">{{ Number(row.weight).toFixed(3) }}</td>
+            <td>{{ row.pieceCount }}</td>
+            <td>{{ row.location || '-' }}</td>
+            <td>
+              <span :class="['tag', statusTagClass[row.status]]">
+                {{ statusLabel[row.status] }}
+              </span>
+            </td>
+            <td class="time">{{ formatDate(row.createdAt) }}</td>
+            <td class="action-col">
+              <button class="action-btn" @click="handleEdit(row)">编辑</button>
+              <button class="action-btn danger" @click="handleDelete(row.id)">删除</button>
+            </td>
+          </tr>
+          <tr v-if="!inventoryStore.inventoryList.length">
+            <td colspan="10" class="empty-cell">
+              <div class="empty-state">
+                <span class="empty-icon">📦</span>
+                <span class="empty-text">暂无库存数据</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- 分页 -->
+      <div v-if="inventoryStore.total > 0" class="pagination">
+        <span class="pagination-info">
+          共 {{ inventoryStore.total }} 条记录
+        </span>
+        <div class="pagination-controls">
+          <button
+            class="btn-pill btn-pill-sm btn-ghost"
+            :disabled="queryForm.page <= 1"
+            @click="goToPage(queryForm.page - 1)"
+          >
+            上一页
+          </button>
+          <span class="page-indicator">{{ queryForm.page }} / {{ totalPages }}</span>
+          <button
+            class="btn-pill btn-pill-sm btn-ghost"
+            :disabled="queryForm.page >= totalPages"
+            @click="goToPage(queryForm.page + 1)"
+          >
+            下一页
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新增/编辑弹窗 -->
+    <Teleport to="body">
+      <transition name="modal">
+        <div v-if="dialogVisible" class="modal-overlay" @click.self="dialogVisible = false">
+          <div class="modal-content glass-card">
+            <div class="modal-header">
+              <h3 class="modal-title">{{ dialogTitle }}</h3>
+              <button class="modal-close" @click="dialogVisible = false">✕</button>
+            </div>
+
+            <div class="modal-body">
+              <div class="form-grid">
+                <div class="form-item">
+                  <label>批号 *</label>
+                  <input v-model="form.batchNo" type="text" placeholder="请输入批号" />
+                </div>
+                <div class="form-item">
+                  <label>品级 *</label>
+                  <input v-model="form.grade" type="text" placeholder="请输入品级" />
+                </div>
+                <div class="form-item">
+                  <label>规格</label>
+                  <input v-model="form.specification" type="text" placeholder="请输入规格" />
+                </div>
+                <div class="form-item">
+                  <label>产品类型</label>
+                  <input v-model="form.productType" type="text" placeholder="请输入产品类型" />
+                </div>
+                <div class="form-item">
+                  <label>重量(吨) *</label>
+                  <input v-model.number="form.weight" type="number" step="0.001" min="0" placeholder="0.000" />
+                </div>
+                <div class="form-item">
+                  <label>片数 *</label>
+                  <input v-model.number="form.pieceCount" type="number" min="0" placeholder="0" />
+                </div>
+                <div class="form-item full-width">
+                  <label>存放位置</label>
+                  <input v-model="form.location" type="text" placeholder="请输入存放位置" />
+                </div>
+                <div class="form-item">
+                  <label>镍含量</label>
+                  <input v-model="form.nickelContent" type="text" placeholder="请输入镍含量" />
+                </div>
+                <div class="form-item full-width">
+                  <label>备注</label>
+                  <textarea v-model="form.remark" rows="3" placeholder="备注信息"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-pill btn-ghost" @click="dialogVisible = false">取消</button>
+              <button class="btn-pill btn-primary" @click="handleSubmit">确定</button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, inject, onMounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import type { InventoryStock, CreateInventoryDto } from '@/types'
 
 const inventoryStore = useInventoryStore()
+const showToast = inject('showToast') as (message: string, type?: string) => void
 
 const queryForm = reactive({
   page: 1,
@@ -151,7 +238,6 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('新增库存')
 const isEdit = ref(false)
 const currentId = ref<number>()
-const formRef = ref<FormInstance>()
 
 const form = reactive<CreateInventoryDto>({
   batchNo: '',
@@ -165,17 +251,10 @@ const form = reactive<CreateInventoryDto>({
   remark: '',
 })
 
-const rules: FormRules = {
-  batchNo: [{ required: true, message: '请输入批号', trigger: 'blur' }],
-  grade: [{ required: true, message: '请输入品级', trigger: 'blur' }],
-  weight: [{ required: true, message: '请输入重量', trigger: 'blur' }],
-  pieceCount: [{ required: true, message: '请输入片数', trigger: 'blur' }],
-}
-
-const statusType: Record<string, '' | 'success' | 'warning' | 'info'> = {
-  available: 'success',
-  reserved: 'warning',
-  shipped: 'info',
+const statusTagClass: Record<string, string> = {
+  available: 'tag-success',
+  reserved: 'tag-warning',
+  shipped: 'tag-default',
 }
 
 const statusLabel: Record<string, string> = {
@@ -183,6 +262,14 @@ const statusLabel: Record<string, string> = {
   reserved: '已预留',
   shipped: '已发货',
 }
+
+const totalPages = computed(() => Math.ceil(inventoryStore.total / queryForm.limit))
+
+const isSelected = (id: number) => selectedRows.value.some(r => r.id === id)
+const isAllSelected = computed(() =>
+  inventoryStore.inventoryList.length > 0 &&
+  selectedRows.value.length === inventoryStore.inventoryList.length
+)
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '-'
@@ -203,11 +290,36 @@ const handleReset = () => {
   queryForm.keyword = ''
   queryForm.grade = ''
   queryForm.status = ''
+  queryForm.page = 1
   handleSearch()
 }
 
-const handleSelectionChange = (rows: InventoryStock[]) => {
-  selectedRows.value = rows
+const clearSearch = () => {
+  queryForm.keyword = ''
+  handleSearch()
+}
+
+const goToPage = (page: number) => {
+  queryForm.page = page
+  handleSearch()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const toggleSelect = (row: InventoryStock) => {
+  const index = selectedRows.value.findIndex(r => r.id === row.id)
+  if (index === -1) {
+    selectedRows.value.push(row)
+  } else {
+    selectedRows.value.splice(index, 1)
+  }
+}
+
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    selectedRows.value = []
+  } else {
+    selectedRows.value = [...inventoryStore.inventoryList]
+  }
 }
 
 const handleCreate = () => {
@@ -233,40 +345,45 @@ const handleEdit = (row: InventoryStock) => {
   isEdit.value = true
   currentId.value = row.id
   Object.assign(form, {
-    batchNo: row.batchNo,
-    grade: row.grade,
-    specification: row.specification,
-    productType: row.productType,
-    weight: Number(row.weight),
-    pieceCount: row.pieceCount,
-    location: row.location,
-    nickelContent: row.nickelContent,
-    remark: row.remark,
+    batchNo: row.batchNo || '',
+    grade: row.grade || '',
+    specification: row.specification || '',
+    productType: row.productType || '',
+    weight: Number(row.weight) || 0,
+    pieceCount: row.pieceCount || 0,
+    location: row.location || '',
+    nickelContent: row.nickelContent || '',
+    remark: row.remark || '',
   })
   dialogVisible.value = true
 }
 
 const handleSubmit = async () => {
-  if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
-    if (!valid) return
-    try {
-      if (isEdit.value && currentId.value) {
-        await inventoryStore.updateInventory(currentId.value, form)
-      } else {
-        await inventoryStore.createInventory(form)
-      }
-      dialogVisible.value = false
-    } catch (e) {
-      // 错误已在 API 层处理
+  if (!form.batchNo || !form.grade || !form.weight || !form.pieceCount) {
+    showToast?.('请填写必填项', 'warning')
+    return
+  }
+  try {
+    if (isEdit.value && currentId.value) {
+      await inventoryStore.updateInventory(currentId.value, form)
+      showToast?.('更新成功', 'success')
+    } else {
+      await inventoryStore.createInventory(form)
+      showToast?.('创建成功', 'success')
     }
-  })
+    dialogVisible.value = false
+    handleSearch()
+  } catch {
+    // 错误已在 API 层处理
+  }
 }
 
 const handleDelete = async (id: number) => {
   try {
     await ElMessageBox.confirm('确定删除该库存记录?', '提示', { type: 'warning' })
     await inventoryStore.deleteInventory(id)
+    showToast?.('删除成功', 'success')
+    handleSearch()
   } catch {
     // 用户取消
   }
@@ -277,9 +394,11 @@ const handleBatchDelete = async () => {
     await ElMessageBox.confirm(`确定删除选中的 ${selectedRows.value.length} 条记录?`, '提示', {
       type: 'warning',
     })
-    const ids = selectedRows.value.map((r) => r.id)
+    const ids = selectedRows.value.map(r => r.id)
     await inventoryStore.batchDelete(ids)
     selectedRows.value = []
+    showToast?.('批量删除成功', 'success')
+    handleSearch()
   } catch {
     // 用户取消
   }
@@ -292,23 +411,424 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .inventory-page {
-  .search-card {
-    margin-bottom: 16px;
+  padding-top: var(--spacing-xl);
+  padding-bottom: var(--spacing-2xl);
+}
+
+// ==================== 工具栏 ====================
+.toolbar {
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.search-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 14px;
+  color: var(--color-text-tertiary);
+}
+
+.search-input {
+  width: 260px;
+  padding: 10px 36px 10px 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-base);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  transition: all var(--transition-fast);
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
   }
-  .action-card {
-    margin-bottom: 16px;
-    .el-card__body {
-      padding: 12px 20px;
-    }
-    .selection-info {
-      margin-left: 16px;
-      color: #999;
+
+  &::placeholder {
+    color: var(--color-text-tertiary);
+  }
+}
+
+.search-clear {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
+}
+
+.filter-input,
+.filter-select {
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-base);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  transition: all var(--transition-fast);
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+}
+
+.filter-select {
+  cursor: pointer;
+}
+
+.action-section {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+// ==================== 表格 ====================
+.table-card {
+  overflow: hidden;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  color: var(--color-text-secondary);
+  gap: var(--spacing-md);
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-divider);
+  }
+
+  th {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--color-bg-tertiary);
+  }
+
+  .table-row {
+    animation: fadeIn 0.3s ease forwards;
+    opacity: 0;
+    transition: background var(--transition-fast);
+
+    &:hover {
+      background: var(--color-bg-hover);
     }
   }
-  .pagination {
-    margin-top: 20px;
-    display: flex;
-    justify-content: flex-end;
+
+  .checkbox-col {
+    width: 40px;
+    text-align: center;
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--color-primary);
+    }
+  }
+
+  .batch-no {
+    font-weight: 500;
+    font-family: monospace;
+  }
+
+  .weight {
+    font-family: monospace;
+  }
+
+  .time {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .action-col {
+    width: 140px;
+  }
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: rgba(0, 113, 227, 0.1);
+  }
+
+  &.danger {
+    color: var(--color-danger);
+
+    &:hover {
+      background: rgba(255, 59, 48, 0.1);
+    }
+  }
+}
+
+.empty-cell {
+  padding: 60px !important;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+
+  .empty-icon {
+    font-size: 48px;
+    opacity: 0.5;
+  }
+
+  .empty-text {
+    color: var(--color-text-secondary);
+  }
+}
+
+// ==================== 分页 ====================
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--color-divider);
+}
+
+.pagination-info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.page-indicator {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: 0 var(--spacing-sm);
+}
+
+// ==================== 弹窗 ====================
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--spacing-lg);
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.modal-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-bg-tertiary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: var(--color-bg-hover);
+  }
+}
+
+.modal-body {
+  padding: var(--spacing-lg);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--color-divider);
+}
+
+// 表单
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.form-item {
+  &.full-width {
+    grid-column: span 2;
+  }
+
+  label {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    transition: all var(--transition-fast);
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+    }
+
+    &::placeholder {
+      color: var(--color-text-tertiary);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+}
+
+// 弹窗动画
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+
+  .modal-content {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+
+  .modal-content {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+// ==================== 响应式 ====================
+@media (max-width: 1024px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-section {
+    flex-wrap: wrap;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-item.full-width {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .data-table {
+    th, td {
+      padding: 10px 12px;
+    }
+  }
+
+  .action-col {
+    width: auto;
   }
 }
 </style>

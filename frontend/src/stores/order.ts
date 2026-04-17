@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import * as api from '@/api/distribution'
 import type { DistributionOrder, CreateOrderDto, UpdateOrderDto, ShipOrderDto, OrderQuery } from '@/types'
-import { ElMessage } from 'element-plus'
 
 export const useOrderStore = defineStore('order', () => {
   const orderList = ref<DistributionOrder[]>([])
@@ -35,51 +34,43 @@ export const useOrderStore = defineStore('order', () => {
 
   const createOrder = async (dto: CreateOrderDto) => {
     const res = await api.createOrder(dto)
-    ElMessage.success('创建成功')
     await fetchOrders()
     return res
   }
 
   const updateOrder = async (id: number, dto: UpdateOrderDto) => {
     const res = await api.updateOrder(id, dto)
-    ElMessage.success('更新成功')
     await fetchOrders()
     return res
   }
 
   const deleteOrder = async (id: number) => {
     await api.deleteOrder(id)
-    ElMessage.success('删除成功')
     await fetchOrders()
   }
 
   const batchDelete = async (ids: number[]) => {
     await api.batchDeleteOrders(ids)
-    ElMessage.success('批量删除成功')
     await fetchOrders()
   }
 
   const confirmOrder = async (id: number) => {
     await api.confirmOrder(id)
-    ElMessage.success('订单已确认')
     await fetchOrders()
   }
 
   const shipOrder = async (id: number, dto: ShipOrderDto) => {
     await api.shipOrder(id, dto)
-    ElMessage.success('订单已发货')
     await fetchOrders()
   }
 
   const deliverOrder = async (id: number) => {
     await api.deliverOrder(id)
-    ElMessage.success('发运完成')
     await fetchOrders()
   }
 
   const cancelOrder = async (id: number) => {
     await api.cancelOrder(id)
-    ElMessage.success('订单已取消')
     await fetchOrders()
   }
 

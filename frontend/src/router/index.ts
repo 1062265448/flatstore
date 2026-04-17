@@ -37,6 +37,36 @@ const routes = [
     component: () => import('@/views/Test.vue'),
     meta: { title: 'API 测试' },
   },
+  {
+    path: '/demos',
+    name: 'DemoSelector',
+    component: () => import('@/views/DemoSelector.vue'),
+    meta: { title: '3D Demo 选择' },
+  },
+  {
+    path: '/demo-industrial',
+    name: 'DemoIndustrial',
+    component: () => import('@/views/Demo1_Industrial.vue'),
+    meta: { title: 'Demo1: 工业写实风格' },
+  },
+  {
+    path: '/demo-modern',
+    name: 'DemoModern',
+    component: () => import('@/views/Demo2_Modern.vue'),
+    meta: { title: 'Demo2: 简约现代风格' },
+  },
+  {
+    path: '/demo-cyberpunk',
+    name: 'DemoCyberpunk',
+    component: () => import('@/views/Demo3_Cyberpunk.vue'),
+    meta: { title: 'Demo3: 科幻未来风格' },
+  },
+  {
+    path: '/demo-rts',
+    name: 'DemoRTS',
+    component: () => import('@/views/Demo4_RTS.vue'),
+    meta: { title: 'Demo4: RTS 游戏风格' },
+  },
 ]
 
 const router = createRouter({
