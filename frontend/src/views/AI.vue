@@ -10,10 +10,7 @@
       <!-- 上传识别区 -->
       <div class="upload-section glass-card fade-in" :style="{ animationDelay: '0.1s' }">
         <div class="section-header">
-          <h3>
-            <span class="section-icon">🤖</span>
-            图像识别
-          </h3>
+          <h3>图像识别</h3>
         </div>
 
         <div
@@ -124,10 +121,7 @@
       <!-- 识别历史 -->
       <div class="history-section glass-card fade-in" :style="{ animationDelay: '0.2s' }">
         <div class="section-header">
-          <h3>
-            <span class="section-icon">📋</span>
-            识别历史
-          </h3>
+          <h3>识别历史</h3>
           <button
             v-if="selectedHistory.length"
             class="btn-pill btn-pill-sm btn-danger"
@@ -493,6 +487,8 @@ const handleImportSubmit = async () => {
   }
 }
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002'
+
 const fetchHistory = async () => {
   historyLoading.value = true
   try {
@@ -501,7 +497,11 @@ const fetchHistory = async () => {
       limit: historyQuery.limit,
       status: historyQuery.status || undefined,
     })
-    historyList.value = res.data
+    // 拼接完整的图片 URL
+    historyList.value = res.data.map((item: AiRecognitionHistory) => ({
+      ...item,
+      imageUrl: item.imageUrl ? `${apiBaseUrl}${item.imageUrl}` : '',
+    }))
     historyTotal.value = res.total
   } finally {
     historyLoading.value = false

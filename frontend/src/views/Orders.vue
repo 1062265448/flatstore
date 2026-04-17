@@ -31,6 +31,9 @@
       </div>
 
       <div class="action-section">
+        <button class="btn-pill btn-ghost" @click="handleReset">
+          重置
+        </button>
         <button class="btn-pill btn-primary" @click="handleCreate">
           <span>+</span> 新增配货单
         </button>
@@ -535,6 +538,13 @@ const formatDate = (dateStr: string) => {
 
 const filterByStatus = (status: string) => {
   queryForm.status = status
+  queryForm.page = 1
+  handleSearch()
+}
+
+const handleReset = () => {
+  queryForm.status = ''
+  queryForm.customerId = undefined
   queryForm.page = 1
   handleSearch()
 }

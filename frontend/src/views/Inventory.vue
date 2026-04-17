@@ -10,7 +10,6 @@
     <div class="toolbar glass-card">
       <div class="search-section">
         <div class="search-input-wrap">
-          <span class="search-icon">🔍</span>
           <input
             v-model="queryForm.keyword"
             type="text"
@@ -121,7 +120,6 @@
           <tr v-if="!inventoryStore.inventoryList.length">
             <td colspan="10" class="empty-cell">
               <div class="empty-state">
-                <span class="empty-icon">📦</span>
                 <span class="empty-text">暂无库存数据</span>
               </div>
             </td>
@@ -172,7 +170,13 @@
                 </div>
                 <div class="form-item">
                   <label>品级 *</label>
-                  <input v-model="form.grade" type="text" placeholder="请输入品级" />
+                  <select v-model="form.grade" class="form-select">
+                    <option value="">请选择品级</option>
+                    <option value="9997">9997</option>
+                    <option value="9996">9996</option>
+                    <option value="9950">9950</option>
+                    <option value="9920">9920</option>
+                  </select>
                 </div>
                 <div class="form-item">
                   <label>规格</label>
@@ -180,7 +184,13 @@
                 </div>
                 <div class="form-item">
                   <label>产品类型</label>
-                  <input v-model="form.productType" type="text" placeholder="请输入产品类型" />
+                  <select v-model="form.productType" class="form-select">
+                    <option value="">请选择产品类型</option>
+                    <option value="电解镍">电解镍</option>
+                    <option value="电积镍">电积镍</option>
+                    <option value="不锈钢专用镍">不锈钢专用镍</option>
+                    <option value="电镀专用镍">电镀专用镍</option>
+                  </select>
                 </div>
                 <div class="form-item">
                   <label>重量(吨) *</label>
@@ -192,11 +202,20 @@
                 </div>
                 <div class="form-item full-width">
                   <label>存放位置</label>
-                  <input v-model="form.location" type="text" placeholder="请输入存放位置" />
-                </div>
-                <div class="form-item">
-                  <label>镍含量</label>
-                  <input v-model="form.nickelContent" type="text" placeholder="请输入镍含量" />
+                  <div class="location-select-wrap">
+                    <select v-model="form.location" class="form-select">
+                      <option value="">请选择存放位置</option>
+                      <option value="三厂区">三厂区</option>
+                      <option value="二厂区">二厂区</option>
+                    </select>
+                    <input
+                      v-if="!form.location || (!['三厂区', '二厂区'].includes(form.location))"
+                      v-model="form.location"
+                      type="text"
+                      placeholder="或输入其他位置"
+                      class="location-input"
+                    />
+                  </div>
                 </div>
                 <div class="form-item full-width">
                   <label>备注</label>
@@ -247,7 +266,6 @@ const form = reactive<CreateInventoryDto>({
   weight: 0,
   pieceCount: 0,
   location: '',
-  nickelContent: '',
   remark: '',
 })
 
@@ -352,7 +370,6 @@ const handleEdit = (row: InventoryStock) => {
     weight: Number(row.weight) || 0,
     pieceCount: row.pieceCount || 0,
     location: row.location || '',
-    nickelContent: row.nickelContent || '',
     remark: row.remark || '',
   })
   dialogVisible.value = true
@@ -440,16 +457,9 @@ onMounted(() => {
   align-items: center;
 }
 
-.search-icon {
-  position: absolute;
-  left: 12px;
-  font-size: 14px;
-  color: var(--color-text-tertiary);
-}
-
 .search-input {
   width: 260px;
-  padding: 10px 36px 10px 36px;
+  padding: 10px 36px 10px 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-base);
@@ -628,11 +638,6 @@ onMounted(() => {
   align-items: center;
   gap: var(--spacing-md);
 
-  .empty-icon {
-    font-size: 48px;
-    opacity: 0.5;
-  }
-
   .empty-text {
     color: var(--color-text-secondary);
   }
@@ -773,6 +778,19 @@ onMounted(() => {
   textarea {
     resize: vertical;
     min-height: 80px;
+  }
+}
+
+.location-select-wrap {
+  display: flex;
+  gap: var(--spacing-sm);
+
+  .form-select {
+    flex: 1;
+  }
+
+  .location-input {
+    flex: 1;
   }
 }
 

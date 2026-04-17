@@ -7,6 +7,11 @@ import { QwenAIService } from '../common/services/qwen-ai.service';
 import { Prisma } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+import { customAlphabet } from 'nanoid';
+
+// 生成不重复订单号
+const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 10);
+const generateOrderNo = () => `ORD-${nanoid()}`;
 
 @Injectable()
 export class DistributionService {
@@ -81,11 +86,11 @@ export class DistributionService {
     status?: string;
     productType?: string;
   }) {
-    const page = params.page || 1;
-    const limit = params.limit || 20;
+    const page = Math.max(1, Number(params.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(params.limit) || 20));
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.InventoryStockWhereInput = {};
     if (params.keyword) {
       where.OR = [
         { batchNo: { contains: params.keyword } },
@@ -208,7 +213,7 @@ export class DistributionService {
     console.log('[AI] 文件信息:', file.originalname, file.size, file.mimetype, file.path);
 
     // 读取文件并转为 base64
-    const buffer = fs.readFileSync(file.path);
+    const buffer = await fs.promises.readFile(file.path);
     const base64 = buffer.toString('base64');
 
     // 调用 AI 识别
@@ -226,6 +231,12 @@ export class DistributionService {
           errorMessage: error.message,
         },
       });
+      // 清理临时文件
+      try {
+        await fs.promises.unlink(file.path);
+      } catch (unlinkError) {
+        console.error('[AI] 临时文件清理失败:', unlinkError);
+      }
       throw error;
     }
 
@@ -308,11 +319,11 @@ export class DistributionService {
     status?: string;
     customerId?: number;
   }) {
-    const page = params.page || 1;
-    const limit = params.limit || 20;
+    const page = Math.max(1, Number(params.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(params.limit) || 20));
     const skip = (page - 1) * limit;
 
-    const where: any = { deletedAt: null };
+    const where: Prisma.DistributionOrderWhereInput = { deletedAt: null };
     if (params.status) where.status = params.status;
     if (params.customerId) where.customerId = params.customerId;
 
@@ -350,7 +361,7 @@ export class DistributionService {
   }
 
   async createOrder(dto: CreateOrderDto) {
-    const orderNo = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const orderNo = generateOrderNo();
 
     // 批量查询库存（避免 N+1）
     const stockIds = dto.items.map((i) => i.stockId);
@@ -581,11 +592,11 @@ export class DistributionService {
   // ==================== AI 识别历史 ====================
 
   async getRecognitionHistory(params: { page?: number; limit?: number; status?: string }) {
-    const page = params.page || 1;
-    const limit = params.limit || 20;
+    const page = Math.max(1, Number(params.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(params.limit) || 20));
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.AiRecognitionHistoryWhereInput = {};
     if (params.status) where.status = params.status;
 
     const [data, total] = await Promise.all([

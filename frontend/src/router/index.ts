@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-const routes = [
+// DEV 模式下包含测试路由
+const DEV = import.meta.env.DEV
+
+const baseRoutes = [
   {
     path: '/',
     name: 'Dashboard',
@@ -31,12 +34,19 @@ const routes = [
     component: () => import('@/views/AI.vue'),
     meta: { title: 'AI 图像识别' },
   },
+]
+
+// DEV 环境额外路由
+const devRoutes = DEV ? [
   {
     path: '/test',
     name: 'Test',
     component: () => import('@/views/Test.vue'),
     meta: { title: 'API 测试' },
   },
+] : []
+
+const demoRoutes = [
   {
     path: '/demos',
     name: 'DemoSelector',
@@ -68,6 +78,8 @@ const routes = [
     meta: { title: 'Demo4: RTS 游戏风格' },
   },
 ]
+
+const routes = [...baseRoutes, ...devRoutes, ...demoRoutes]
 
 const router = createRouter({
   history: createWebHistory(),

@@ -5,7 +5,6 @@ import {
   IsArray,
   ValidateNested,
   Min,
-  MinLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -50,6 +49,18 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   remark?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  totalWeight?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  totalPieces?: number;
 
   @ApiProperty()
   @IsArray()

@@ -4,13 +4,6 @@
     <nav class="nav" :class="{ 'nav-scrolled': isScrolled }">
       <div class="nav-left">
         <div class="nav-logo" @click="router.push('/')">
-          <span class="nav-logo-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="6" width="18" height="15" rx="2" stroke="currentColor" stroke-width="2"/>
-              <path d="M3 10H21" stroke="currentColor" stroke-width="2"/>
-              <path d="M10 6V3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </span>
           <span class="nav-logo-text">平面库配货</span>
         </div>
       </div>
@@ -25,7 +18,6 @@
             :class="{ active: isActive(item.path) }"
             :style="{ animationDelay: `${index * 0.05}s` }"
           >
-            <span class="nav-link-icon" v-html="item.icon"></span>
             <span class="nav-link-text">{{ item.name }}</span>
             <span class="nav-link-indicator"></span>
           </router-link>
@@ -95,12 +87,12 @@ const isScrolled = ref(false)
 
 // 导航项
 const navItems = [
-  { path: '/', name: '首页', icon: '🏠' },
-  { path: '/inventory', name: '库存', icon: '📦' },
-  { path: '/orders', name: '配货单', icon: '📋' },
-  { path: '/customers', name: '客户', icon: '👥' },
-  { path: '/ai', name: 'AI识别', icon: '🤖' },
-  { path: '/demos', name: '3D展厅', icon: '🎮' },
+  { path: '/', name: '首页' },
+  { path: '/inventory', name: '库存' },
+  { path: '/orders', name: '配货单' },
+  { path: '/customers', name: '客户' },
+  { path: '/ai', name: 'AI识别' },
+  { path: '/demos', name: '3D展厅' },
 ]
 
 // 面包屑
@@ -213,17 +205,6 @@ onUnmounted(() => {
     opacity: 0.8;
   }
 
-  .nav-logo-icon {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-primary);
-    color: white;
-    border-radius: var(--radius-md);
-  }
-
   .nav-logo-text {
     font-size: var(--font-size-lg);
     font-weight: 600;
@@ -260,19 +241,11 @@ onUnmounted(() => {
   &:hover {
     background: var(--color-bg-hover);
     color: var(--color-text-primary);
-
-    .nav-link-icon {
-      transform: scale(1.1);
-    }
   }
 
   &.active {
     background: var(--color-primary);
     color: var(--color-text-inverse);
-
-    .nav-link-icon {
-      transform: scale(1.1);
-    }
 
     .nav-link-indicator {
       width: 20px;
@@ -284,11 +257,6 @@ onUnmounted(() => {
       left: 50%;
       transform: translateX(-50%);
     }
-  }
-
-  .nav-link-icon {
-    font-size: 16px;
-    transition: transform var(--transition-normal);
   }
 
   .nav-link-text {

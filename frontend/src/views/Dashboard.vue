@@ -14,9 +14,6 @@
         class="stat-card glass-card"
         :style="{ animationDelay: `${index * 0.1}s` }"
       >
-        <div class="stat-icon" :style="{ background: stat.gradient }">
-          <span class="stat-icon-inner">{{ stat.icon }}</span>
-        </div>
         <div class="stat-content">
           <div class="stat-label">{{ stat.label }}</div>
           <div class="stat-value">{{ stat.value }}</div>
@@ -30,20 +27,14 @@
     <div class="charts-grid">
       <div class="chart-card glass-card fade-in" :style="{ animationDelay: '0.4s' }">
         <div class="chart-header">
-          <h3 class="chart-title">
-            <span class="chart-icon">📊</span>
-            库存状态分布
-          </h3>
+          <h3 class="chart-title">库存状态分布</h3>
         </div>
         <div ref="inventoryChartRef" class="chart-container"></div>
       </div>
 
       <div class="chart-card glass-card fade-in" :style="{ animationDelay: '0.5s' }">
         <div class="chart-header">
-          <h3 class="chart-title">
-            <span class="chart-icon">📈</span>
-            配货单状态
-          </h3>
+          <h3 class="chart-title">配货单状态</h3>
         </div>
         <div ref="orderChartRef" class="chart-container"></div>
       </div>
@@ -53,14 +44,10 @@
     <div class="weight-grid">
       <div class="weight-card glass-card fade-in" :style="{ animationDelay: '0.6s' }">
         <div class="weight-header">
-          <h3 class="chart-title">
-            <span class="chart-icon">📦</span>
-            库存统计
-          </h3>
+          <h3 class="chart-title">库存统计</h3>
         </div>
         <div class="weight-stats">
           <div class="weight-item">
-            <div class="weight-icon">⚖️</div>
             <div class="weight-info">
               <div class="weight-value">{{ Number(stats?.inventory.totalWeight || 0).toFixed(2) }}</div>
               <div class="weight-label">总重量（吨）</div>
@@ -68,7 +55,6 @@
           </div>
           <div class="weight-divider"></div>
           <div class="weight-item">
-            <div class="weight-icon">📦</div>
             <div class="weight-info">
               <div class="weight-value">{{ stats?.inventory.totalPieces || 0 }}</div>
               <div class="weight-label">总片数</div>
@@ -76,7 +62,6 @@
           </div>
           <div class="weight-divider"></div>
           <div class="weight-item">
-            <div class="weight-icon">🏭</div>
             <div class="weight-info">
               <div class="weight-value">{{ stats?.inventory.total || 0 }}</div>
               <div class="weight-label">库存批次</div>
@@ -87,10 +72,7 @@
 
       <div class="weight-card glass-card fade-in" :style="{ animationDelay: '0.7s' }">
         <div class="weight-header">
-          <h3 class="chart-title">
-            <span class="chart-icon">🚚</span>
-            配货单统计
-          </h3>
+          <h3 class="chart-title">配货单统计</h3>
         </div>
         <div class="weight-stats order-stats">
           <div class="order-badge draft">
@@ -134,28 +116,24 @@ let orderChart: echarts.ECharts | null = null
 // 统计卡片配置
 const statCards = computed(() => [
   {
-    icon: '📦',
     label: '库存总数',
     value: stats.value?.inventory.total || 0,
     sub: `可用 ${stats.value?.inventory.available || 0} 批次`,
     gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   },
   {
-    icon: '📋',
     label: '配货单',
     value: stats.value?.order.total || 0,
     sub: `进行中 ${(stats.value?.order.confirmed || 0) + (stats.value?.order.shipping || 0)} 单`,
     gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
   },
   {
-    icon: '🚚',
     label: '已发货',
     value: stats.value?.order.shipped || 0,
     sub: '配货单完成',
     gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
   },
   {
-    icon: '👥',
     label: '客户数',
     value: stats.value?.customer.total || 0,
     sub: '合作客户',
@@ -329,24 +307,6 @@ onUnmounted(() => {
   overflow: hidden;
   cursor: default;
 
-  .stat-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: var(--radius-lg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-  }
-
-  .stat-icon-inner {
-    font-size: 24px;
-    animation: bounce 2s ease-in-out infinite;
-    animation-delay: var(--delay, 0s);
-  }
-
   .stat-content {
     flex: 1;
     min-width: 0;
@@ -397,10 +357,6 @@ onUnmounted(() => {
     .stat-value {
       transform: scale(1.05);
     }
-
-    .stat-icon-inner {
-      animation: bounce 0.5s ease-in-out;
-    }
   }
 }
 
@@ -435,16 +391,9 @@ onUnmounted(() => {
 }
 
 .chart-title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--color-text-primary);
-
-  .chart-icon {
-    font-size: 18px;
-  }
 }
 
 .chart-container {
@@ -488,10 +437,6 @@ onUnmounted(() => {
   &:hover {
     transform: translateY(-2px);
   }
-}
-
-.weight-icon {
-  font-size: 32px;
 }
 
 .weight-value {
