@@ -91,15 +91,15 @@ Flatstore/
 
 ### 2. 配货单管理
 
-状态机：`draft → confirmed → shipping → shipped`
+状态机：`draft → shipping → shipped`
 
 | API | 说明 |
 |-----|------|
 | `POST /distribution/orders` | 创建（自动锁定库存） |
-| `POST /distribution/orders/:id/confirm` | 确认 |
 | `POST /distribution/orders/:id/ship` | 发货 |
 | `POST /distribution/orders/:id/deliver` | 完成发运 |
 | `POST /distribution/orders/:id/cancel` | 取消 |
+| `DELETE /distribution/orders/:id` | 删除（仅 cancelled/shipped） |
 
 ### 3. AI 图像识别
 

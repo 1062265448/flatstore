@@ -76,6 +76,11 @@ export class CreateInventoryDto {
   @IsOptional()
   @IsString()
   certificateNo?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  recognitionHistoryId?: number;
 }
 
 export class UpdateInventoryDto {
@@ -145,4 +150,15 @@ export class UpdateInventoryDto {
   @IsOptional()
   @IsString()
   certificateNo?: string;
+}
+
+export class BatchCreateInventoryDto {
+  @ApiProperty({ type: [CreateInventoryDto] })
+  @IsOptional()
+  items?: CreateInventoryDto[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  recognitionHistoryId?: number;
 }

@@ -38,6 +38,16 @@ export class CreateOrderDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  productType?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  specification?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   productSpec?: string;
 
   @ApiPropertyOptional()
@@ -79,6 +89,16 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsString()
   customerName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  productType?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  specification?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

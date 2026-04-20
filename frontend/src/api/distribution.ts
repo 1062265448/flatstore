@@ -37,8 +37,13 @@ export const createInventory = (data: CreateInventoryDto) => {
   return request.post<InventoryStock>('/distribution/inventory', data)
 }
 
-export const batchCreateInventory = (items: CreateInventoryDto[]) => {
-  return request.post('/distribution/inventory/batch', items)
+export interface BatchCreateInventoryRequest {
+  items: CreateInventoryDto[]
+  recognitionHistoryId?: number
+}
+
+export const batchCreateInventory = (data: BatchCreateInventoryRequest) => {
+  return request.post('/distribution/inventory/batch', data)
 }
 
 export const updateInventory = (id: number, data: UpdateInventoryDto) => {
@@ -108,10 +113,6 @@ export const deleteOrder = (id: number) => {
 
 export const batchDeleteOrders = (ids: number[]) => {
   return request.post('/distribution/orders/batch-delete', { ids })
-}
-
-export const confirmOrder = (id: number) => {
-  return request.post<DistributionOrder>(`/distribution/orders/${id}/confirm`)
 }
 
 export const shipOrder = (id: number, data: ShipOrderDto) => {

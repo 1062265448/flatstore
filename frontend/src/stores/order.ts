@@ -54,11 +54,6 @@ export const useOrderStore = defineStore('order', () => {
     await fetchOrders()
   }
 
-  const confirmOrder = async (id: number) => {
-    await api.confirmOrder(id)
-    await fetchOrders()
-  }
-
   const shipOrder = async (id: number, dto: ShipOrderDto) => {
     await api.shipOrder(id, dto)
     await fetchOrders()
@@ -85,7 +80,6 @@ export const useOrderStore = defineStore('order', () => {
     updateOrder,
     deleteOrder,
     batchDelete,
-    confirmOrder,
     shipOrder,
     deliverOrder,
     cancelOrder,

@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -19,10 +20,14 @@ import { DistributionService } from './distribution.service';
 import { CreateInventoryDto, UpdateInventoryDto } from './dto/inventory.dto';
 import { CreateOrderDto, UpdateOrderDto, ShipOrderDto } from './dto/order.dto';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { existsSync } from 'fs';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 @ApiTags('配货模块')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('distribution')
 export class DistributionController {
   constructor(private readonly service: DistributionService) {}
@@ -64,8 +69,8 @@ export class DistributionController {
 
   @Post('inventory/batch')
   @ApiOperation({ summary: '批量创建库存' })
-  batchCreateInventory(@Body() items: CreateInventoryDto[]) {
-    return this.service.batchCreateInventory(items);
+  batchCreateInventory(@Body() body: { items: CreateInventoryDto[]; recognitionHistoryId?: number }) {
+    return this.service.batchCreateInventory(body.items, body.recognitionHistoryId);
   }
 
   @Patch('inventory/:id')
@@ -90,6 +95,7 @@ export class DistributionController {
   }
 
   @Post('inventory/ai-recognize')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'AI 图像识别' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -208,11 +214,7 @@ export class DistributionController {
     return this.service.batchDeleteOrders(body.ids);
   }
 
-  @Post('orders/:id/confirm')
-  @ApiOperation({ summary: '确认订单' })
-  confirmOrder(@Param('id', ParseIntPipe) id: number) {
-    return this.service.confirmOrder(id);
-  }
+    // 移除 confirm 接口 - 创建后直接可发货
 
   @Post('orders/:id/ship')
   @ApiOperation({ summary: '发货' })
