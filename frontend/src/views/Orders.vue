@@ -112,11 +112,6 @@
               <!-- 草稿状态 -->
               <template v-if="row.status === 'draft'">
                 <button class="action-btn" @click="handleEdit(row)">编辑</button>
-                <button class="action-btn success" @click="handleConfirm(row.id)">确认</button>
-                <button class="action-btn danger" @click="handleCancel(row.id)">取消</button>
-              </template>
-              <!-- 已确认状态 -->
-              <template v-else-if="row.status === 'confirmed'">
                 <button class="action-btn warning" @click="handleShip(row)">发货</button>
                 <button class="action-btn danger" @click="handleCancel(row.id)">取消</button>
               </template>
@@ -191,11 +186,24 @@
                 </div>
                 <div class="form-item">
                   <label>目标品级</label>
-                  <input v-model="form.targetGrade" type="text" placeholder="请输入目标品级" />
+                  <select v-model="form.targetGrade" class="form-select">
+                    <option value="">请选择品级</option>
+                    <option v-for="g in gradeOptions" :key="g" :value="g">{{ g }}</option>
+                  </select>
+                </div>
+                <div class="form-item">
+                  <label>产品类型</label>
+                  <select v-model="form.productType" class="form-select">
+                    <option value="">请选择类型</option>
+                    <option v-for="t in productTypeOptions" :key="t" :value="t">{{ t }}</option>
+                  </select>
                 </div>
                 <div class="form-item">
                   <label>产品规格</label>
-                  <input v-model="form.productSpec" type="text" placeholder="请输入产品规格" />
+                  <select v-model="form.specification" class="form-select">
+                    <option value="">请选择规格</option>
+                    <option v-for="s in specificationOptions" :key="s" :value="s">{{ s }}</option>
+                  </select>
                 </div>
                 <div class="form-item full-width">
                   <label>备注</label>
@@ -203,8 +211,8 @@
                 </div>
               </div>
 
-              <!-- 库存选择区 -->
-              <div class="stock-section">
+              <!-- 库存选择区（新建时显示） -->
+              <div v-if="!isEdit" class="stock-section">
                 <div class="stock-header">
                   <h4>
                     <span class="stock-icon">📦</span>
@@ -224,13 +232,17 @@
                   >
                     <div class="stock-info">
                       <span class="stock-batch">{{ stock.batchNo }}</span>
-                      <span class="tag tag-info">{{ stock.grade }}</span>
-                      <span class="stock-spec">{{ stock.specification || '-' }}</span>
+                      <span class="stock-tags">
+                        <span class="tag tag-grade">{{ stock.grade }}</span>
+                        <span class="tag tag-type">{{ stock.productType || '-' }}</span>
+                        <span class="tag tag-spec">{{ stock.specification || '-' }}</span>
+                      </span>
                     </div>
                     <div class="stock-meta">
                       <span class="stock-weight">{{ Number(stock.weight).toFixed(3) }}吨</span>
                       <span class="stock-pieces">{{ stock.pieceCount }}片</span>
                       <span class="stock-location">{{ stock.location || '-' }}</span>
+                      <span v-if="stock.nickelContent" class="stock-nickel">Ni {{ Number(stock.nickelContent).toFixed(2) }}%</span>
                     </div>
                     <div class="stock-action">
                       <span v-if="isStockSelected(stock.id)" class="selected-badge">
@@ -252,9 +264,8 @@
               <div class="items-section">
                 <div class="items-header">
                   <h4>
-                    <span class="items-icon">📋</span>
-                    配货明细
-                  </h4>
+                    <span class="items-icon">{{ isEdit ? '📋' : '📦' }}</span>
+                    {{ isEdit ? '配货明细（仅可编辑重量和片数）' : '配货明细' }}
                   <span class="items-count">{{ form.items.length }} 项</span>
                 </div>
 
@@ -262,11 +273,16 @@
                   <div v-for="(item, index) in form.items" :key="index" class="item-row">
                     <div class="item-stock">
                       <span class="item-batch">{{ getStockBatchNo(item.stockId) }}</span>
-                      <span class="item-grade">{{ getStockGrade(item.stockId) }}</span>
+                      <span class="item-tags">
+                        <span class="tag tag-grade">{{ getStockGrade(item.stockId) }}</span>
+                        <span class="tag tag-type">{{ getStockProductType(item.stockId) }}</span>
+                        <span class="tag tag-spec">{{ getStockSpec(item.stockId) }}</span>
+                        <span class="tag tag-nickel">Ni {{ getStockNickel(item.stockId) }}%</span>
+                      </span>
                     </div>
                     <input v-model.number="item.weight" type="number" step="0.001" min="0" placeholder="重量(吨)" class="item-input" />
                     <input v-model.number="item.pieceCount" type="number" min="0" placeholder="片数" class="item-input" />
-                    <button class="item-remove" @click="handleRemoveItem(index)">
+                    <button v-if="!isEdit" class="item-remove" @click="handleRemoveItem(index)">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                         <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                       </svg>
@@ -275,7 +291,7 @@
                 </div>
 
                 <div v-if="!form.items.length" class="items-empty">
-                  <span>从上方选择库存添加配货明细</span>
+                  <span>{{ isEdit ? '无配货明细' : '从上方选择库存添加配货明细' }}</span>
                 </div>
               </div>
             </div>
@@ -421,7 +437,7 @@ import { useOrderStore } from '@/stores/order'
 import { useCustomerStore } from '@/stores/customer'
 import { useInventoryStore } from '@/stores/inventory'
 import { ElMessageBox } from 'element-plus'
-import type { DistributionOrder, CreateOrderDto, OrderItemDto, ShipOrderDto } from '@/types'
+import type { DistributionOrder, CreateOrderDto, OrderItemDto, ShipOrderDto, InventoryStock } from '@/types'
 
 const orderStore = useOrderStore()
 const customerStore = useCustomerStore()
@@ -443,8 +459,40 @@ const dialogTitle = ref('新增配货单')
 const isEdit = ref(false)
 const currentId = ref<number>()
 const currentOrder = ref<DistributionOrder | null>(null)
-const availableStocks = ref<any[]>([])
+const availableStocks = ref<InventoryStock[]>([])
 const stockKeyword = ref('')
+
+// 品级选项（从库存数据提取）
+const gradeOptions = computed(() => {
+  const grades = new Set<string>()
+  availableStocks.value.forEach(s => {
+    if (s.grade) grades.add(s.grade)
+  })
+  // 排序：9997 > 9996 > 9950 > 9920
+  return Array.from(grades).sort((a, b) => {
+    const order = ['9997', '9996', '9950', '9920']
+    return order.indexOf(a) - order.indexOf(b)
+  })
+})
+
+// 固定的产品类型选项
+const productTypeOptions = [
+  '电解镍',
+  '电积镍',
+  '不锈钢专用镍',
+  '电镀专用镍',
+]
+
+// 固定的产品规格选项
+const specificationOptions = [
+  '整板',
+  '镍条',
+  '100*100',
+  '50*50',
+  '25*25',
+  '20*20',
+  '镍包',
+]
 
 // 计算属性：过滤库存
 const filteredStocks = computed(() => {
@@ -484,11 +532,30 @@ const getStockGrade = (stockId: number) => {
   return stock?.grade || '-'
 }
 
+// 获取库存产品类型
+const getStockProductType = (stockId: number) => {
+  const stock = availableStocks.value.find(s => s.id === stockId)
+  return stock?.productType || '-'
+}
+
+// 获取库存规格
+const getStockSpec = (stockId: number) => {
+  const stock = availableStocks.value.find(s => s.id === stockId)
+  return stock?.specification || '-'
+}
+
+// 获取库存镍含量
+const getStockNickel = (stockId: number) => {
+  const stock = availableStocks.value.find(s => s.id === stockId)
+  return stock?.nickelContent ? Number(stock.nickelContent).toFixed(2) : '-'
+}
+
 const form = reactive<CreateOrderDto & { items: OrderItemDto[] }>({
   customerId: 0,
   customerName: '',
   targetGrade: '',
-  productSpec: '',
+  productType: '',
+  specification: '',
   remark: '',
   items: [{ stockId: 0, weight: 0, pieceCount: 0 }],
 })
@@ -502,7 +569,6 @@ const shipOrderId = ref<number>()
 const statusOptions = [
   { value: '', label: '全部' },
   { value: 'draft', label: '草稿' },
-  { value: 'confirmed', label: '已确认' },
   { value: 'shipping', label: '发货中' },
   { value: 'shipped', label: '已发货' },
   { value: 'cancelled', label: '已取消' },
@@ -510,7 +576,6 @@ const statusOptions = [
 
 const statusTagClass: Record<string, string> = {
   draft: 'tag-default',
-  confirmed: 'tag-warning',
   shipping: 'tag-info',
   shipped: 'tag-success',
   cancelled: 'tag-danger',
@@ -518,7 +583,6 @@ const statusTagClass: Record<string, string> = {
 
 const statusLabel: Record<string, string> = {
   draft: '草稿',
-  confirmed: '已确认',
   shipping: '发货中',
   shipped: '已发货',
   cancelled: '已取消',
@@ -590,7 +654,8 @@ const handleCreate = async () => {
     customerId: 0,
     customerName: '',
     targetGrade: '',
-    productSpec: '',
+    productType: '',
+    specification: '',
     remark: '',
     items: [],
   })
@@ -608,7 +673,8 @@ const handleEdit = async (row: DistributionOrder) => {
     customerId: row.customerId,
     customerName: row.customerName,
     targetGrade: row.targetGrade,
-    productSpec: row.productSpec,
+    productType: (row as any).productType || '',
+    specification: (row as any).specification || '',
     remark: row.remark,
     items: row.items?.map((i) => ({
       stockId: i.stockId,
@@ -616,8 +682,8 @@ const handleEdit = async (row: DistributionOrder) => {
       pieceCount: i.pieceCount,
     })) || [],
   })
-  await inventoryStore.fetchInventory({ page: 1, limit: 1000, status: 'available' })
-  availableStocks.value = inventoryStore.inventoryList
+  // 编辑时使用订单已有的库存信息，无需重新加载
+  availableStocks.value = row.items?.map((i) => i.stock).filter(Boolean) || []
   dialogVisible.value = true
 }
 
@@ -702,17 +768,6 @@ const handleBatchDelete = async () => {
     await orderStore.batchDelete(ids)
     selectedRows.value = []
     showToast?.('批量删除成功', 'success')
-    handleSearch()
-  } catch {
-    // 用户取消
-  }
-}
-
-const handleConfirm = async (id: number) => {
-  try {
-    await ElMessageBox.confirm('确认该配货单?', '提示', { type: 'info' })
-    await orderStore.confirmOrder(id)
-    showToast?.('确认成功', 'success')
     handleSearch()
   } catch {
     // 用户取消
@@ -1174,6 +1229,35 @@ onMounted(() => {
   gap: var(--spacing-sm);
 }
 
+// 标签样式
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.tag-grade {
+  background: rgba(0, 113, 227, 0.1);
+  color: #0071e3;
+}
+
+.tag-type {
+  background: rgba(52, 199, 89, 0.1);
+  color: #34c759;
+}
+
+.tag-spec {
+  background: rgba(255, 149, 0, 0.1);
+  color: #ff9500;
+}
+
+.tag-nickel {
+  background: rgba(88, 86, 214, 0.1);
+  color: #5856d6;
+}
+
 .items-empty {
   padding: var(--spacing-lg);
   text-align: center;
@@ -1186,9 +1270,9 @@ onMounted(() => {
 .item-row {
   display: grid;
   grid-template-columns: 1fr 100px 80px 36px;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   align-items: center;
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-md);
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
@@ -1210,9 +1294,11 @@ onMounted(() => {
   color: var(--color-primary);
 }
 
-.item-grade {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+.item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
 }
 
 .item-input {
@@ -1340,9 +1426,11 @@ onMounted(() => {
   color: var(--color-text-primary);
 }
 
-.stock-spec {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+.stock-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .stock-meta {
@@ -1351,6 +1439,7 @@ onMounted(() => {
   gap: var(--spacing-md);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+  margin-top: 8px;
 }
 
 .stock-weight {
@@ -1364,6 +1453,11 @@ onMounted(() => {
 
 .stock-location {
   font-size: var(--font-size-xs);
+}
+
+.stock-nickel {
+  font-family: monospace;
+  color: #34c759;
 }
 
 .stock-action {
