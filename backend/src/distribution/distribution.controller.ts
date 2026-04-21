@@ -55,6 +55,12 @@ export class DistributionController {
     return this.service.getInventoryList({ page, limit, keyword, grade, status, productType });
   }
 
+  @Get('inventory/search')
+  @ApiOperation({ summary: '库存远程搜索（用于下拉选择）' })
+  searchInventory(@Query('keyword') keyword: string, @Query('limit') limit?: number) {
+    return this.service.searchInventory(keyword || '', limit);
+  }
+
   @Get('inventory/:id')
   @ApiOperation({ summary: '获取单条库存' })
   getInventoryById(@Param('id', ParseIntPipe) id: number) {
@@ -177,8 +183,15 @@ export class DistributionController {
     @Query('limit') limit?: number,
     @Query('status') status?: string,
     @Query('customerId') customerId?: number,
+    @Query('includeItems') includeItems?: string,
   ) {
-    return this.service.getOrderList({ page, limit, status, customerId });
+    return this.service.getOrderList({
+      page,
+      limit,
+      status,
+      customerId,
+      includeItems: includeItems === 'true',
+    });
   }
 
   @Get('orders/:id')

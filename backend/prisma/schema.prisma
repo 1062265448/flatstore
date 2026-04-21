@@ -121,3 +121,15 @@ model AiRecognitionHistory {
   @@index([status])
   @@index([createdAt(sort: Desc)])
 }
+
+// 用户
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique @db.VarChar(50)
+  password  String   @db.VarChar(100)
+  role      String   @default("user") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("user")
+}
