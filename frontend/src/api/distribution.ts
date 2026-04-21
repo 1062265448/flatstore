@@ -58,6 +58,13 @@ export const batchDeleteInventory = (ids: number[]) => {
   return request.post('/distribution/inventory/batch-delete', { ids })
 }
 
+// 库存远程搜索（用于 el-select）
+export const searchInventory = (keyword: string, limit?: number) => {
+  return request.get<InventoryStock[]>('/distribution/inventory/search', {
+    params: { keyword, limit },
+  })
+}
+
 // AI 识别
 export const aiRecognize = (file: File) => {
   const formData = new FormData()

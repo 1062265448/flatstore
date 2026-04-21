@@ -101,7 +101,7 @@ export interface DistributionOrder {
   targetGrade?: string
   totalWeight?: string | number
   totalPieces?: number
-  status: 'draft' | 'confirmed' | 'shipping' | 'shipped' | 'cancelled'
+  status: 'draft' | 'shipping' | 'shipped' | 'cancelled'
   shippedAt?: string
   driverName?: string
   vehicleNo?: string
@@ -201,9 +201,9 @@ export interface Statistics {
   order: {
     total: number
     draft: number
-    confirmed: number
     shipping: number
     shipped: number
+    cancelled: number
   }
   customer: {
     total: number

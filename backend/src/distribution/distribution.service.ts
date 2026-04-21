@@ -12,6 +12,10 @@ import { customAlphabet } from 'nanoid';
 const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 10);
 const generateOrderNo = () => `ORD-${nanoid()}`;
 
+// 统计缓存
+const STATS_CACHE_TTL = 30000; // 30 秒
+let statsCache: { data: any; timestamp: number } | null = null;
+
 @Injectable()
 export class DistributionService {
   constructor(
@@ -22,6 +26,11 @@ export class DistributionService {
   // ==================== 统计 ====================
 
   async getStatistics() {
+    const now = Date.now();
+    if (statsCache && now - statsCache.timestamp < STATS_CACHE_TTL) {
+      return statsCache.data;
+    }
+
     const [inventoryStats, orderStats, customerCount] = await Promise.all([
       this.prisma.inventoryStock.groupBy({
         by: ['status'],
@@ -72,7 +81,9 @@ export class DistributionService {
       if (stat.status === 'cancelled') order.cancelled = stat._count.id;
     }
 
-    return { inventory, order, customer: { total: customerCount } };
+    const result = { inventory, order, customer: { total: customerCount } };
+    statsCache = { data: result, timestamp: now };
+    return result;
   }
 
   // ==================== 库存管理 ====================
@@ -113,6 +124,39 @@ export class DistributionService {
     ]);
 
     return { data, total, page, pageSize: limit };
+  }
+
+  // 库存远程搜索（用于 el-select）
+  async searchInventory(keyword: string, limit = 20) {
+    const where: Prisma.InventoryStockWhereInput = {
+      status: 'available',
+    };
+
+    if (keyword && keyword.trim()) {
+      where.OR = [
+        { batchNo: { contains: keyword } },
+        { grade: { contains: keyword } },
+        { specification: { contains: keyword } },
+        { location: { contains: keyword } },
+      ];
+    }
+
+    return this.prisma.inventoryStock.findMany({
+      where,
+      take: Math.min(50, Number(limit)),
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        batchNo: true,
+        grade: true,
+        specification: true,
+        productType: true,
+        weight: true,
+        pieceCount: true,
+        location: true,
+        status: true,
+      },
+    });
   }
 
   async getInventoryById(id: number) {
@@ -323,6 +367,7 @@ export class DistributionService {
     limit?: number;
     status?: string;
     customerId?: number;
+    includeItems?: boolean;
   }) {
     const page = Math.max(1, Number(params.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(params.limit) || 20));
@@ -332,18 +377,19 @@ export class DistributionService {
     if (params.status) where.status = params.status;
     if (params.customerId) where.customerId = params.customerId;
 
+    // 默认不包含明细，按需加载
+    const include = {
+      customer: { select: { id: true, name: true } },
+      ...(params.includeItems ? { items: { include: { stock: true } } } : {}),
+    };
+
     const [data, total] = await Promise.all([
       this.prisma.distributionOrder.findMany({
         where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
-          customer: { select: { id: true, name: true } },
-          items: {
-            include: { stock: true },
-          },
-        },
+        include,
       }),
       this.prisma.distributionOrder.count({ where }),
     ]);
@@ -371,13 +417,17 @@ export class DistributionService {
     const totalWeight = dto.items.reduce((sum, item) => sum + item.weight, 0);
     const totalPieces = dto.items.reduce((sum, item) => sum + item.pieceCount, 0);
 
+    // 校验客户存在性（在事务外）
     const customer = await this.prisma.customer.findUnique({
       where: { id: dto.customerId },
     });
+    if (!customer) {
+      throw new NotFoundException('客户不存在');
+    }
 
     const stockIds = dto.items.map((i) => i.stockId);
 
-    return this.prisma.$transaction(async (tx) => {
+    const order = await this.prisma.$transaction(async (tx) => {
       const stocks = await tx.inventoryStock.findMany({
         where: { id: { in: stockIds }, status: 'available' },
       });
@@ -390,11 +440,11 @@ export class DistributionService {
         }
       }
 
-      const order = await tx.distributionOrder.create({
+      const newOrder = await tx.distributionOrder.create({
         data: {
           orderNo,
           customerId: dto.customerId,
-          customerName: dto.customerName || customer?.name,
+          customerName: dto.customerName || customer.name,
           productType: dto.productType,
           specification: dto.specification,
           productSpec: dto.productSpec,
@@ -418,8 +468,12 @@ export class DistributionService {
         data: { status: 'reserved' },
       });
 
-      return order;
+      return newOrder;
     });
+
+    // 清除统计缓存
+    statsCache = null;
+    return order;
   }
 
   async updateOrder(id: number, dto: UpdateOrderDto) {
@@ -447,7 +501,7 @@ export class DistributionService {
       throw new BadRequestException('只有草稿状态的订单可以发货');
     }
 
-    return this.prisma.distributionOrder.update({
+    const result = await this.prisma.distributionOrder.update({
       where: { id },
       data: {
         status: 'shipping',
@@ -455,6 +509,9 @@ export class DistributionService {
         vehicleNo: dto.vehicleNo,
       },
     });
+
+    statsCache = null;
+    return result;
   }
 
   async deliverOrder(id: number) {
@@ -469,7 +526,7 @@ export class DistributionService {
 
     const stockIds = order.items.map((i) => i.stockId);
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       await tx.distributionOrder.update({
         where: { id },
         data: { status: 'shipped', shippedAt: new Date() },
@@ -482,6 +539,9 @@ export class DistributionService {
 
       return tx.distributionOrder.findUnique({ where: { id } });
     });
+
+    statsCache = null;
+    return result;
   }
 
   async cancelOrder(id: number) {
@@ -496,7 +556,7 @@ export class DistributionService {
 
     const stockIds = order.items.map((i) => i.stockId);
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       await tx.distributionOrder.update({
         where: { id },
         data: { status: 'cancelled' },
@@ -509,6 +569,9 @@ export class DistributionService {
 
       return tx.distributionOrder.findUnique({ where: { id } });
     });
+
+    statsCache = null;
+    return result;
   }
 
   async deleteOrder(id: number) {

@@ -266,6 +266,7 @@
                   <h4>
                     <span class="items-icon">{{ isEdit ? '📋' : '📦' }}</span>
                     {{ isEdit ? '配货明细（仅可编辑重量和片数）' : '配货明细' }}
+                  </h4>
                   <span class="items-count">{{ form.items.length }} 项</span>
                 </div>
 

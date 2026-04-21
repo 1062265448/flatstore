@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import router from '@/router'
 
 // ⚠️ 注意：Axios 拦截器已解包 response.data
 // 响应拦截器会将 response.data 直接返回
@@ -13,6 +14,12 @@ const request = axios.create({
 // 请求拦截器
 request.interceptors.request.use(
   (config) => {
+    // 添加 JWT Token
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+
     // 如果没有指定 Content-Type 且数据不是 FormData/Blob，默认使用 JSON
     const hasContentType =
       config.headers['Content-Type'] || config.headers['content-type']
@@ -33,6 +40,13 @@ request.interceptors.response.use(
     return response.data
   },
   (error) => {
+    // 401 未授权，跳转登录页
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      router.push('/login')
+    }
+
     const message = error.response?.data?.message || error.message || '请求失败'
     ElMessage.error(message)
     return Promise.reject(error)
