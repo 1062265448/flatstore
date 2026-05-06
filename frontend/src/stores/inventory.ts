@@ -12,7 +12,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     loading.value = true
     try {
       // ⚠️ Axios 已解包，res.data 直接是数组
-      const res = await api.getInventoryList(params)
+      const res = await api.getInventoryList(params) as any
       inventoryList.value = res.data
       total.value = res.total
     } finally {

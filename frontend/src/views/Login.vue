@@ -100,12 +100,8 @@
 
               <div class="form-footer">
                 <div class="footer-divider"></div>
-                <p class="register-link">
-                  还没有账户？
-                  <el-link type="primary" @click="showRegister = true" :underline="false">立即注册</el-link>
-                </p>
                 <p class="default-account">
-                  默认账户：<code>admin</code> / <code>admin123</code>
+                  账户：<code>admin</code> / <code>admin123</code>
                 </p>
               </div>
             </el-form>
@@ -114,54 +110,7 @@
       </div>
     </div>
 
-    <!-- 注册对话框 -->
-    <el-dialog
-      v-model="showRegister"
-      title="注册新账户"
-      width="480px"
-      destroy-on-close
-      class="register-dialog"
-    >
-      <el-form
-        ref="registerFormRef"
-        :model="registerForm"
-        :rules="registerRules"
-        @submit.prevent="handleRegister"
-      >
-        <el-form-item label="用户名" prop="username">
-          <el-input
-            v-model="registerForm.username"
-            placeholder="请输入用户名"
-          />
-        </el-form-item>
-        <el-form-item label="密码" prop="password">
-          <el-input
-            v-model="registerForm.password"
-            type="password"
-            placeholder="请输入密码"
-            show-password
-          />
-        </el-form-item>
-        <el-form-item label="确认密码" prop="confirmPassword">
-          <el-input
-            v-model="registerForm.confirmPassword"
-            type="password"
-            placeholder="请再次输入密码"
-            show-password
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showRegister = false">取消</el-button>
-        <el-button
-          type="primary"
-          :loading="authStore.loading"
-          @click="handleRegister"
-        >
-          注册
-        </el-button>
-      </template>
-    </el-dialog>
+
   </div>
 </template>
 
@@ -291,7 +240,6 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const formRef = ref<FormInstance>()
-const registerFormRef = ref<FormInstance>()
 
 const form = reactive({
   username: '',
@@ -309,37 +257,6 @@ const rules: FormRules = {
   ],
 }
 
-const showRegister = ref(false)
-const registerForm = reactive({
-  username: '',
-  password: '',
-  confirmPassword: '',
-})
-
-const registerRules: FormRules = {
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度为3-20个字符', trigger: 'blur' },
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 30, message: '密码长度为6-30个字符', trigger: 'blur' },
-  ],
-  confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
-    {
-      validator: (_rule: any, value: string, callback: any) => {
-        if (value !== registerForm.password) {
-          callback(new Error('两次输入的密码不一致'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'blur',
-    },
-  ],
-}
-
 const handleLogin = async () => {
   try {
     await formRef.value?.validate()
@@ -349,24 +266,6 @@ const handleLogin = async () => {
   } catch (error: any) {
     if (error?.response?.status === 401) {
       ElMessage.error('用户名或密码错误')
-    } else if (error.message) {
-      ElMessage.error(error.message)
-    }
-  }
-}
-
-const handleRegister = async () => {
-  try {
-    await registerFormRef.value?.validate()
-    await authStore.register({
-      username: registerForm.username,
-      password: registerForm.password,
-    })
-    ElMessage.success('注册成功，已自动登录')
-    showRegister.value = false
-  } catch (error: any) {
-    if (error?.response?.status === 400 && error?.response?.data?.message?.includes('已存在')) {
-      ElMessage.error('用户名已存在')
     } else if (error.message) {
       ElMessage.error(error.message)
     }

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>仓储发运 - 物流追踪与路线优化</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #fafafa;
+    --card: #ffffff;
+    --accent: #6366f1;
+    --accent-light: rgba(99,102,241,0.1);
+    --text: #1f2937;
+    --text-dim: #6b7280;
+    --border: #e5e7eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 28px; font-weight: 700; }
+  header h1 span { color: var(--accent); }
+  .user-info { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 600;
+  }
+  
+  .map-area {
+    background: var(--card); border-radius: 16px; padding: 24px;
+    box-shadow: var(--shadow); margin-bottom: 24px; position: relative;
+    overflow: hidden;
+  }
+  .map-area::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe, #ddd6fe);
+    opacity: 0.3; z-index: 0;
+  }
+  .map-content { position: relative; z-index: 1; }
+  .map-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+  
+  .route-visual {
+    display: flex; align-items: center; gap: 20px; padding: 20px;
+    background: rgba(255,255,255,0.8); border-radius: 12px;
+  }
+  .route-node {
+    text-align: center; flex: 1;
+  }
+  .node-icon {
+    width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .node-icon.warehouse { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+  .node-icon.transit { background: linear-gradient(135deg, #3b82f6, #06b6d4); }
+  .node-icon.delivered { background: linear-gradient(135deg, #10b981, #34d399); }
+  .node-label { font-weight: 600; font-size: 14px; }
+  .node-time { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  
+  .route-line {
+    flex: 0.5; height: 3px; position: relative;
+  }
+  .route-line::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, var(--accent), var(--success));
+    border-radius: 2px;
+  }
+  .route-line::after {
+    content: '🚚'; position: absolute; top: -12px;
+    animation: move 3s ease-in-out infinite;
+  }
+  @keyframes move {
+    0% { left: 0; } 100% { left: calc(100% - 24px); }
+  }
+  
+  .tracking-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  }
+  
+  .tracking-card {
+    background: var(--card); border-radius: 16px; padding: 24px;
+    box-shadow: var(--shadow);
+  }
+  .tracking-card h3 {
+    font-size: 16px; font-weight: 600; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 8px; top: 0; bottom: 0;
+    width: 2px; background: var(--border);
+  }
+  .timeline-item {
+    position: relative; padding-bottom: 16px;
+  }
+  .timeline-item::before {
+    content: ''; position: absolute; left: -20px; top: 4px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--border); border: 2px solid #fff;
+  }
+  .timeline-item.active::before { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-light); }
+  .timeline-item.done::before { background: var(--success); }
+  .timeline-time { font-size: 12px; color: var(--text-dim); }
+  .timeline-text { font-size: 14px; margin-top: 4px; }
+  
+  .route-list { display: flex; flex-direction: column; gap: 12px; }
+  .route-item {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px; border-radius: 12px; background: var(--bg);
+    transition: transform 0.2s;
+  }
+  .route-item:hover { transform: translateX(4px); }
+  .route-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .route-icon.optimal { background: linear-gradient(135deg, #10b981, #34d399); }
+  .route-icon.alt { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+  .route-icon.slow { background: linear-gradient(135deg, #ef4444, #f87171); }
+  .route-details { flex: 1; }
+  .route-name { font-weight: 600; font-size: 14px; }
+  .route-meta { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .route-tag {
+    padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;
+  }
+  .tag-green { background: rgba(16,185,129,0.1); color: var(--success); }
+  .tag-yellow { background: rgba(245,158,11,0.1); color: var(--warning); }
+  .tag-red { background: rgba(239,68,68,0.1); color: var(--danger); }
+  
+  .fleet-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px;
+  }
+  .fleet-card {
+    background: var(--bg); border-radius: 10px; padding: 16px; text-align: center;
+  }
+  .fleet-icon { font-size: 32px; margin-bottom: 8px; }
+  .fleet-name { font-weight: 600; font-size: 14px; }
+  .fleet-status { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .fleet-status.online { color: var(--success); }
+  .fleet-status.busy { color: var(--warning); }
+  
+  @media (max-width: 1024px) {
+    .tracking-grid { grid-template-columns: 1fr; }
+    .fleet-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .route-visual { flex-direction: column; }
+    .route-line { width: 3px; height: 30px; }
+    .fleet-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>FlatShip <span>物流追踪</span></h1>
+    <div class="user-info">
+      <div class="avatar">管</div>
+      <div>
+        <div style="font-weight:600">管理员</div>
+        <div style="font-size:12px;color:var(--text-dim)">上海总仓</div>
+      </div>
+    </div>
+  </header>
+  
+  <div class="map-area">
+    <div class="map-content">
+      <div class="map-title">🗺️ 实时物流追踪</div>
+      <div class="route-visual">
+        <div class="route-node">
+          <div class="node-icon warehouse">🏭</div>
+          <div class="node-label">上海总仓</div>
+          <div class="node-time">08:30 已出库</div>
+        </div>
+        <div class="route-line"></div>
+        <div class="route-node">
+          <div class="node-icon transit">🔄</div>
+          <div class="node-label">南京中转</div>
+          <div class="node-time">预计 14:00 到达</div>
+        </div>
+        <div class="route-line"></div>
+        <div class="route-node">
+          <div class="node-icon delivered">📍</div>
+          <div class="node-label">武汉汉口</div>
+          <div class="node-time">预计 18:30 送达</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="tracking-grid">
+    <div class="tracking-card">
+      <h3>📦 运单详情 SH20260416001</h3>
+      <div style="margin-bottom:20px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px">
+          <div><span style="color:var(--text-dim)">发件人：</span>上海总仓 A区</div>
+          <div><span style="color:var(--text-dim)">收件人：</span>武汉汉口 客户李**</div>
+          <div><span style="color:var(--text-dim)">承运商：</span>顺丰速运</div>
+          <div><span style="color:var(--text-dim)">预计时效：</span>10小时</div>
+        </div>
+      </div>
+      <div class="timeline">
+        <div class="timeline-item done">
+          <div class="timeline-time">08:30</div>
+          <div class="timeline-text">仓库拣货完成，等待出库</div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-time">09:15</div>
+          <div class="timeline-text">扫码出库，称重 12.5kg</div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-time">09:30</div>
+          <div class="timeline-text">顺丰揽收成功</div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-time">11:00</div>
+          <div class="timeline-text">到达上海分拨中心</div>
+        </div>
+        <div class="timeline-item active">
+          <div class="timeline-time">14:00 预计</div>
+          <div class="timeline-text">到达南京中转站</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="tracking-card">
+      <h3>🛣️ 路线优化推荐</h3>
+      <div class="route-list">
+        <div class="route-item">
+          <div class="route-icon optimal">⚡</div>
+          <div class="route-details">
+            <div class="route-name">最优路线：沪宁高速 → 合武高速</div>
+            <div class="route-meta">距离 680km | 预计 8.5 小时 | 过路费 ¥280</div>
+          </div>
+          <span class="route-tag tag-green">推荐</span>
+        </div>
+        <div class="route-item">
+          <div class="route-icon alt">🔄</div>
+          <div class="route-details">
+            <div class="route-name">备选路线：沪渝高速 → 京港澳</div>
+            <div class="route-meta">距离 720km | 预计 9.2 小时 | 过路费 ¥310</div>
+          </div>
+          <span class="route-tag tag-yellow">备选</span>
+        </div>
+        <div class="route-item">
+          <div class="route-icon slow">⏱️</div>
+          <div class="route-details">
+            <div class="route-name">绕行路线：避开施工路段</div>
+            <div class="route-meta">距离 780km | 预计 11 小时 | 过路费 ¥350</div>
+          </div>
+          <span class="route-tag tag-red">绕行</span>
+        </div>
+      </div>
+      
+      <h3 style="margin-top:24px">🚛 车队状态</h3>
+      <div class="fleet-grid">
+        <div class="fleet-card">
+          <div class="fleet-icon">🚚</div>
+          <div class="fleet-name">沪A·12345</div>
+          <div class="fleet-status online">行驶中</div>
+        </div>
+        <div class="fleet-card">
+          <div class="fleet-icon">🚛</div>
+          <div class="fleet-name">苏B·67890</div>
+          <div class="fleet-status busy">装卸中</div>
+        </div>
+        <div class="fleet-card">
+          <div class="fleet-icon">🚐</div>
+          <div class="fleet-name">浙C·11111</div>
+          <div class="fleet-status online">行驶中</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

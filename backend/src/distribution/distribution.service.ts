@@ -445,8 +445,6 @@ export class DistributionService {
           orderNo,
           customerId: dto.customerId,
           customerName: dto.customerName || customer.name,
-          productType: dto.productType,
-          specification: dto.specification,
           productSpec: dto.productSpec,
           targetGrade: dto.targetGrade,
           remark: dto.remark,
