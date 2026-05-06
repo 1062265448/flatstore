@@ -79,10 +79,6 @@
             <span class="badge-count">{{ stats?.order.draft || 0 }}</span>
             <span class="badge-label">草稿</span>
           </div>
-          <div class="order-badge confirmed">
-            <span class="badge-count">{{ stats?.order.confirmed || 0 }}</span>
-            <span class="badge-label">已确认</span>
-          </div>
           <div class="order-badge shipping">
             <span class="badge-count">{{ stats?.order.shipping || 0 }}</span>
             <span class="badge-label">发货中</span>
@@ -124,7 +120,7 @@ const statCards = computed(() => [
   {
     label: '配货单',
     value: stats.value?.order.total || 0,
-    sub: `进行中 ${(stats.value?.order.confirmed || 0) + (stats.value?.order.shipping || 0)} 单`,
+    sub: `进行中 ${(stats.value?.order.draft || 0) + (stats.value?.order.shipping || 0)} 单`,
     gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
   },
   {

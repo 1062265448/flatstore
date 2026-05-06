@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数字工厂建模与三维仿真 - 系统总览</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0e27;
+    --card: rgba(20,25,60,0.7);
+    --accent: #00f5d4;
+    --accent2: #7c3aed;
+    --accent3: #f72585;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --border: rgba(148,163,184,0.15);
+  }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: -1;
+    background: 
+      radial-gradient(circle at 20% 30%, rgba(124,58,237,0.15), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(0,245,212,0.1), transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(247,37,133,0.05), transparent 50%);
+  }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 0 30px; border-bottom: 1px solid var(--border); margin-bottom: 32px;
+  }
+  .logo {
+    font-size: 26px; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-size: 200% 200%;
+    animation: gradientShift 4s ease infinite;
+  }
+  @keyframes gradientShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  .logo-sub { font-size: 12px; color: var(--text-dim); font-weight: 400; margin-top: 4px; -webkit-text-fill-color: var(--text-dim); }
+  .nav { display: flex; gap: 8px; }
+  .nav a {
+    color: var(--text-dim); text-decoration: none; padding: 8px 16px;
+    border-radius: 8px; font-size: 14px; transition: all 0.3s;
+  }
+  .nav a:hover, .nav a.active { color: var(--accent); background: var(--card); }
+  
+  .hero {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;
+  }
+  .hero-visual {
+    background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+    padding: 32px; position: relative; overflow: hidden; min-height: 400px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+  }
+  .hero-visual::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(0,245,212,0.05), rgba(124,58,237,0.05));
+  }
+  .factory-3d {
+    position: relative; z-index: 1; width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .iso-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%;
+    transform: perspective(800px) rotateX(25deg) rotateZ(-15deg);
+    transform-style: preserve-3d;
+  }
+  .iso-block {
+    aspect-ratio: 1; border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0,245,212,0.2), rgba(124,58,237,0.2));
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; transition: all 0.3s;
+    animation: float 3s ease-in-out infinite;
+  }
+  .iso-block:nth-child(odd) { animation-delay: 0.5s; }
+  .iso-block:nth-child(3n) { animation-delay: 1s; }
+  .iso-block:hover {
+    transform: translateZ(20px) scale(1.1);
+    border-color: var(--accent);
+    box-shadow: 0 0 30px rgba(0,245,212,0.3);
+  }
+  @keyframes float {
+    0%,100% { transform: translateZ(0); }
+    50% { transform: translateZ(10px); }
+  }
+  
+  .hero-info { display: flex; flex-direction: column; gap: 16px; }
+  .info-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; transition: all 0.3s;
+  }
+  .info-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(0,245,212,0.1);
+  }
+  .info-card h3 {
+    font-size: 16px; font-weight: 600; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .info-card p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
+  
+  .tech-stack {
+    display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;
+  }
+  .tech-tag {
+    padding: 6px 12px; border-radius: 20px; font-size: 12px;
+    background: rgba(0,245,212,0.1); color: var(--accent);
+    border: 1px solid rgba(0,245,212,0.2);
+  }
+  
+  .section-title {
+    font-size: 22px; font-weight: 700; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  
+  .architecture {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px;
+  }
+  .arch-layer {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; position: relative; overflow: hidden;
+  }
+  .arch-layer::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .arch-layer:nth-child(1)::before { background: var(--accent3); }
+  .arch-layer:nth-child(2)::before { background: var(--accent2); }
+  .arch-layer:nth-child(3)::before { background: var(--accent); }
+  .arch-layer:nth-child(4)::before { background: #fbbf24; }
+  
+  .arch-label {
+    font-size: 12px; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 12px;
+  }
+  .arch-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .arch-items { display: flex; flex-direction: column; gap: 10px; }
+  .arch-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 8px;
+    background: rgba(255,255,255,0.03); font-size: 13px;
+  }
+  .arch-item-icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  
+  .features {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  }
+  .feature-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px; transition: all 0.3s; position: relative; overflow: hidden;
+  }
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 8px 32px rgba(0,245,212,0.15);
+  }
+  .feature-icon {
+    width: 48px; height: 48px; border-radius: 12px; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+  }
+  .feature-card:nth-child(1) .feature-icon { background: linear-gradient(135deg, #00f5d4, #00bbf9); }
+  .feature-card:nth-child(2) .feature-icon { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+  .feature-card:nth-child(3) .feature-icon { background: linear-gradient(135deg, #f72585, #ff6b6b); }
+  .feature-card:nth-child(4) .feature-icon { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+  .feature-card:nth-child(5) .feature-icon { background: linear-gradient(135deg, #3b82f6, #06b6d4); }
+  .feature-card:nth-child(6) .feature-icon { background: linear-gradient(135deg, #10b981, #34d399); }
+  .feature-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .feature-desc { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+  
+  @media (max-width: 1024px) {
+    .hero { grid-template-columns: 1fr; }
+    .architecture { grid-template-columns: repeat(2, 1fr); }
+    .features { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .architecture { grid-template-columns: 1fr; }
+    .features { grid-template-columns: 1fr; }
+    header { flex-direction: column; gap: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <div class="logo">数字工厂 Digital Twin<span class="logo-sub">建模与三维仿真系统</span></div>
+    </div>
+    <nav class="nav">
+      <a href="#" class="active">总览</a>
+      <a href="#">3D 建模</a>
+      <a href="#">仿真引擎</a>
+      <a href="#">数据分析</a>
+    </nav>
+  </header>
+  
+  <div class="hero">
+    <div class="hero-visual">
+      <div class="factory-3d">
+        <div class="iso-grid">
+          <div class="iso-block">🏭</div>
+          <div class="iso-block">⚙️</div>
+          <div class="iso-block">🔧</div>
+          <div class="iso-block">📦</div>
+          <div class="iso-block">🤖</div>
+          <div class="iso-block">🚚</div>
+          <div class="iso-block">📊</div>
+          <div class="iso-block">🔌</div>
+          <div class="iso-block">💡</div>
+        </div>
+        <p style="margin-top:24px;color:var(--text-dim);font-size:14px;text-align:center;z-index:1">
+          3D 工厂模型 — 拖拽旋转 · 点击查看细节
+        </p>
+      </div>
+    </div>
+    
+    <div class="hero-info">
+      <div class="info-card">
+        <h3>🎯 系统定位</h3>
+        <p>构建数字孪生工厂，实现物理工厂的三维数字化建模、实时数据驱动仿真与智能决策优化。</p>
+      </div>
+      <div class="info-card">
+        <h3>🔬 核心技术</h3>
+        <p>基于 WebGL/Three.js 的 3D 渲染引擎 + IoT 实时数据接入 + AI 仿真优化算法</p>
+        <div class="tech-stack">
+          <span class="tech-tag">Three.js</span>
+          <span class="tech-tag">WebGL</span>
+          <span class="tech-tag">Unity</span>
+          <span class="tech-tag">WebSocket</span>
+          <span class="tech-tag">Digital Twin</span>
+        </div>
+      </div>
+      <div class="info-card">
+        <h3>📐 建模精度</h3>
+        <p>设备级：LOD3 精度（毫米级） | 产线级：LOD2 精度（厘米级） | 工厂级：LOD1 精度（米级）</p>
+      </div>
+    </div>
+  </div>
+  
+  <h2 class="section-title">系统架构</h2>
+  <div class="architecture">
+    <div class="arch-layer">
+      <div class="arch-label">L4 · 展示层</div>
+      <div class="arch-title">交互展示</div>
+      <div class="arch-items">
+        <div class="arch-item"><span class="arch-item-icon">🖥️</span>3D Web 可视化</div>
+        <div class="arch-item"><span class="arch-item-icon">📱</span>移动端适配</div>
+        <div class="arch-item"><span class="arch-item-icon">🥽</span>VR/AR 展示</div>
+      </div>
+    </div>
+    <div class="arch-layer">
+      <div class="arch-label">L3 · 仿真层</div>
+      <div class="arch-title">仿真引擎</div>
+      <div class="arch-items">
+        <div class="arch-item"><span class="arch-item-icon">⚡</span>实时驱动仿真</div>
+        <div class="arch-item"><span class="arch-item-icon">🔄</span>离散事件仿真</div>
+        <div class="arch-item"><span class="arch-item-icon">🤖</span>AI 优化算法</div>
+      </div>
+    </div>
+    <div class="arch-layer">
+      <div class="arch-label">L2 · 数据层</div>
+      <div class="arch-title">数据处理</div>
+      <div class="arch-items">
+        <div class="arch-item"><span class="arch-item-icon">📡</span>IoT 数据接入</div>
+        <div class="arch-item"><span class="arch-item-icon">🗄️</span>时序数据库</div>
+        <div class="arch-item"><span class="arch-item-icon">🔄</span>数据同步引擎</div>
+      </div>
+    </div>
+    <div class="arch-layer">
+      <div class="arch-label">L1 · 模型层</div>
+      <div class="arch-title">三维建模</div>
+      <div class="arch-items">
+        <div class="arch-item"><span class="arch-item-icon">🏗️</span>工厂空间建模</div>
+        <div class="arch-item"><span class="arch-item-icon">⚙️</span>设备模型库</div>
+        <div class="arch-item"><span class="arch-item-icon">🔗</span>产线拓扑建模</div>
+      </div>
+    </div>
+  </div>
+  
+  <h2 class="section-title">核心能力</h2>
+  <div class="features">
+    <div class="feature-card">
+      <div class="feature-icon">🏗️</div>
+      <div class="feature-title">参数化建模</div>
+      <div class="feature-desc">通过配置文件自动生成设备 3D 模型，支持拖拽式场景编辑，降低建模门槛。</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">实时数字孪生</div>
+      <div class="feature-desc">IoT 传感器数据驱动 3D 场景实时更新，物理工厂与数字模型毫秒级同步。</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔮</div>
+      <div class="feature-title">产线仿真预测</div>
+      <div class="feature-desc">基于历史数据的产线瓶颈分析与产能预测，支持"What-If"方案模拟。</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">效能分析看板</div>
+      <div class="feature-desc">OEE、UPH、良率等核心指标实时计算，3D 热力图直观展示产线健康度。</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <div class="feature-title">AI 智能调度</div>
+      <div class="feature-desc">基于强化学习的最优排产方案推荐，自动调整 AGV 路径与设备负载。</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <div class="feature-title">安全预警</div>
+      <div class="feature-desc">设备异常检测、碰撞预警、环境监控，异常事件 3D 定位与告警推送。</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
