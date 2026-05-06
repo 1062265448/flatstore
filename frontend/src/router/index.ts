@@ -8,31 +8,43 @@ const baseRoutes = [
     path: '/',
     name: 'Dashboard',
     component: () => import('@/views/Dashboard.vue'),
-    meta: { title: '仪表盘' },
+    meta: { title: '仪表盘', requiresAuth: true },
   },
   {
     path: '/inventory',
     name: 'Inventory',
     component: () => import('@/views/Inventory.vue'),
-    meta: { title: '库存管理' },
+    meta: { title: '库存管理', requiresAuth: true },
   },
   {
     path: '/orders',
     name: 'Orders',
     component: () => import('@/views/Orders.vue'),
-    meta: { title: '配货单管理' },
+    meta: { title: '配货单管理', requiresAuth: true },
   },
   {
     path: '/customers',
     name: 'Customers',
     component: () => import('@/views/Customers.vue'),
-    meta: { title: '客户管理' },
+    meta: { title: '客户管理', requiresAuth: true },
   },
   {
     path: '/ai',
     name: 'AI',
     component: () => import('@/views/AI.vue'),
-    meta: { title: 'AI 图像识别' },
+    meta: { title: 'AI 图像识别', requiresAuth: true },
+  },
+  {
+    path: '/warehouse',
+    name: 'Warehouse',
+    component: () => import('@/views/Warehouse.vue'),
+    meta: { title: '3D 仓库', requiresAuth: true },
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/Login.vue'),
+    meta: { title: '登录' },
   },
 ]
 
@@ -46,40 +58,7 @@ const devRoutes = DEV ? [
   },
 ] : []
 
-const demoRoutes = [
-  {
-    path: '/demos',
-    name: 'DemoSelector',
-    component: () => import('@/views/DemoSelector.vue'),
-    meta: { title: '3D Demo 选择' },
-  },
-  {
-    path: '/demo-industrial',
-    name: 'DemoIndustrial',
-    component: () => import('@/views/Demo1_Industrial.vue'),
-    meta: { title: 'Demo1: 工业写实风格' },
-  },
-  {
-    path: '/demo-modern',
-    name: 'DemoModern',
-    component: () => import('@/views/Demo2_Modern.vue'),
-    meta: { title: 'Demo2: 简约现代风格' },
-  },
-  {
-    path: '/demo-cyberpunk',
-    name: 'DemoCyberpunk',
-    component: () => import('@/views/Demo3_Cyberpunk.vue'),
-    meta: { title: 'Demo3: 科幻未来风格' },
-  },
-  {
-    path: '/demo-rts',
-    name: 'DemoRTS',
-    component: () => import('@/views/Demo4_RTS.vue'),
-    meta: { title: 'Demo4: RTS 游戏风格' },
-  },
-]
-
-const routes = [...baseRoutes, ...devRoutes, ...demoRoutes]
+const routes = [...baseRoutes, ...devRoutes]
 
 const router = createRouter({
   history: createWebHistory(),
@@ -88,7 +67,20 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   document.title = `${to.meta.title || '平面库'} - 平面库配货模块`
-  next()
+
+  // 检查路由是否需要认证
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const token = localStorage.getItem('token')
+
+  if (requiresAuth && !token) {
+    // 如果需要认证且没有 token，重定向到登录页
+    next({ path: '/login', query: { redirect: to.fullPath } })
+  } else if (to.path === '/login' && token) {
+    // 如果已登录却访问登录页，重定向到首页
+    next({ path: '/' })
+  } else {
+    next()
+  }
 })
 
 export default router

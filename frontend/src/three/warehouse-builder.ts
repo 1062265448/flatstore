@@ -9,6 +9,7 @@ import {
   BUILDING_CONFIG,
   WAREHOUSE_ZONES,
   CENTRAL_AISLE,
+  WarehouseZone,
 } from './warehouse-layout'
 
 // 存储所有创建的对象，用于清理

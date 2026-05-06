@@ -36,6 +36,35 @@
             </svg>
           </span>
         </button>
+
+        <!-- 用户菜单 -->
+        <div v-if="authStore.isAuthenticated" class="user-menu">
+          <el-dropdown @command="handleUserCommand" trigger="click">
+            <div class="user-avatar">
+              <div class="avatar-placeholder">
+                {{ authStore.user?.username?.charAt(0).toUpperCase() || 'U' }}
+              </div>
+              <span class="username">{{ authStore.user?.username }}</span>
+              <el-icon><arrow-down /></el-icon>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">
+                  <el-icon><UserIcon /></el-icon>
+                  <span>个人中心</span>
+                </el-dropdown-item>
+                <el-dropdown-item divided command="logout">
+                  <el-icon><SwitchButton /></el-icon>
+                  <span>退出登录</span>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+        <div v-else class="auth-buttons">
+          <el-button type="text" @click="router.push('/login')">登录</el-button>
+          <el-button type="primary" size="small" @click="router.push('/login?register=true')">注册</el-button>
+        </div>
       </div>
     </nav>
 
@@ -78,10 +107,13 @@
 import { ref, computed, onMounted, onUnmounted, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
+import { useAuthStore } from '@/stores/auth'
+import { ArrowDown, User as UserIcon, SwitchButton } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const themeStore = useThemeStore()
+const authStore = useAuthStore()
 
 const isScrolled = ref(false)
 
@@ -92,7 +124,7 @@ const navItems = [
   { path: '/orders', name: '配货单' },
   { path: '/customers', name: '客户' },
   { path: '/ai', name: 'AI识别' },
-  { path: '/demos', name: '3D展厅' },
+  { path: '/warehouse', name: '仓库' },
 ]
 
 // 面包屑
@@ -103,12 +135,8 @@ const breadcrumbs = computed(() => {
     '/orders': '配货单',
     '/customers': '客户管理',
     '/ai': 'AI识别',
-    '/demos': '3D展厅',
+    '/warehouse': '3D 仓库',
     '/test': 'API测试',
-    '/demo-industrial': '工业风格',
-    '/demo-modern': '现代风格',
-    '/demo-cyberpunk': '赛博朋克',
-    '/demo-rts': 'RTS风格',
   }
   const path = route.path
   if (titles[path]) {
@@ -149,9 +177,24 @@ const showToast = (message: string, type = 'default', duration = 2500) => {
 // 提供给子组件使用
 provide('showToast', showToast)
 
-// 初始化主题
+// 用户菜单命令处理
+const handleUserCommand = (command: string) => {
+  switch (command) {
+    case 'profile':
+      // TODO: 跳转到个人中心页面
+      showToast('个人中心功能开发中', 'info')
+      break
+    case 'logout':
+      authStore.logout()
+      showToast('已退出登录', 'success')
+      break
+  }
+}
+
+// 初始化主题和认证状态
 onMounted(() => {
   themeStore.initTheme()
+  authStore.initAuth()
   window.addEventListener('scroll', handleScroll)
 })
 
@@ -449,6 +492,89 @@ onUnmounted(() => {
 
   .breadcrumb {
     padding: 0 var(--spacing-md);
+  }
+}
+
+/* 用户菜单样式 */
+.user-menu {
+  margin-left: 16px;
+
+  .user-avatar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: var(--color-bg-tertiary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+
+    &:hover {
+      background: var(--color-bg-hover);
+    }
+
+    .avatar-placeholder {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .username {
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      color: var(--color-text-primary);
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .el-icon {
+      color: var(--color-text-tertiary);
+      font-size: 12px;
+    }
+  }
+
+  :deep(.el-dropdown-menu) {
+    margin-top: 8px;
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: var(--glass-shadow-hover);
+
+    .el-dropdown-menu__item {
+      padding: 10px 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &:hover {
+        background: var(--color-bg-hover);
+      }
+
+      .el-icon {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+}
+
+.auth-buttons {
+  margin-left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .el-button {
+    font-weight: 500;
   }
 }
 </style>
