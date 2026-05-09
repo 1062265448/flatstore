@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
 
@@ -6,10 +6,19 @@ import router from '@/router'
 // 响应拦截器会将 response.data 直接返回
 // 所以 API 调用后 res.data 直接是数据数组/对象
 
-const request = axios.create({
+// 自定义请求实例类型，拦截器已解包 response.data
+interface RequestInstance extends Omit<AxiosInstance, 'get' | 'post' | 'put' | 'patch' | 'delete'> {
+  get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>
+  post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>
+  put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>
+  patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>
+  delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>
+}
+
+const request: RequestInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002',
   timeout: 30000,
-})
+}) as RequestInstance
 
 // 请求拦截器
 request.interceptors.request.use(

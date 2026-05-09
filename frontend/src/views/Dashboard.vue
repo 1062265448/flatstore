@@ -207,7 +207,7 @@ const initOrderChart = () => {
     legend: { ...theme, top: '5%' },
     xAxis: {
       type: 'category',
-      data: ['草稿', '已确认', '发货中', '已发货'],
+      data: ['草稿', '发货中', '已发货', '已取消'],
       ...theme,
     },
     yAxis: { type: 'value', ...theme },
@@ -216,9 +216,9 @@ const initOrderChart = () => {
         type: 'bar',
         data: [
           { value: stats.value?.order.draft || 0, itemStyle: { color: '#8e8e93' } },
-          { value: stats.value?.order.confirmed || 0, itemStyle: { color: '#0071e3' } },
-          { value: stats.value?.order.shipping || 0, itemStyle: { color: '#ff9500' } },
-          { value: stats.value?.order.shipped || 0, itemStyle: { color: '#34c759' } },
+          { value: stats.value?.order.shipping || 0, itemStyle: { color: '#0071e3' } },
+          { value: stats.value?.order.shipped || 0, itemStyle: { color: '#ff9500' } },
+          { value: stats.value?.order.cancelled || 0, itemStyle: { color: '#34c759' } },
         ],
         barWidth: '50%',
         itemStyle: { borderRadius: [8, 8, 0, 0] },

@@ -1,5 +1,5 @@
 import { setActivePinia, createPinia } from 'pinia'
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useThemeStore } from '../theme'
 
 describe('useThemeStore', () => {

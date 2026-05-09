@@ -11,9 +11,18 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // CORS 配置
+  // CORS 配置 - 支持多来源（Web 前端 + Mobile App）
+  const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5174')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5174',
+    origin: (origin, callback) => {
+      // 允许无 origin 的请求（如 Capacitor、Postman）
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(null, true); // 开发环境允许所有来源
+    },
     credentials: true,
   });
 

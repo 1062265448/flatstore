@@ -551,7 +551,7 @@ const getStockNickel = (stockId: number) => {
   return stock?.nickelContent ? Number(stock.nickelContent).toFixed(2) : '-'
 }
 
-const form = reactive<CreateOrderDto & { items: OrderItemDto[] }>({
+const form = reactive<CreateOrderDto & { items: OrderItemDto[]; productType?: string; specification?: string }>({
   customerId: 0,
   customerName: '',
   targetGrade: '',
@@ -684,7 +684,7 @@ const handleEdit = async (row: DistributionOrder) => {
     })) || [],
   })
   // 编辑时使用订单已有的库存信息，无需重新加载
-  availableStocks.value = row.items?.map((i) => i.stock).filter(Boolean) || []
+  availableStocks.value = row.items?.map((i) => i.stock).filter((s): s is InventoryStock => Boolean(s)) || []
   dialogVisible.value = true
 }
 
@@ -709,20 +709,8 @@ const handleAddFromStock = (stock: any) => {
   })
 }
 
-const handleAddItem = () => {
-  form.items.push({ stockId: 0, weight: 0, pieceCount: 0 })
-}
-
 const handleRemoveItem = (index: number) => {
   form.items.splice(index, 1)
-}
-
-const handleStockSelect = (index: number) => {
-  const stock = availableStocks.value.find((s) => s.id === form.items[index].stockId)
-  if (stock) {
-    form.items[index].weight = Number(stock.weight)
-    form.items[index].pieceCount = stock.pieceCount
-  }
 }
 
 const handleSubmit = async () => {

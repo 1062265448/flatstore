@@ -11,7 +11,6 @@ vi.mock('@/api/distribution', () => ({
   updateOrder: vi.fn(),
   deleteOrder: vi.fn(),
   batchDeleteOrders: vi.fn(),
-  confirmOrder: vi.fn(),
   shipOrder: vi.fn(),
   deliverOrder: vi.fn(),
   cancelOrder: vi.fn(),
@@ -86,15 +85,6 @@ describe('useOrderStore', () => {
   })
 
   describe('订单状态机操作', () => {
-    it('confirmOrder 应确认订单', async () => {
-      ;(api.confirmOrder as any).mockResolvedValue(undefined)
-      ;(api.getOrderList as any).mockResolvedValue({ data: [], total: 0 })
-
-      const store = useOrderStore()
-      await store.confirmOrder(1)
-
-      expect(api.confirmOrder).toHaveBeenCalledWith(1)
-    })
 
     it('shipOrder 应发货', async () => {
       ;(api.shipOrder as any).mockResolvedValue(undefined)

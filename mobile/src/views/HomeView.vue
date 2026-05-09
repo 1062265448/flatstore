@@ -1,0 +1,200 @@
+<template>
+  <div class="home-view">
+    <div class="page-header">
+      <div class="header-label">平面库配货</div>
+      <h1 class="header-title">{{ greeting }}</h1>
+      <p class="header-date">{{ todayStr }}</p>
+    </div>
+
+    <div class="stats">
+      <StatCard :value="stats?.inventory.total || 0" label="总批次" />
+      <StatCard :value="stats?.inventory.available || 0" label="可用" value-color="var(--green)" />
+      <StatCard :value="stats?.inventory.reserved || 0" label="预留" value-color="var(--amber)" />
+    </div>
+
+    <!-- 库存状态分布条 -->
+    <div class="section-label">库存状态分布</div>
+    <div class="status-bar-section">
+      <div class="status-bar">
+        <div class="bar-segment available" :style="{ width: availablePct + '%' }"></div>
+        <div class="bar-segment reserved" :style="{ width: reservedPct + '%' }"></div>
+        <div class="bar-segment shipped" :style="{ width: shippedPct + '%' }"></div>
+      </div>
+      <div class="status-legend">
+        <div class="legend-item"><span class="legend-dot available"></span>可用 {{ stats?.inventory.available || 0 }}</div>
+        <div class="legend-item"><span class="legend-dot reserved"></span>预留 {{ stats?.inventory.reserved || 0 }}</div>
+        <div class="legend-item"><span class="legend-dot shipped"></span>已发货 {{ stats?.inventory.shipped || 0 }}</div>
+      </div>
+    </div>
+
+    <!-- 最近配货单 -->
+    <div class="section-label">最近配货单</div>
+    <div class="recent-orders">
+      <template v-if="recentOrders.length">
+        <OrderCard
+          v-for="order in recentOrders"
+          :key="order.id"
+          :order="order"
+          @click="router.push(`/orders/${order.id}`)"
+        />
+      </template>
+      <div v-else class="empty-hint">暂无配货单</div>
+    </div>
+
+    <!-- AI FAB -->
+    <button class="ai-fab" @click="router.push('/ai')">AI</button>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useStatisticsStore } from '@/stores/statistics'
+import { useOrderStore } from '@/stores/order'
+import StatCard from '@/components/StatCard.vue'
+import OrderCard from '@/components/OrderCard.vue'
+
+const router = useRouter()
+const statisticsStore = useStatisticsStore()
+const orderStore = useOrderStore()
+
+const stats = computed(() => statisticsStore.stats)
+const recentOrders = computed(() => orderStore.orderList.slice(0, 3))
+
+const greeting = computed(() => {
+  const h = new Date().getHours()
+  if (h < 6) return '夜深了'
+  if (h < 12) return '早上好'
+  if (h < 14) return '中午好'
+  if (h < 18) return '下午好'
+  return '晚上好'
+})
+
+const todayStr = computed(() => {
+  const d = new Date()
+  const weekdays = ['日', '一', '二', '三', '四', '五', '六']
+  return `${d.getMonth() + 1}月${d.getDate()}日 星期${weekdays[d.getDay()]}`
+})
+
+const total = computed(() => stats.value?.inventory.total || 0)
+const availablePct = computed(() => total.value ? ((stats.value?.inventory.available || 0) / total.value * 100) : 0)
+const reservedPct = computed(() => total.value ? ((stats.value?.inventory.reserved || 0) / total.value * 100) : 0)
+const shippedPct = computed(() => total.value ? ((stats.value?.inventory.shipped || 0) / total.value * 100) : 0)
+
+onMounted(async () => {
+  await Promise.all([
+    statisticsStore.fetchStatistics(),
+    orderStore.fetchOrders({ limit: 5 }),
+  ])
+})
+</script>
+
+<style scoped>
+.home-view {
+  padding-bottom: calc(var(--tab-height) + 20px);
+}
+.page-header {
+  padding: 4px 20px 16px;
+}
+.header-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+.header-title {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+.header-date {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.stats {
+  display: flex;
+  gap: 8px;
+  padding: 0 20px 16px;
+}
+
+.section-label {
+  padding: 0 20px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+.status-bar-section {
+  padding: 0 20px 20px;
+}
+.status-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  display: flex;
+  overflow: hidden;
+}
+.bar-segment {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+.bar-segment.available { background: var(--green); }
+.bar-segment.reserved { background: var(--amber); }
+.bar-segment.shipped { background: var(--text-tertiary); }
+
+.status-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.legend-dot.available { background: var(--green); }
+.legend-dot.reserved { background: var(--amber); }
+.legend-dot.shipped { background: var(--text-tertiary); }
+
+.recent-orders {
+  margin-bottom: 20px;
+}
+.empty-hint {
+  padding: 0 20px;
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+.ai-fab {
+  position: fixed;
+  bottom: calc(var(--tab-height) + 16px);
+  right: 20px;
+  width: 52px;
+  height: 52px;
+  background: var(--text);
+  color: white;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  z-index: 60;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ai-fab:active {
+  transform: scale(0.9);
+}
+</style>
