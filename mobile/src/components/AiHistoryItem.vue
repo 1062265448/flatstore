@@ -1,7 +1,8 @@
 <template>
   <div class="ai-item" @click="$emit('click')">
     <div class="ai-thumb">
-      <span>IMG</span>
+      <img v-if="item.imageUrl" :src="item.imageUrl" class="ai-thumb-img" />
+      <span v-else>IMG</span>
     </div>
     <div class="ai-info">
       <div class="ai-batch">{{ item.batchNo || '识别失败' }}<template v-if="item.grade"> · {{ item.grade }}</template></div>
@@ -48,7 +49,7 @@ const formatTime = (dateStr: string) => {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: #F0F0F0;
+  background: var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -56,6 +57,12 @@ const formatTime = (dateStr: string) => {
   font-weight: 600;
   color: var(--text-tertiary);
   flex-shrink: 0;
+  overflow: hidden;
+}
+.ai-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .ai-info { flex: 1; min-width: 0; }
 .ai-batch {

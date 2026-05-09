@@ -30,7 +30,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await api.login(credentials)
       setAuth(response)
-      router.push('/')
+      const redirect = router.currentRoute.value.query.redirect as string
+      router.push(redirect || '/')
       return response
     } catch (e) {
       // 让上层处理错误提示
@@ -55,10 +56,17 @@ export const useAuthStore = defineStore('auth', () => {
     router.push('/login')
   }
 
-  const initAuth = () => {
+  const initAuth = async () => {
+    const savedToken = localStorage.getItem('token')
     const savedUser = localStorage.getItem('user')
-    if (savedUser) {
-      try { user.value = JSON.parse(savedUser) } catch { clearAuth() }
+    if (savedToken && savedUser) {
+      try {
+        user.value = JSON.parse(savedUser)
+        // Validate token is still valid
+        await api.getProfile()
+      } catch {
+        clearAuth()
+      }
     }
   }
 

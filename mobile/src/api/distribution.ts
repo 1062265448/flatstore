@@ -6,8 +6,10 @@ import type {
   InventoryQuery,
   Customer,
   CreateCustomerDto,
+  UpdateCustomerDto,
   DistributionOrder,
   CreateOrderDto,
+  UpdateOrderDto,
   ShipOrderDto,
   OrderQuery,
   AiRecognizeResult,
@@ -53,6 +55,9 @@ export const updateInventory = (id: number, data: UpdateInventoryDto) =>
 export const deleteInventory = (id: number) =>
   request.delete(`/distribution/inventory/${id}`)
 
+export const batchDeleteInventory = (ids: number[]) =>
+  request.post('/distribution/inventory/batch-delete', { ids })
+
 export const searchInventory = (keyword: string, limit?: number) =>
   request.get<InventoryStock[]>('/distribution/inventory/search', { params: { keyword, limit } })
 
@@ -69,8 +74,17 @@ export const aiRecognize = (file: File) => {
 export const getCustomers = () =>
   request.get<Customer[]>('/distribution/customers')
 
+export const getCustomerById = (id: number) =>
+  request.get<Customer>(`/distribution/customers/${id}`)
+
 export const createCustomer = (data: CreateCustomerDto) =>
   request.post<Customer>('/distribution/customers', data)
+
+export const updateCustomer = (id: number, data: UpdateCustomerDto) =>
+  request.put<Customer>(`/distribution/customers/${id}`, data)
+
+export const deleteCustomer = (id: number) =>
+  request.delete(`/distribution/customers/${id}`)
 
 // ==================== Orders ====================
 export const getOrderList = (params: OrderQuery) =>
@@ -82,11 +96,14 @@ export const getOrderById = (id: number) =>
 export const createOrder = (data: CreateOrderDto) =>
   request.post<DistributionOrder>('/distribution/orders', data)
 
-export const updateOrder = (id: number, data: any) =>
+export const updateOrder = (id: number, data: UpdateOrderDto) =>
   request.put<DistributionOrder>(`/distribution/orders/${id}`, data)
 
 export const deleteOrder = (id: number) =>
   request.delete(`/distribution/orders/${id}`)
+
+export const batchDeleteOrders = (ids: number[]) =>
+  request.post('/distribution/orders/batch-delete', { ids })
 
 export const shipOrder = (id: number, data: ShipOrderDto) =>
   request.post<DistributionOrder>(`/distribution/orders/${id}/ship`, data)
@@ -103,3 +120,6 @@ export const getRecognitionHistory = (params: RecognitionHistoryQuery) =>
 
 export const deleteRecognitionHistory = (id: number) =>
   request.delete(`/distribution/recognition-history/${id}`)
+
+export const batchDeleteRecognitionHistory = (ids: number[]) =>
+  request.post('/distribution/recognition-history/batch-delete', { ids })

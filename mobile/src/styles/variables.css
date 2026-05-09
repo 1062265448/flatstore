@@ -23,3 +23,19 @@
   --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', sans-serif;
   --font-mono: 'SF Mono', 'Fira Code', 'Menlo', monospace;
 }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent-soft: #1a2a3a;
+    --green-soft: #0a2a1a;
+    --amber-soft: #2a1a0a;
+    --red-soft: #2a0a0a;
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --border: #2c2c2e;
+    --border-strong: #3a3a3c;
+    --text: #f5f5f7;
+    --text-secondary: #98989d;
+    --text-tertiary: #636366;
+  }
+}

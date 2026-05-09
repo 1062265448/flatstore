@@ -73,7 +73,7 @@ const statusLabel = computed(() => {
 const formatWeight = (w: string | number) => {
   const n = Number(w)
   if (isNaN(n)) return '-'
-  return n >= 1000 ? n.toLocaleString() : n.toFixed(2)
+  return n >= 1000 ? n.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : n.toFixed(3)
 }
 </script>
 

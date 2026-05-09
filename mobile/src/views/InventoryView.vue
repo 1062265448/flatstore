@@ -96,7 +96,7 @@ onMounted(async () => {
   padding-bottom: calc(var(--tab-height) + 20px);
 }
 .page-header {
-  padding: 4px 20px 16px;
+  padding: 12px 20px 16px;
 }
 .header-label {
   font-size: 11px;
@@ -106,7 +106,7 @@ onMounted(async () => {
   font-weight: 500;
 }
 .header-title {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 600;
   letter-spacing: -0.5px;
   color: var(--text);
@@ -127,13 +127,13 @@ onMounted(async () => {
 .empty-hint {
   text-align: center;
   padding: 40px 0;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-tertiary);
 }
 .load-more {
   text-align: center;
   padding: 16px 0;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--accent);
   cursor: pointer;
 }

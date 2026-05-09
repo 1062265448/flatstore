@@ -49,6 +49,10 @@ const routes = [
     component: () => import('@/views/ProfileView.vue'),
     meta: { title: '我的', tab: 'profile', requiresAuth: true },
   },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/',
+  },
 ]
 
 const router = createRouter({

@@ -45,7 +45,7 @@ request.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      // 不自动跳转，让调用方处理
+      window.location.href = '/login'
     }
     // 确保错误信息能被正确读取
     if (!error.response?.data?.message && error.message) {
@@ -55,7 +55,5 @@ request.interceptors.response.use(
     return Promise.reject(error)
   }
 )
-
-export default request
 
 export default request

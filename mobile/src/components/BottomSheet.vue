@@ -4,8 +4,17 @@
       <div v-if="visible" class="sheet-overlay" @click.self="close"></div>
     </transition>
     <transition name="slide-up">
-      <div v-if="visible" class="sheet">
-        <div class="sheet-bar" @click="close"></div>
+      <div
+        v-if="visible"
+        ref="sheetRef"
+        class="sheet"
+        @touchstart="onTouchStart"
+        @touchmove="onTouchMove"
+        @touchend="onTouchEnd"
+      >
+        <div class="sheet-bar" @click="close">
+          <div class="sheet-bar-indicator"></div>
+        </div>
         <slot></slot>
       </div>
     </transition>
@@ -13,9 +22,46 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{ visible: boolean }>()
+import { ref, watch } from 'vue'
+
+const props = defineProps<{ visible: boolean }>()
 const emit = defineEmits<{ close: [] }>()
+
+const sheetRef = ref<HTMLElement>()
+const startY = ref(0)
+const deltaY = ref(0)
+
 const close = () => emit('close')
+
+const onTouchStart = (e: TouchEvent) => {
+  startY.value = e.touches[0].clientY
+  deltaY.value = 0
+}
+
+const onTouchMove = (e: TouchEvent) => {
+  deltaY.value = e.touches[0].clientY - startY.value
+  if (deltaY.value > 0 && sheetRef.value) {
+    sheetRef.value.style.transform = `translateY(${deltaY.value}px)`
+  }
+}
+
+const onTouchEnd = () => {
+  if (sheetRef.value) {
+    sheetRef.value.style.transform = ''
+  }
+  if (deltaY.value > 80) {
+    close()
+  }
+}
+
+// Body scroll lock
+watch(() => props.visible, (v) => {
+  if (v) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+})
 </script>
 
 <style scoped>
@@ -32,17 +78,22 @@ const close = () => emit('close')
   right: 0;
   background: var(--surface);
   border-radius: 24px 24px 0 0;
-  padding: 12px 24px calc(48px + var(--safe-bottom));
+  padding: 8px 24px calc(48px + var(--safe-bottom));
   z-index: 100;
   max-height: 80vh;
   overflow-y: auto;
+  transition: transform 0.15s ease-out;
 }
 .sheet-bar {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 16px;
+  cursor: pointer;
+}
+.sheet-bar-indicator {
   width: 36px;
   height: 4px;
   background: var(--border);
   border-radius: 2px;
-  margin: 0 auto 24px;
-  cursor: pointer;
 }
 </style>

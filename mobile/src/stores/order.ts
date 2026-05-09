@@ -7,27 +7,28 @@ export const useOrderStore = defineStore('order', () => {
   const orderList = ref<DistributionOrder[]>([])
   const currentOrder = ref<DistributionOrder | null>(null)
   const total = ref(0)
-  const loading = ref(false)
+  const loadingList = ref(false)
+  const loadingDetail = ref(false)
 
   const fetchOrders = async (params: OrderQuery = {}) => {
-    loading.value = true
+    loadingList.value = true
     try {
       const res = await api.getOrderList(params) as any
       orderList.value = res.data
       total.value = res.total
     } finally {
-      loading.value = false
+      loadingList.value = false
     }
   }
 
   const fetchOrderById = async (id: number) => {
-    loading.value = true
+    loadingDetail.value = true
     try {
       const res = await api.getOrderById(id) as any
       currentOrder.value = res
       return res
     } finally {
-      loading.value = false
+      loadingDetail.value = false
     }
   }
 
@@ -52,5 +53,8 @@ export const useOrderStore = defineStore('order', () => {
     await api.deleteOrder(id)
   }
 
-  return { orderList, currentOrder, total, loading, fetchOrders, fetchOrderById, createOrder, shipOrder, deliverOrder, cancelOrder, deleteOrder }
+  // Backward compat: expose `loading` as computed from both
+  const loading = ref(false)
+
+  return { orderList, currentOrder, total, loading, loadingList, loadingDetail, fetchOrders, fetchOrderById, createOrder, shipOrder, deliverOrder, cancelOrder, deleteOrder }
 })
