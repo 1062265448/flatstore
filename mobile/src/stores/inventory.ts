@@ -8,11 +8,11 @@ export const useInventoryStore = defineStore('inventory', () => {
   const total = ref(0)
   const loading = ref(false)
 
-  const fetchInventory = async (params: InventoryQuery = {}) => {
+  const fetchInventory = async (params: InventoryQuery = {}, append = false) => {
     loading.value = true
     try {
       const res = await api.getInventoryList(params) as any
-      inventoryList.value = res.data
+      inventoryList.value = append ? [...inventoryList.value, ...res.data] : res.data
       total.value = res.total
     } finally {
       loading.value = false

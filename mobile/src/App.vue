@@ -41,7 +41,7 @@ const showTabBar = computed(() => {
 }
 .toast-container {
   position: fixed;
-  top: 60px;
+  top: calc(60px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 300;

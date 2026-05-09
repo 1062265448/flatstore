@@ -92,9 +92,10 @@ onMounted(async () => {
 <style scoped>
 .home-view {
   padding-bottom: calc(var(--tab-height) + 20px);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 .page-header {
-  padding: 4px 20px 16px;
+  padding: 12px 20px 16px;
 }
 .header-label {
   font-size: 11px;
@@ -104,13 +105,13 @@ onMounted(async () => {
   font-weight: 500;
 }
 .header-title {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 600;
   letter-spacing: -0.5px;
   color: var(--text);
 }
 .header-date {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-tertiary);
   margin-top: 2px;
 }
@@ -123,7 +124,7 @@ onMounted(async () => {
 
 .section-label {
   padding: 0 20px 8px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-tertiary);
 }
@@ -172,7 +173,7 @@ onMounted(async () => {
 }
 .empty-hint {
   padding: 0 20px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-tertiary);
 }
 

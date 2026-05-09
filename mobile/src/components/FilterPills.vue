@@ -31,6 +31,9 @@ defineEmits<{
   overflow-x: auto;
 }
 .filter-pill {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   padding: 7px 14px;
   border-radius: 20px;
   font-size: 13px;

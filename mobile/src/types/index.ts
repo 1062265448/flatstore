@@ -35,6 +35,8 @@ export interface CreateInventoryDto {
   remark?: string
   inspectionDate?: string
   certificateNo?: string
+  sourceType?: string
+  sourceImage?: string
 }
 
 export interface UpdateInventoryDto {
@@ -83,6 +85,14 @@ export interface CreateCustomerDto {
   remark?: string
 }
 
+export interface UpdateCustomerDto {
+  name?: string
+  contact?: string
+  phone?: string
+  address?: string
+  remark?: string
+}
+
 // 配货单
 export interface DistributionOrder {
   id: number
@@ -123,10 +133,24 @@ export interface OrderItemDto {
 export interface CreateOrderDto {
   customerId: number
   customerName?: string
+  productType?: string
+  specification?: string
+  productSpec?: string
+  targetGrade?: string
+  totalWeight?: number
+  totalPieces?: number
+  remark?: string
+  items: OrderItemDto[]
+}
+
+export interface UpdateOrderDto {
+  customerId?: number
+  customerName?: string
+  productType?: string
+  specification?: string
   productSpec?: string
   targetGrade?: string
   remark?: string
-  items: OrderItemDto[]
 }
 
 export interface ShipOrderDto {

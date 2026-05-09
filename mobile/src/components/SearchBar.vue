@@ -50,15 +50,17 @@ defineEmits<{
   position: absolute;
   right: 32px;
   top: 50%;
-  transform: translateY(-10%);
-  width: 24px;
-  height: 24px;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-tertiary);
   border-radius: 50%;
+  border: none;
+  background: transparent;
 }
 .search-clear:active {
   background: var(--border);
