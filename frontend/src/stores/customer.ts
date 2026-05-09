@@ -11,8 +11,8 @@ export const useCustomerStore = defineStore('customer', () => {
     loading.value = true
     try {
       // ⚠️ Axios 已解包，res 直接是数组
-      const res = await api.getCustomers()
-      customers.value = res as Customer[]
+      const res = await api.getCustomers() as any
+      customers.value = res
     } finally {
       loading.value = false
     }

@@ -26,7 +26,7 @@ export const getStatistics = () => {
 
 // ==================== 库存 ====================
 export const getInventoryList = (params: InventoryQuery) => {
-  return request.get<PaginatedResponse<InventoryStock>>('/distribution/inventory', { params })
+  return request.get<PaginatedResponse<InventoryStock>>('/distribution/inventory', { params } as any)
 }
 
 export const getInventoryById = (id: number) => {
@@ -62,7 +62,7 @@ export const batchDeleteInventory = (ids: number[]) => {
 export const searchInventory = (keyword: string, limit?: number) => {
   return request.get<InventoryStock[]>('/distribution/inventory/search', {
     params: { keyword, limit },
-  })
+  } as any)
 }
 
 // AI 识别
@@ -73,7 +73,7 @@ export const aiRecognize = (file: File) => {
   // ⚠️ 不设置 Content-Type，让浏览器自动添加 boundary
   return request.post<AiRecognizeResult[]>('/distribution/inventory/ai-recognize', formData, {
     timeout: 120000,  // 统一 120s，与后端一致
-  })
+  } as any)
 }
 
 // ==================== 客户 ====================
@@ -99,7 +99,7 @@ export const deleteCustomer = (id: number) => {
 
 // ==================== 配货单 ====================
 export const getOrderList = (params: OrderQuery) => {
-  return request.get<PaginatedResponse<DistributionOrder>>('/distribution/orders', { params })
+  return request.get<PaginatedResponse<DistributionOrder>>('/distribution/orders', { params } as any)
 }
 
 export const getOrderById = (id: number) => {
@@ -136,7 +136,7 @@ export const cancelOrder = (id: number) => {
 
 // ==================== AI 识别历史 ====================
 export const getRecognitionHistory = (params: RecognitionHistoryQuery) => {
-  return request.get<PaginatedResponse<AiRecognitionHistory>>('/distribution/recognition-history', { params })
+  return request.get<PaginatedResponse<AiRecognitionHistory>>('/distribution/recognition-history', { params } as any)
 }
 
 export const deleteRecognitionHistory = (id: number) => {

@@ -340,7 +340,6 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, inject, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
 import { aiRecognize, batchCreateInventory, getRecognitionHistory, deleteRecognitionHistory, batchDeleteRecognitionHistory } from '@/api/distribution'
 import type { AiRecognizeResult, AiRecognitionHistory, CreateInventoryDto } from '@/types'
 
@@ -378,12 +377,7 @@ const imagePreviewVisible = ref(false)
 const previewImageUrl = ref('')
 
 const totalHistoryPages = computed(() => Math.ceil(historyTotal.value / historyQuery.limit))
-const isAllHistorySelected = computed(() =>
-  historyList.value.length > 0 &&
-  selectedHistory.value.length === historyList.value.length
-)
 
-const isHistorySelected = (id: number) => selectedHistory.value.some(r => r.id === id)
 
 const triggerUpload = () => {
   uploadRef.value?.click()
@@ -440,7 +434,7 @@ const handleRecognize = async () => {
   uploading.value = true
   try {
     const res = await aiRecognize(selectedFile.value)
-    recognizeResults.value = res as AiRecognizeResult[]
+    recognizeResults.value = res as any
     if (!recognizeResults.value.length) {
       showToast?.('未识别到任何数据', 'warning')
     } else {
@@ -476,7 +470,7 @@ const handleImportSubmit = async () => {
       sourceType: 'ai_recognize',
     }))
 
-    await batchCreateInventory(items)
+    await batchCreateInventory({ items })
     showToast?.(`成功导入 ${items.length} 条库存记录`, 'success')
     importVisible.value = false
     handleReset()
@@ -498,11 +492,11 @@ const fetchHistory = async () => {
       status: historyQuery.status || undefined,
     })
     // 拼接完整的图片 URL
-    historyList.value = res.data.map((item: AiRecognitionHistory) => ({
+    historyList.value = (res as any).data.map((item: AiRecognitionHistory) => ({
       ...item,
       imageUrl: item.imageUrl ? `${apiBaseUrl}${item.imageUrl}` : '',
     }))
-    historyTotal.value = res.total
+    historyTotal.value = (res as any).total
   } finally {
     historyLoading.value = false
   }
@@ -513,22 +507,7 @@ const goToHistoryPage = (page: number) => {
   fetchHistory()
 }
 
-const toggleSelectHistory = (row: AiRecognitionHistory) => {
-  const index = selectedHistory.value.findIndex(r => r.id === row.id)
-  if (index === -1) {
-    selectedHistory.value.push(row)
-  } else {
-    selectedHistory.value.splice(index, 1)
-  }
-}
 
-const toggleSelectAllHistory = () => {
-  if (isAllHistorySelected.value) {
-    selectedHistory.value = []
-  } else {
-    selectedHistory.value = [...historyList.value]
-  }
-}
 
 const handleViewHistory = (row: AiRecognitionHistory) => {
   currentHistory.value = row

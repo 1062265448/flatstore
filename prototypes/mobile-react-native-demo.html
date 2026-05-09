@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>平面库配货 - React Native Demo</title>
+  <style>
+    :root {
+      --primary: #5856D6;
+      --primary-light: #7C73E6;
+      --success: #34C759;
+      --warning: #FF9F0A;
+      --danger: #FF3B30;
+      --info: #007AFF;
+      --bg-primary: #F2F2F7;
+      --bg-card: #FFFFFF;
+      --bg-separator: #E5E5EA;
+      --text-primary: #000000;
+      --text-secondary: #8E8E93;
+      --text-tertiary: #C7C7CC;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 14px rgba(0,0,0,0.08);
+      --ios-safe-bottom: 34px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', sans-serif;
+      background: #F5F5F5;
+      color: var(--text-primary);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      gap: 40px;
+    }
+
+    /* ===== 手机外壳 ===== */
+    .phone-frame {
+      width: 390px;
+      height: 844px;
+      background: var(--bg-primary);
+      position: relative;
+      overflow: hidden;
+      border-radius: 48px;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.18), 0 0 0 2px #2d2d2d, inset 0 0 0 1px rgba(255,255,255,0.05);
+    }
+    .phone-frame::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 126px;
+      height: 30px;
+      background: #2d2d2d;
+      border-radius: 0 0 20px 20px;
+      z-index: 100;
+    }
+
+    /* ===== 状态栏 ===== */
+    .ios-status-bar {
+      height: 44px;
+      padding: 0 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent;
+      font-size: 15px;
+      font-weight: 600;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* ===== iOS 导航栏 ===== */
+    .ios-nav {
+      background: var(--bg-card);
+      padding: 4px 16px 10px;
+      border-bottom: 0.5px solid var(--bg-separator);
+      position: relative;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(255,255,255,0.92);
+    }
+    .ios-nav .large-title {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    /* ===== iOS SearchBar ===== */
+    .ios-search {
+      padding: 8px 16px 12px;
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(255,255,255,0.92);
+    }
+    .ios-search-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .ios-search-input {
+      flex: 1;
+      height: 36px;
+      border: none;
+      background: rgba(118,118,128,0.12);
+      border-radius: 10px;
+      padding: 0 16px 0 34px;
+      font-size: 16px;
+      color: var(--text-primary);
+      outline: none;
+      position: relative;
+      font-family: inherit;
+    }
+    .ios-search-wrap { position: relative; flex: 1; }
+    .ios-search-wrap::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      opacity: 0.5;
+    }
+    .ios-search-btn {
+      padding: 8px 14px;
+      background: transparent;
+      color: var(--primary);
+      border: none;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* ===== iOS Segmented Control ===== */
+    .ios-segment {
+      display: flex;
+      margin: 8px 16px 12px;
+      background: rgba(118,118,128,0.12);
+      border-radius: 9px;
+      padding: 2px;
+      position: relative;
+    }
+    .ios-segment-item {
+      flex: 1;
+      text-align: center;
+      padding: 6px 4px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 1;
+      position: relative;
+    }
+    .ios-segment-item.active {
+      background: var(--bg-card);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    /* ===== 内容区 ===== */
+    .ios-content {
+      height: calc(100% - 260px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 100px;
+    }
+    .ios-content::-webkit-scrollbar { display: none; }
+
+    /* ===== iOS InsetGroupedList ===== */
+    .ios-section {
+      padding: 0 16px 20px;
+    }
+    .ios-section-title {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      padding: 8px 4px;
+      letter-spacing: 0.5px;
+    }
+    .ios-list {
+      background: var(--bg-card);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .ios-list-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      gap: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .ios-list-item:active { background: #E8E8ED; }
+    .ios-list-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 16px;
+      right: 0;
+      height: 0.5px;
+      background: var(--bg-separator);
+    }
+    .ios-list-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .ios-list-text { flex: 1; min-width: 0; }
+    .ios-list-text .primary { font-size: 16px; font-weight: 400; }
+    .ios-list-text .secondary { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+    .ios-list-chevron {
+      font-size: 14px;
+      color: var(--text-tertiary);
+    }
+
+    /* ===== 统计卡片 ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 0 16px 16px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .stat-card .sc-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .stat-card .sc-value {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      font-family: 'SF Pro Display', -apple-system, sans-serif;
+    }
+    .stat-card .sc-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* ===== 库存卡片 (RN FlatList style) ===== */
+    .inv-list { padding: 0 16px; }
+    .inv-card {
+      background: var(--bg-card);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .inv-card:active { transform: scale(0.98); }
+    .inv-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .inv-batch { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
+    .inv-grade-tag {
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'SF Mono', monospace;
+      letter-spacing: 0.5px;
+    }
+    .tag-9996 { background: #EEF0FF; color: var(--primary); }
+    .tag-9990 { background: #FFF4E5; color: var(--warning); }
+    .tag-9980 { background: #E5F3FF; color: var(--info); }
+
+    .inv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .inv-item-label { font-size: 11px; color: var(--text-secondary); }
+    .inv-item-value { font-size: 15px; font-weight: 500; margin-top: 1px; }
+    .inv-item-value.mono { font-family: 'SF Mono', monospace; letter-spacing: -0.3px; }
+
+    .inv-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 0.5px solid var(--bg-separator);
+    }
+    .inv-status-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot.green { background: var(--success); }
+    .dot.orange { background: var(--warning); }
+    .dot.blue { background: var(--info); }
+
+    .inv-btn-group { display: flex; gap: 8px; }
+    .rn-btn {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .rn-btn-primary { background: var(--primary); color: white; }
+    .rn-btn-secondary { background: rgba(118,118,128,0.12); color: var(--text-secondary); }
+
+    /* ===== AI Bottom Sheet ===== */
+    .ios-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 99;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .ios-overlay.show { opacity: 1; pointer-events: auto; }
+    .ios-sheet {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg-card);
+      border-radius: 20px 20px 0 0;
+      padding: 12px 20px 50px;
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      z-index: 100;
+    }
+    .ios-sheet.show { transform: translateY(0); }
+    .sheet-handle {
+      width: 36px; height: 5px;
+      background: var(--bg-separator);
+      border-radius: 3px;
+      margin: 0 auto 16px;
+    }
+    .sheet-title {
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .sheet-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .camera-view {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .camera-view::before {
+      content: '';
+      position: absolute;
+      width: 160px; height: 160px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 16px;
+    }
+    .camera-icon { font-size: 40px; position: relative; z-index: 1; }
+    .camera-text { font-size: 14px; color: rgba(255,255,255,0.8); position: relative; z-index: 1; }
+
+    .result-section { margin-top: 20px; }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 0.5px solid var(--bg-separator);
+      font-size: 15px;
+    }
+    .result-label { color: var(--text-secondary); }
+    .result-value { font-weight: 600; }
+    .import-btn {
+      width: 100%;
+      height: 50px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 600;
+      margin-top: 20px;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: -0.3px;
+    }
+
+    /* ===== iOS TabBar ===== */
+    .ios-tabbar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 83px;
+      background: rgba(249,249,249,0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 0.5px solid var(--bg-separator);
+      display: flex;
+      align-items: flex-start;
+      padding-top: 8px;
+      padding-bottom: var(--ios-safe-bottom);
+      z-index: 50;
+    }
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 10px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .tab-item.active { color: var(--primary); }
+    .tab-icon { font-size: 24px; }
+
+    /* ===== 配货单页 ===== */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .order-item {
+      background: var(--bg-card);
+      border-radius: 14px;
+      padding: 16px;
+      margin: 0 16px 10px;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+    }
+    .order-item:active { transform: scale(0.98); }
+    .order-top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .order-no { font-size: 15px; font-weight: 600; }
+    .order-badge {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge-shipping { background: #FFF4E5; color: var(--warning); }
+    .badge-done { background: #E5FFEC; color: var(--success); }
+    .badge-draft { background: rgba(118,118,128,0.12); color: var(--text-secondary); }
+    .order-name { font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; }
+    .order-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .order-meta span { display: flex; align-items: center; gap: 4px; }
+
+    /* 订单详情 */
+    .detail-header {
+      display: flex;
+      align-items: center;
+      padding: 4px 16px 12px;
+      background: var(--bg-card);
+      border-bottom: 0.5px solid var(--bg-separator);
+    }
+    .detail-header .back { color: var(--primary); font-size: 16px; cursor: pointer; }
+    .detail-header .title { flex: 1; text-align: center; font-size: 17px; font-weight: 600; margin-right: 40px; }
+
+    .timeline { padding: 20px 16px; }
+    .tl-item {
+      display: flex;
+      gap: 14px;
+      padding-bottom: 24px;
+      position: relative;
+    }
+    .tl-item::before {
+      content: '';
+      position: absolute;
+      left: 15px;
+      top: 28px;
+      bottom: 0;
+      width: 2px;
+      background: var(--bg-separator);
+    }
+    .tl-item:last-child::before { display: none; }
+    .tl-dot {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .tl-item.pending .tl-dot { background: var(--bg-separator); }
+    .tl-text .tl-title { font-size: 15px; font-weight: 500; }
+    .tl-text .tl-time { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+
+    /* ===== AI 历史 ===== */
+    .ai-history-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-card);
+      border-radius: 14px;
+      padding: 12px 16px;
+      margin: 0 16px 8px;
+      box-shadow: var(--shadow-sm);
+    }
+    .ai-thumb {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .ai-info { flex: 1; }
+    .ai-info .ai-batch { font-size: 15px; font-weight: 500; }
+    .ai-info .ai-time { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .ai-status {
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .ai-ok { background: #E5FFEC; color: var(--success); }
+    .ai-fail { background: #FFE5E5; color: var(--danger); }
+
+    .desc-text {
+      padding: 20px 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+    .desc-text h3 { color: var(--text-primary); font-size: 15px; margin-bottom: 6px; }
+    .desc-text ul { padding-left: 18px; margin: 8px 0; }
+    .desc-text li { margin-bottom: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <!-- 状态栏 -->
+  <div class="ios-status-bar">
+    <span>9:41</span>
+    <span>📶 🔋</span>
+  </div>
+
+  <!-- ========== 库存页 ========== -->
+  <div class="page active" id="page-inventory-rn">
+    <div class="ios-nav">
+      <div class="large-title">库存</div>
+    </div>
+    <div class="ios-search">
+      <div class="ios-search-bar">
+        <div class="ios-search-wrap">
+          <input class="ios-search-input" placeholder="搜索批号、品级..." readonly>
+        </div>
+        <button class="ios-search-btn">筛选</button>
+      </div>
+    </div>
+
+    <div class="ios-content" id="content-inventory">
+      <!-- 统计 -->
+      <div class="ios-section">
+        <div class="ios-section-title">库存概览</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="sc-icon">📦</div>
+          <div class="sc-value">156</div>
+          <div class="sc-label">总批次</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-icon">✅</div>
+          <div class="sc-value">98</div>
+          <div class="sc-label">可用</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-icon">🔒</div>
+          <div class="sc-value">42</div>
+          <div class="sc-label">预留</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-icon">⚖️</div>
+          <div class="sc-value">247.8</div>
+          <div class="sc-label">总重量 (t)</div>
+        </div>
+      </div>
+
+      <!-- Segmented Control -->
+      <div class="ios-segment">
+        <div class="ios-segment-item active">全部</div>
+        <div class="ios-segment-item">Ni9996</div>
+        <div class="ios-segment-item">Ni9990</div>
+        <div class="ios-segment-item">Ni9980</div>
+      </div>
+
+      <!-- 库存列表 -->
+      <div class="inv-list">
+        <div class="inv-card">
+          <div class="inv-top">
+            <span class="inv-batch">26-1-109J</span>
+            <span class="inv-grade-tag tag-9996">Ni9996</span>
+          </div>
+          <div class="inv-grid">
+            <div>
+              <div class="inv-item-label">包号</div>
+              <div class="inv-item-value mono">47J</div>
+            </div>
+            <div>
+              <div class="inv-item-label">重量</div>
+              <div class="inv-item-value mono">1,482.0 kg</div>
+            </div>
+            <div>
+              <div class="inv-item-label">块数</div>
+              <div class="inv-item-value">25</div>
+            </div>
+            <div>
+              <div class="inv-item-label">库位</div>
+              <div class="inv-item-value">A-03-12</div>
+            </div>
+          </div>
+          <div class="inv-bottom">
+            <div class="inv-status-dot">
+              <span class="dot green"></span>
+              <span style="color:var(--success)">可用</span>
+            </div>
+            <div class="inv-btn-group">
+              <button class="rn-btn rn-btn-secondary">详情</button>
+              <button class="rn-btn rn-btn-primary">配货</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-card">
+          <div class="inv-top">
+            <span class="inv-batch">26-3-088J</span>
+            <span class="inv-grade-tag tag-9990">Ni9990</span>
+          </div>
+          <div class="inv-grid">
+            <div>
+              <div class="inv-item-label">包号</div>
+              <div class="inv-item-value mono">112</div>
+            </div>
+            <div>
+              <div class="inv-item-label">重量</div>
+              <div class="inv-item-value mono">1,356.5 kg</div>
+            </div>
+            <div>
+              <div class="inv-item-label">块数</div>
+              <div class="inv-item-value">31</div>
+            </div>
+            <div>
+              <div class="inv-item-label">库位</div>
+              <div class="inv-item-value">B-01-05</div>
+            </div>
+          </div>
+          <div class="inv-bottom">
+            <div class="inv-status-dot">
+              <span class="dot orange"></span>
+              <span style="color:var(--warning)">预留</span>
+            </div>
+            <div class="inv-btn-group">
+              <button class="rn-btn rn-btn-secondary">详情</button>
+              <button class="rn-btn rn-btn-secondary" style="color:var(--warning)">跟踪</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-card">
+          <div class="inv-top">
+            <span class="inv-batch">26-5-055J</span>
+            <span class="inv-grade-tag tag-9996">Ni9996</span>
+          </div>
+          <div class="inv-grid">
+            <div>
+              <div class="inv-item-label">包号</div>
+              <div class="inv-item-value mono">78s</div>
+            </div>
+            <div>
+              <div class="inv-item-label">重量</div>
+              <div class="inv-item-value mono">1,521.3 kg</div>
+            </div>
+            <div>
+              <div class="inv-item-label">块数</div>
+              <div class="inv-item-value">28</div>
+            </div>
+            <div>
+              <div class="inv-item-label">库位</div>
+              <div class="inv-item-value">C-02-08</div>
+            </div>
+          </div>
+          <div class="inv-bottom">
+            <div class="inv-status-dot">
+              <span class="dot green"></span>
+              <span style="color:var(--success)">可用</span>
+            </div>
+            <div class="inv-btn-group">
+              <button class="rn-btn rn-btn-secondary">详情</button>
+              <button class="rn-btn rn-btn-primary">配货</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 配货单页 -->
+    <div class="ios-content" id="content-orders" style="display:none">
+      <div class="ios-segment" style="margin-top:4px">
+        <div class="ios-segment-item active">全部 (24)</div>
+        <div class="ios-segment-item">发货中 (8)</div>
+        <div class="ios-segment-item">已完成 (13)</div>
+        <div class="ios-segment-item">草稿 (3)</div>
+      </div>
+
+      <div style="margin-top:8px">
+        <div class="order-item" onclick="showOrderDetailRn()">
+          <div class="order-top">
+            <span class="order-no">ORD-1717845200</span>
+            <span class="order-badge badge-shipping">发货中</span>
+          </div>
+          <div class="order-name">📦 上海宝钢特种材料有限公司</div>
+          <div class="order-meta">
+            <span>⚖️ 14.82t</span>
+            <span>📋 10批</span>
+            <span>🚛 张师傅</span>
+          </div>
+        </div>
+        <div class="order-item">
+          <div class="order-top">
+            <span class="order-no">ORD-1717832400</span>
+            <span class="order-badge badge-done">已完成</span>
+          </div>
+          <div class="order-name">📦 江苏沙钢集团有限公司</div>
+          <div class="order-meta">
+            <span>⚖️ 22.35t</span>
+            <span>📋 15批</span>
+            <span>✅ 05-06</span>
+          </div>
+        </div>
+        <div class="order-item">
+          <div class="order-top">
+            <span class="order-no">ORD-1717819600</span>
+            <span class="order-badge badge-draft">草稿</span>
+          </div>
+          <div class="order-name">📦 浙江青山钢铁有限公司</div>
+          <div class="order-meta">
+            <span>⚖️ 8.64t</span>
+            <span>📋 6批</span>
+            <span>⏳ 待确认</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 订单详情页 -->
+    <div class="page" id="page-order-detail-rn">
+      <div class="detail-header">
+        <span class="back" onclick="backToOrdersRn()">‹ 返回</span>
+        <span class="title">订单详情</span>
+      </div>
+      <div style="overflow-y:auto;height:calc(100% - 50px);padding-bottom:100px">
+        <div style="padding:16px">
+          <div class="inv-card" style="margin:0 0 16px">
+            <div class="inv-top">
+              <span class="inv-batch">ORD-1717845200</span>
+              <span class="inv-grade-tag tag-9996" style="background:#FFF4E5;color:var(--warning)">发货中</span>
+            </div>
+            <div style="font-size:14px;color:var(--text-secondary);margin:8px 0">上海宝钢特种材料有限公司</div>
+            <div class="order-meta">
+              <span>⚖️ 14.82t</span>
+              <span>📋 10批</span>
+              <span>🚛 张师傅</span>
+              <span>🚗 沪A·12345</span>
+            </div>
+          </div>
+
+          <div class="ios-section" style="padding:0">
+            <div class="ios-section-title">物流轨迹</div>
+            <div class="ios-list">
+              <div class="ios-list-item" style="padding:16px">
+                <div class="timeline" style="padding:0;width:100%">
+                  <div class="tl-item">
+                    <div class="tl-dot" style="font-size:14px">📋</div>
+                    <div class="tl-text">
+                      <div class="tl-title">订单创建</div>
+                      <div class="tl-time">2026-05-06 09:00</div>
+                    </div>
+                  </div>
+                  <div class="tl-item">
+                    <div class="tl-dot" style="font-size:14px;background:var(--success)">🔒</div>
+                    <div class="tl-text">
+                      <div class="tl-title">库存已锁定 (10批)</div>
+                      <div class="tl-time">2026-05-06 09:01</div>
+                    </div>
+                  </div>
+                  <div class="tl-item">
+                    <div class="tl-dot" style="font-size:14px;background:var(--warning)">🚛</div>
+                    <div class="tl-text">
+                      <div class="tl-title">司机发货 - 张师傅</div>
+                      <div class="tl-time">2026-05-06 14:30</div>
+                    </div>
+                  </div>
+                  <div class="tl-item pending">
+                    <div class="tl-dot" style="font-size:14px">✅</div>
+                    <div class="tl-text">
+                      <div class="tl-title" style="color:var(--text-secondary)">完成配送</div>
+                      <div class="tl-time">等待确认</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;bottom:64px;left:0;right:0;padding:12px 16px;background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);border-top:0.5px solid var(--bg-separator);display:flex;gap:10px">
+        <button style="flex:1;height:48px;border-radius:12px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:16px;font-weight:600;cursor:pointer;font-family:inherit">取消订单</button>
+        <button style="flex:1;height:48px;border-radius:12px;border:none;background:var(--primary);color:white;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit">确认送达</button>
+      </div>
+    </div>
+
+    <!-- AI 识别历史页 -->
+    <div class="ios-content" id="content-ai" style="display:none">
+      <div style="padding:0 16px 8px">
+        <div class="ios-segment">
+          <div class="ios-segment-item active">全部</div>
+          <div class="ios-segment-item">今日</div>
+          <div class="ios-segment-item">本周</div>
+        </div>
+      </div>
+
+      <div style="margin-top:8px">
+        <div class="ai-history-item">
+          <div class="ai-thumb">📷</div>
+          <div class="ai-info">
+            <div class="ai-batch">26-1-109J · Ni9996</div>
+            <div class="ai-time">2026-05-08 09:15 · 6 条记录</div>
+          </div>
+          <span class="ai-status ai-ok">成功</span>
+        </div>
+        <div class="ai-history-item">
+          <div class="ai-thumb" style="background:linear-gradient(135deg,#f093fb,#f5576c)">📷</div>
+          <div class="ai-info">
+            <div class="ai-batch">26-3-088J · Ni9990</div>
+            <div class="ai-time">2026-05-08 08:42 · 4 条记录</div>
+          </div>
+          <span class="ai-status ai-ok">成功</span>
+        </div>
+        <div class="ai-history-item">
+          <div class="ai-thumb" style="background:linear-gradient(135deg,#4facfe,#00f2fe)">📷</div>
+          <div class="ai-info">
+            <div class="ai-batch">识别失败</div>
+            <div class="ai-time">2026-05-07 16:30 · 网络超时</div>
+          </div>
+          <span class="ai-status ai-fail">失败</span>
+        </div>
+        <div class="ai-history-item">
+          <div class="ai-thumb" style="background:linear-gradient(135deg,#43e97b,#38f9d7)">📷</div>
+          <div class="ai-info">
+            <div class="ai-batch">26-5-055J · Ni9996</div>
+            <div class="ai-time">2026-05-07 14:20 · 8 条记录</div>
+          </div>
+          <span class="ai-status ai-ok">成功</span>
+        </div>
+        <div class="ai-history-item">
+          <div class="ai-thumb" style="background:linear-gradient(135deg,#fa709a,#fee140)">📷</div>
+          <div class="ai-info">
+            <div class="ai-batch">26-2-077J · Ni9980</div>
+            <div class="ai-time">2026-05-07 11:05 · 3 条记录</div>
+          </div>
+          <span class="ai-status ai-ok">成功</span>
+        </div>
+      </div>
+
+      <div class="desc-text" style="margin-top:16px">
+        <h3>💡 AI 识别使用提示</h3>
+        <ul>
+          <li>支持拍照或从相册选择图片</li>
+          <li>图片格式：JPG/PNG，最大 10MB</li>
+          <li>识别时间约 10-30 秒</li>
+          <li>支持批量导入库存</li>
+          <li>识别结果自动保存至历史记录</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- AI Sheet -->
+    <div class="ios-overlay" id="iosOverlay" onclick="hideAISheet()"></div>
+    <div class="ios-sheet" id="iosSheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">📸 AI 识别</div>
+      <div class="sheet-subtitle">拍照或选择图片，AI 将自动识别镍板标签信息</div>
+      <div class="camera-view" onclick="simulateAIRn()">
+        <div class="camera-icon">📷</div>
+        <div class="camera-text">点击拍照</div>
+      </div>
+      <div class="result-section" id="aiResultRn" style="display:none">
+        <div class="result-row"><span class="result-label">批号</span><span class="result-value">26-1-109J</span></div>
+        <div class="result-row"><span class="result-label">品级</span><span class="result-value">Ni9996</span></div>
+        <div class="result-row"><span class="result-label">包号</span><span class="result-value">47J</span></div>
+        <div class="result-row"><span class="result-label">重量</span><span class="result-value">1,482.0 kg</span></div>
+        <div class="result-row"><span class="result-label">块数</span><span class="result-value">25</span></div>
+        <div class="result-row"><span class="result-label">生产日期</span><span class="result-value">2026-04-19</span></div>
+        <button class="import-btn">导入到库存</button>
+      </div>
+    </div>
+
+    <!-- TabBar -->
+    <div class="ios-tabbar">
+      <div class="tab-item active" onclick="switchTabRn('inventory')">
+        <div class="tab-icon">📦</div>
+        <span>库存</span>
+      </div>
+      <div class="tab-item" onclick="switchTabRn('orders')">
+        <div class="tab-icon">📋</div>
+        <span>配货</span>
+      </div>
+      <div class="tab-item" onclick="showAISheet()">
+        <div class="tab-icon">📸</div>
+        <span>AI</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">👤</div>
+        <span>客户</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">⚙️</div>
+        <span>设置</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchTabRn(tab) {
+    document.querySelectorAll('.tab-item').forEach((el,i) => {
+      el.classList.toggle('active',
+        (tab === 'inventory' && i === 0) ||
+        (tab === 'orders' && i === 1) ||
+        (tab === 'ai' && i === 2) ||
+        (tab === 'customer' && i === 3) ||
+        (tab === 'settings' && i === 4)
+      );
+    });
+    document.getElementById('content-inventory').style.display = tab === 'inventory' ? '' : 'none';
+    document.getElementById('content-orders').style.display = tab === 'orders' ? '' : 'none';
+    document.getElementById('content-ai').style.display = tab === 'ai' ? '' : 'none';
+    // reset order detail
+    document.getElementById('page-order-detail-rn').classList.toggle('active', false);
+  }
+
+  function showAISheet() {
+    document.getElementById('iosSheet').classList.add('show');
+    document.getElementById('iosOverlay').classList.add('show');
+    document.getElementById('aiResultRn').style.display = 'none';
+    document.querySelector('.camera-view').style.display = 'flex';
+  }
+  function hideAISheet() {
+    document.getElementById('iosSheet').classList.remove('show');
+    document.getElementById('iosOverlay').classList.remove('show');
+  }
+  function simulateAIRn() {
+    const cam = document.querySelector('.camera-view');
+    cam.innerHTML = '<div class="camera-icon" style="animation:spin 1s linear infinite">⏳</div><div class="camera-text">AI 正在识别...</div>';
+    setTimeout(() => {
+      cam.style.display = 'none';
+      document.getElementById('aiResultRn').style.display = 'block';
+    }, 1800);
+  }
+
+  function showOrderDetailRn() {
+    document.getElementById('page-inventory-rn').classList.remove('active');
+    document.getElementById('page-order-detail-rn').classList.add('active');
+  }
+  function backToOrdersRn() {
+    document.getElementById('page-order-detail-rn').classList.remove('active');
+    document.getElementById('page-inventory-rn').classList.add('active');
+  }
+
+  // Segmented Control 切换
+  document.querySelectorAll('.ios-segment').forEach(seg => {
+    seg.querySelectorAll('.ios-segment-item').forEach(item => {
+      item.addEventListener('click', () => {
+        seg.querySelectorAll('.ios-segment-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+  });
+</script>
+
+<style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>
+</body>
+</html>

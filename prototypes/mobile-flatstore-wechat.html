@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>平面库配货 — 微信小程序风格</title>
+  <style>
+    :root {
+      --green: #07C160;
+      --green-soft: #E8F8EE;
+      --green-dark: #06AD56;
+      --blue: #576B95;
+      --orange: #FA9D3B;
+      --orange-soft: #FFF3E0;
+      --red: #FA5151;
+      --red-soft: #FEF0F0;
+      --bg: #F6F6F6;
+      --surface: #FFFFFF;
+      --border: #ECECEC;
+      --text: #111111;
+      --text2: #666666;
+      --text3: #999999;
+      --radius: 12px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+      background:#E8E8E8; display:flex; justify-content:center; align-items:center; min-height:100vh; padding:20px; gap:40px; flex-wrap:wrap;
+    }
+    .phone {
+      width:375px; height:812px; background:var(--bg); border-radius:44px; overflow:hidden;
+      position:relative; box-shadow:0 0 0 2px #1a1a1a, 0 20px 60px rgba(0,0,0,0.15);
+    }
+    .phone::before {
+      content:''; position:absolute; top:0; left:50%; transform:translateX(-50%);
+      width:126px; height:30px; background:#1a1a1a; border-radius:0 0 18px 18px; z-index:100;
+    }
+    .capsule {
+      position:absolute; top:10px; right:16px; display:flex; gap:8px; align-items:center; z-index:101;
+      background:rgba(0,0,0,0.15); border-radius:16px; padding:4px 10px;
+    }
+    .capsule .dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.9); }
+    .capsule .line { width:1px; height:12px; background:rgba(255,255,255,0.3); }
+    .capsule .close { width:10px; height:10px; position:relative; }
+    .capsule .close::before, .capsule .close::after {
+      content:''; position:absolute; top:50%; left:50%; width:10px; height:1.5px; background:rgba(255,255,255,0.9);
+    }
+    .capsule .close::before { transform:translate(-50%,-50%) rotate(45deg); }
+    .capsule .close::after { transform:translate(-50%,-50%) rotate(-45deg); }
+
+    .statusbar {
+      height:50px; display:flex; align-items:center; justify-content:space-between;
+      padding:0 28px; font-size:14px; font-weight:600; color:var(--text); background:var(--surface); z-index:10; position:relative;
+    }
+
+    .screen { display:none; flex-direction:column; height:calc(812px - 50px - 56px); overflow-y:auto; background:var(--bg); }
+    .screen.active { display:flex; }
+    .screen::-webkit-scrollbar { width:0; }
+
+    /* WeChat-style tabbar */
+    .tabbar {
+      position:absolute; bottom:0; left:0; right:0; height:56px;
+      background:var(--surface); border-top:0.5px solid #D9D9D9;
+      display:flex; align-items:center; justify-content:space-around; z-index:50;
+    }
+    .tab {
+      display:flex; flex-direction:column; align-items:center; gap:2px;
+      font-size:10px; color:var(--text3); cursor:pointer; padding:2px 12px;
+    }
+    .tab.active { color:var(--green); }
+    .tab svg { width:22px; height:22px; }
+    .tab .plus { display:none; }
+
+    /* WeChat Nav Bar */
+    .wx-nav {
+      height:44px; display:flex; align-items:center; justify-content:center;
+      background:var(--surface); border-bottom:0.5px solid #D9D9D9;
+      font-size:17px; font-weight:600; color:var(--text); position:relative;
+    }
+    .wx-nav .back {
+      position:absolute; left:12px; font-size:14px; color:var(--text); cursor:pointer;
+      display:flex; align-items:center; gap:2px;
+    }
+    .wx-nav .back::before { content:'‹'; font-size:22px; line-height:1; }
+
+    .card {
+      background:var(--surface); border-radius:var(--radius); padding:16px;
+      margin:10px 12px; box-shadow:none;
+    }
+
+    /* LOGIN */
+    #login-screen { height:calc(812px - 50px); background:var(--surface); justify-content:center; align-items:center; padding:40px 28px; }
+    .login-logo { width:72px; height:72px; background:var(--green); border-radius:16px; display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
+    .login-logo svg { width:40px; height:40px; fill:white; }
+    .login-title { font-size:22px; font-weight:700; color:var(--text); margin-bottom:4px; }
+    .login-subtitle { font-size:14px; color:var(--text2); margin-bottom:28px; }
+    .wx-input {
+      width:100%; height:48px; border:none; border-bottom:1px solid var(--border);
+      padding:0 4px; font-size:16px; outline:none; background:transparent; color:var(--text);
+      margin-bottom:8px;
+    }
+    .wx-input::placeholder { color:var(--text3); }
+    .wx-btn {
+      width:100%; height:48px; background:var(--green); color:white; border:none;
+      border-radius:8px; font-size:17px; font-weight:500; cursor:pointer; margin-top:20px;
+    }
+    .wx-btn:active { background:var(--green-dark); }
+    .wx-btn-disabled { background:#9ED9B5; }
+
+    /* HOME */
+    .wx-notice {
+      margin:12px; padding:10px 14px; background:var(--surface); border-radius:8px;
+      display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text2);
+    }
+    .wx-notice .icon { font-size:16px; }
+    .wx-notice .text { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .home-stats {
+      display:flex; margin:0 12px; gap:0; background:var(--surface); border-radius:var(--radius); overflow:hidden;
+    }
+    .home-stat {
+      flex:1; text-align:center; padding:16px 8px; border-right:0.5px solid var(--border);
+    }
+    .home-stat:last-child { border:none; }
+    .home-stat .val { font-size:22px; font-weight:700; color:var(--green); }
+    .home-stat .label { font-size:11px; color:var(--text2); margin-top:2px; }
+
+    .section-title { font-size:14px; font-weight:600; color:var(--text); padding:16px 12px 8px; }
+    .quick-row { display:flex; padding:0 12px; gap:0; background:var(--surface); margin:0 12px; border-radius:var(--radius); }
+    .quick-item {
+      flex:1; display:flex; flex-direction:column; align-items:center; padding:16px 4px;
+      cursor:pointer; border-right:0.5px solid var(--border);
+    }
+    .quick-item:last-child { border:none; }
+    .quick-item .icon { font-size:28px; margin-bottom:6px; }
+    .quick-item .name { font-size:12px; color:var(--text); font-weight:500; }
+
+    .wx-cell {
+      display:flex; align-items:center; justify-content:space-between; padding:14px 16px;
+      background:var(--surface); cursor:pointer; border-bottom:0.5px solid var(--border);
+    }
+    .wx-cell:first-child { border-radius:var(--radius) var(--radius) 0 0; }
+    .wx-cell:last-child { border-bottom:none; border-radius:0 0 var(--radius) var(--radius); }
+    .wx-cell:only-child { border-radius:var(--radius); }
+    .wx-cell .left { display:flex; align-items:center; gap:10px; font-size:15px; }
+    .wx-cell .left .dot { width:8px; height:8px; border-radius:50%; }
+    .wx-cell .right { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text3); }
+    .wx-cell .right::after { content:'›'; font-size:16px; color:var(--text3); }
+    .cell-group { margin:0 12px; }
+
+    .badge { padding:2px 8px; border-radius:4px; font-size:11px; font-weight:500; }
+    .badge-draft { background:var(--orange-soft); color:var(--orange); }
+    .badge-shipping { background:#E8F0FF; color:var(--blue); }
+    .badge-shipped { background:var(--green-soft); color:var(--green); }
+
+    /* INVENTORY */
+    .wx-search {
+      margin:10px 12px; height:36px; background:#F0F0F0; border-radius:8px;
+      display:flex; align-items:center; padding:0 10px; gap:6px; font-size:13px; color:var(--text3);
+    }
+    .wx-search input { flex:1; border:none; outline:none; font-size:13px; background:transparent; color:var(--text); }
+    .inv-card {
+      margin:0 12px 8px; background:var(--surface); border-radius:var(--radius); padding:14px 16px; cursor:pointer;
+    }
+    .inv-card:active { background:#F8F8F8; }
+    .inv-card .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .inv-card .batch { font-size:16px; font-weight:600; color:var(--text); }
+    .inv-card .loc { font-size:11px; padding:1px 6px; background:var(--green-soft); border-radius:4px; color:var(--green); }
+    .inv-card .info { display:flex; flex-wrap:wrap; gap:4px 16px; font-size:13px; color:var(--text2); }
+    .inv-card .info b { color:var(--text); font-weight:500; }
+
+    /* DETAIL */
+    .detail-group { margin:10px 12px; background:var(--surface); border-radius:var(--radius); }
+    .detail-row { display:flex; justify-content:space-between; padding:13px 16px; border-bottom:0.5px solid var(--border); font-size:14px; }
+    .detail-row:last-child { border:none; }
+    .detail-row .label { color:var(--text2); }
+    .detail-row .value { color:var(--text); font-weight:500; }
+    .detail-actions { display:flex; gap:12px; padding:16px 12px; }
+    .detail-actions button { flex:1; height:44px; border-radius:8px; font-size:15px; font-weight:500; border:none; cursor:pointer; }
+    .wx-btn-primary { background:var(--green); color:white; }
+    .wx-btn-warn { background:var(--red-soft); color:var(--red); }
+
+    /* AI */
+    .ai-center { display:flex; flex-direction:column; align-items:center; padding:60px 20px 20px; }
+    .ai-circle {
+      width:120px; height:120px; border-radius:50%; background:var(--green);
+      display:flex; align-items:center; justify-content:center; cursor:pointer;
+      box-shadow:0 6px 24px rgba(7,193,96,0.3);
+    }
+    .ai-circle svg { width:48px; height:48px; fill:white; }
+    .ai-title { font-size:17px; font-weight:600; color:var(--text); margin-top:16px; }
+    .ai-desc { font-size:13px; color:var(--text2); margin-top:4px; text-align:center; }
+    .ai-row-btn {
+      margin-top:20px; padding:10px 24px; border:1px solid var(--border); border-radius:8px;
+      font-size:14px; color:var(--text2); background:var(--surface); cursor:pointer;
+    }
+    .ai-result-card {
+      margin:8px 12px; background:var(--surface); border-radius:var(--radius); padding:14px 16px;
+    }
+    .ai-result-card .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .ai-result-card .name { font-size:15px; font-weight:600; color:var(--text); }
+    .ai-result-card .conf { font-size:11px; color:var(--green); }
+    .ai-result-card .fields { font-size:12px; color:var(--text2); }
+    .ai-bottom { padding:12px; }
+    .ai-bottom button { width:100%; height:44px; border-radius:8px; font-size:15px; border:none; cursor:pointer; font-weight:500; }
+
+    /* ORDERS */
+    .wx-tabs { display:flex; background:var(--surface); border-bottom:0.5px solid var(--border); }
+    .wx-tab {
+      flex:1; text-align:center; padding:10px 0; font-size:14px; color:var(--text2); cursor:pointer; position:relative;
+    }
+    .wx-tab.active { color:var(--green); font-weight:600; }
+    .wx-tab.active::after {
+      content:''; position:absolute; bottom:0; left:35%; right:35%; height:2px;
+      background:var(--green); border-radius:1px;
+    }
+    .wx-tab .num { font-size:10px; background:var(--red); color:white; border-radius:10px; padding:0 5px; margin-left:3px; vertical-align:top; }
+    .order-card {
+      margin:8px 12px; background:var(--surface); border-radius:var(--radius); padding:14px 16px; cursor:pointer;
+    }
+    .order-card:active { background:#F8F8F8; }
+    .order-card .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .order-card .ono { font-size:15px; font-weight:600; color:var(--text); }
+    .order-card .mid { display:flex; justify-content:space-between; font-size:13px; color:var(--text2); margin-bottom:4px; }
+    .order-card .mid b { color:var(--text); font-weight:500; }
+    .order-card .bottom { font-size:12px; color:var(--text3); }
+
+    /* ORDER DETAIL */
+    .od-action-bar {
+      position:sticky; bottom:0; background:var(--surface); padding:10px 12px;
+      border-top:0.5px solid var(--border); display:flex; gap:10px;
+    }
+    .od-action-bar button { flex:1; height:44px; border-radius:8px; font-size:15px; font-weight:500; border:none; cursor:pointer; }
+    .od-item { display:flex; justify-content:space-between; padding:12px 0; border-bottom:0.5px solid var(--border); font-size:14px; }
+    .od-item:last-child { border:none; }
+
+    /* MINE */
+    .mine-card { margin:12px; background:var(--surface); border-radius:var(--radius); overflow:hidden; }
+    .mine-top { display:flex; align-items:center; padding:20px 16px; gap:14px; }
+    .mine-avatar { width:52px; height:52px; border-radius:8px; background:var(--green-soft); display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--green); font-weight:700; }
+    .mine-name { font-size:17px; font-weight:600; color:var(--text); }
+    .mine-id { font-size:12px; color:var(--text3); margin-top:2px; }
+
+    .fade-in { animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);} }
+
+    .modal-overlay {
+      position:absolute; inset:0; background:rgba(0,0,0,0.5); z-index:200;
+      display:none; align-items:flex-end;
+    }
+    .modal-overlay.show { display:flex; }
+    .modal-sheet {
+      width:100%; background:var(--surface); border-radius:12px 12px 0 0;
+      padding:20px 16px 30px; animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from{transform:translateY(100%);} to{transform:translateY(0);} }
+    .modal-sheet h3 { font-size:17px; font-weight:600; margin-bottom:16px; text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="capsule"><div class="dot"></div><div class="line"></div><div class="close"></div></div>
+    <div class="statusbar"><span>9:41</span><span style="font-size:11px;">⚪ 🔵 ■</span></div>
+
+    <!-- Login -->
+    <div id="login-screen" class="screen active" style="display:flex;">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 28px;">
+        <div class="login-logo"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9v-2h4V5h2v4h4v2z"/></svg></div>
+        <div class="login-title">平面库配货</div>
+        <div class="login-subtitle">电积镍原料库管理</div>
+        <input class="wx-input" type="text" placeholder="请输入用户名" value="admin">
+        <input class="wx-input" type="password" placeholder="请输入密码" value="123456">
+        <button class="wx-btn" onclick="doLogin()">登 录</button>
+        <div style="margin-top:16px;font-size:12px;color:var(--text3);">登录即表示同意《用户协议》和《隐私政策》</div>
+      </div>
+    </div>
+
+    <!-- Home -->
+    <div id="home-screen" class="screen">
+      <div class="wx-nav">平面库配货</div>
+      <div class="wx-notice">
+        <span class="icon">📢</span>
+        <span class="text">您有3个待发货配货单，请及时处理</span>
+      </div>
+      <div class="home-stats fade-in">
+        <div class="home-stat"><div class="val">286</div><div class="label">库存批次</div></div>
+        <div class="home-stat"><div class="val">1,247</div><div class="label">总件数</div></div>
+        <div class="home-stat"><div class="val">412.8t</div><div class="label">总重量</div></div>
+      </div>
+      <div class="section-title">快捷操作</div>
+      <div class="quick-row fade-in">
+        <div class="quick-item" onclick="switchTab('ai')"><span class="icon">📸</span><span class="name">拍照识别</span></div>
+        <div class="quick-item" onclick="switchTab('inventory')"><span class="icon">📦</span><span class="name">库存查询</span></div>
+        <div class="quick-item" onclick="switchTab('orders')"><span class="icon">📋</span><span class="name">创建配货</span></div>
+        <div class="quick-item" onclick="switchTab('orders')"><span class="icon">🚚</span><span class="name">发运管理</span></div>
+      </div>
+      <div class="section-title">待处理配货单</div>
+      <div class="cell-group fade-in">
+        <div class="wx-cell" onclick="showOrderDetail('PO-2025-0138','draft')">
+          <div class="left"><div class="dot" style="background:var(--orange);"></div>PO-2025-0138 · 金川集团</div>
+          <div class="right"><span class="badge badge-draft">待发货</span></div>
+        </div>
+        <div class="wx-cell" onclick="showOrderDetail('PO-2025-0141','draft')">
+          <div class="left"><div class="dot" style="background:var(--orange);"></div>PO-2025-0141 · 新疆新鑫</div>
+          <div class="right"><span class="badge badge-draft">待发货</span></div>
+        </div>
+        <div class="wx-cell" onclick="showOrderDetail('PO-2025-0139','shipping')">
+          <div class="left"><div class="dot" style="background:var(--blue);"></div>PO-2025-0139 · 广西银亿</div>
+          <div class="right"><span class="badge badge-shipping">已发货</span></div>
+        </div>
+      </div>
+      <div style="height:16px;"></div>
+    </div>
+
+    <!-- Inventory -->
+    <div id="inventory-screen" class="screen">
+      <div class="wx-nav">库存管理</div>
+      <div class="wx-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="搜索批号、牌号、规格">
+      </div>
+      <div class="inv-card fade-in" onclick="showInvDetail(1)">
+        <div class="top"><span class="batch">N2025-0156</span><span class="loc">A-03-12</span></div>
+        <div class="info">牌号 <b>Ni9996</b> · 规格 <b>1000×500×8</b><br>重量 <b>2.45t</b> · 件数 <b>12</b> · 镍含量 <b>≥99.96%</b></div>
+      </div>
+      <div class="inv-card fade-in" onclick="showInvDetail(2)">
+        <div class="top"><span class="batch">N2025-0163</span><span class="loc">B-01-05</span></div>
+        <div class="info">牌号 <b>Ni9999</b> · 规格 <b>1000×500×10</b><br>重量 <b>3.12t</b> · 件数 <b>16</b> · 镍含量 <b>≥99.99%</b></div>
+      </div>
+      <div class="inv-card fade-in" onclick="showInvDetail(3)">
+        <div class="top"><span class="batch">N2025-0178</span><span class="loc">A-05-08</span></div>
+        <div class="info">牌号 <b>Ni9990</b> · 规格 <b>800×400×6</b><br>重量 <b>1.86t</b> · 件数 <b>8</b> · 镍含量 <b>≥99.90%</b></div>
+      </div>
+      <div class="inv-card fade-in" onclick="showInvDetail(4)">
+        <div class="top"><span class="batch">N2025-0182</span><span class="loc">C-02-11</span></div>
+        <div class="info">牌号 <b>Ni9996</b> · 规格 <b>1000×500×8</b><br>重量 <b>2.78t</b> · 件数 <b>14</b> · 镍含量 <b>≥99.96%</b></div>
+      </div>
+    </div>
+
+    <!-- Inv Detail -->
+    <div id="inv-detail-screen" class="screen">
+      <div class="wx-nav"><div class="back" onclick="backTo('inventory')"></div>库存详情</div>
+      <div class="detail-group fade-in">
+        <div class="detail-row"><span class="label">包装单号</span><span class="value" id="d-packageNo">PK-2025-A0312</span></div>
+        <div class="detail-row"><span class="label">批号</span><span class="value" id="d-batchNo">N2025-0156</span></div>
+        <div class="detail-row"><span class="label">牌号</span><span class="value" id="d-grade">Ni9996</span></div>
+        <div class="detail-row"><span class="label">产品类型</span><span class="value" id="d-productType">电积镍</span></div>
+        <div class="detail-row"><span class="label">规格</span><span class="value" id="d-spec">1000×500×8mm</span></div>
+        <div class="detail-row"><span class="label">重量</span><span class="value" id="d-weight">2.45 t</span></div>
+        <div class="detail-row"><span class="label">件数</span><span class="value" id="d-pieceCount">12 件</span></div>
+        <div class="detail-row"><span class="label">库位</span><span class="value" id="d-location">A-03-12</span></div>
+      </div>
+      <div class="detail-group fade-in">
+        <div class="detail-row"><span class="label">镍含量</span><span class="value" id="d-nickel">≥99.96%</span></div>
+        <div class="detail-row"><span class="label">杂质含量</span><span class="value" id="d-impurity">C≤0.01%</span></div>
+        <div class="detail-row"><span class="label">检验日期</span><span class="value" id="d-inspDate">2025-04-20</span></div>
+        <div class="detail-row"><span class="label">质证书号</span><span class="value" id="d-certNo">QC-2025-0892</span></div>
+        <div class="detail-row"><span class="label">备注</span><span class="value" id="d-remark">-</span></div>
+      </div>
+      <div class="detail-actions">
+        <button class="wx-btn-primary">编辑</button>
+        <button class="wx-btn-warn">删除</button>
+      </div>
+    </div>
+
+    <!-- AI -->
+    <div id="ai-screen" class="screen">
+      <div class="wx-nav">拍照识别</div>
+      <div id="ai-capture" class="ai-center">
+        <div class="ai-circle" onclick="doRecognize()">
+          <svg viewBox="0 0 24 24"><path d="M12 15.2a3.2 3.2 0 100-6.4 3.2 3.2 0 000 6.4z"/><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+        </div>
+        <div class="ai-title">拍照识别</div>
+        <div class="ai-desc">对准质检单或包装标签拍照<br>AI自动识别批号、牌号、规格等信息</div>
+        <div class="ai-row-btn">📷 从相册选择</div>
+      </div>
+      <div id="ai-results" style="display:none;">
+        <div class="section-title" style="padding-top:10px;">识别结果 · 3条</div>
+        <div class="ai-result-card fade-in">
+          <div class="top"><span class="name">N2025-0201 / Ni9996</span><span class="conf">✓ 98%</span></div>
+          <div class="fields">规格 1000×500×8 | 重量 2.45t | 件数 12</div>
+        </div>
+        <div class="ai-result-card fade-in">
+          <div class="top"><span class="name">N2025-0202 / Ni9999</span><span class="conf">✓ 95%</span></div>
+          <div class="fields">规格 1000×500×10 | 重量 3.12t | 件数 16</div>
+        </div>
+        <div class="ai-result-card fade-in">
+          <div class="top"><span class="name">N2025-0203 / Ni9996</span><span class="conf">✓ 92%</span></div>
+          <div class="fields">规格 1000×500×8 | 重量 2.10t | 件数 10</div>
+        </div>
+        <div class="ai-bottom">
+          <button class="wx-btn" onclick="confirmImport()">确认导入库存（3条）</button>
+          <button class="ai-row-btn" style="width:100%;margin-top:8px;text-align:center;" onclick="resetAI()">重新识别</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders -->
+    <div id="orders-screen" class="screen">
+      <div class="wx-nav">配货管理</div>
+      <div class="wx-tabs">
+        <div class="wx-tab active" onclick="switchOrderTab(this,'draft')">待发货<span class="num">3</span></div>
+        <div class="wx-tab" onclick="switchOrderTab(this,'shipping')">已发货</div>
+        <div class="wx-tab" onclick="switchOrderTab(this,'shipped')">已完成</div>
+      </div>
+      <div id="order-list-draft">
+        <div class="order-card fade-in" onclick="showOrderDetail('PO-2025-0138','draft')">
+          <div class="top"><span class="ono">PO-2025-0138</span><span class="badge badge-draft">待发货</span></div>
+          <div class="mid">客户 <b>金川集团</b> · 产品 <b>电积镍</b></div>
+          <div class="mid">重量 <b>29.4t</b> · 件数 <b>144件</b></div>
+          <div class="bottom">2025-04-22 · 3项</div>
+        </div>
+        <div class="order-card fade-in" onclick="showOrderDetail('PO-2025-0141','draft')">
+          <div class="top"><span class="ono">PO-2025-0141</span><span class="badge badge-draft">待发货</span></div>
+          <div class="mid">客户 <b>新疆新鑫</b> · 产品 <b>电积镍</b></div>
+          <div class="mid">重量 <b>18.6t</b> · 件数 <b>92件</b></div>
+          <div class="bottom">2025-04-23 · 2项</div>
+        </div>
+        <div class="order-card fade-in" onclick="showOrderDetail('PO-2025-0143','draft')">
+          <div class="top"><span class="ono">PO-2025-0143</span><span class="badge badge-draft">待发货</span></div>
+          <div class="mid">客户 <b>吉林吉恩</b> · 产品 <b>电积镍</b></div>
+          <div class="mid">重量 <b>12.8t</b> · 件数 <b>64件</b></div>
+          <div class="bottom">2025-04-24 · 2项</div>
+        </div>
+      </div>
+      <div id="order-list-shipping" style="display:none;">
+        <div class="order-card fade-in" onclick="showOrderDetail('PO-2025-0139','shipping')">
+          <div class="top"><span class="ono">PO-2025-0139</span><span class="badge badge-shipping">已发货</span></div>
+          <div class="mid">客户 <b>广西银亿</b> · 产品 <b>电积镍</b></div>
+          <div class="mid">重量 <b>35.2t</b> · 件数 <b>176件</b></div>
+          <div class="bottom">司机 张伟 · 甘A·88756</div>
+        </div>
+      </div>
+      <div id="order-list-shipped" style="display:none;">
+        <div class="order-card fade-in" onclick="showOrderDetail('PO-2025-0135','shipped')">
+          <div class="top"><span class="ono">PO-2025-0135</span><span class="badge badge-shipped">已完成</span></div>
+          <div class="mid">客户 <b>金川集团</b> · 产品 <b>电积镍</b></div>
+          <div class="mid">重量 <b>24.5t</b> · 件数 <b>120件</b></div>
+          <div class="bottom">完成 2025-04-20</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Detail -->
+    <div id="order-detail-screen" class="screen">
+      <div class="wx-nav"><div class="back" onclick="backTo('orders')"></div>配货单详情</div>
+      <div style="flex:1;overflow-y:auto;">
+        <div class="detail-group fade-in">
+          <div class="detail-row"><span class="label">单号</span><span class="value" id="od-no">PO-2025-0138</span></div>
+          <div class="detail-row"><span class="label">状态</span><span class="value" id="od-status"></span></div>
+          <div class="detail-row"><span class="label">客户</span><span class="value" id="od-customer">金川集团</span></div>
+          <div class="detail-row"><span class="label">产品类型</span><span class="value">电积镍</span></div>
+          <div class="detail-row"><span class="label">目标牌号</span><span class="value">Ni9996</span></div>
+          <div class="detail-row"><span class="label">总重量</span><span class="value">29.4 t</span></div>
+          <div class="detail-row"><span class="label">总件数</span><span class="value">144 件</span></div>
+          <div class="detail-row"><span class="label">创建时间</span><span class="value">2025-04-22 14:30</span></div>
+        </div>
+        <div class="section-title">配货明细</div>
+        <div class="detail-group fade-in">
+          <div class="od-item">
+            <div><div style="font-weight:500;">N2025-0156</div><div style="font-size:12px;color:var(--text2);">Ni9996 · 1000×500×8</div></div>
+            <div style="text-align:right;font-weight:500;">2.45t / 12件</div>
+          </div>
+          <div class="od-item">
+            <div><div style="font-weight:500;">N2025-0163</div><div style="font-size:12px;color:var(--text2);">Ni9999 · 1000×500×10</div></div>
+            <div style="text-align:right;font-weight:500;">3.12t / 16件</div>
+          </div>
+          <div class="od-item">
+            <div><div style="font-weight:500;">N2025-0182</div><div style="font-size:12px;color:var(--text2);">Ni9996 · 1000×500×8</div></div>
+            <div style="text-align:right;font-weight:500;">2.78t / 14件</div>
+          </div>
+        </div>
+        <div id="od-driver-card" class="detail-group fade-in" style="display:none;">
+          <div class="detail-row"><span class="label">司机</span><span class="value" id="od-driver">张伟</span></div>
+          <div class="detail-row"><span class="label">车牌号</span><span class="value" id="od-vehicle">甘A·88756</span></div>
+        </div>
+        <div style="height:72px;"></div>
+      </div>
+      <div class="od-action-bar" id="od-actions"></div>
+    </div>
+
+    <!-- Mine -->
+    <div id="mine-screen" class="screen">
+      <div class="wx-nav">我的</div>
+      <div class="mine-card fade-in">
+        <div class="mine-top">
+          <div class="mine-avatar">管</div>
+          <div><div class="mine-name">管理员</div><div class="mine-id">ID: admin</div></div>
+        </div>
+      </div>
+      <div class="cell-group fade-in">
+        <div class="wx-cell"><div class="left">📢 消息通知</div><div class="right"></div></div>
+        <div class="wx-cell"><div class="left">⚙️ 系统设置</div><div class="right"></div></div>
+        <div class="wx-cell"><div class="left">📊 数据导出</div><div class="right"></div></div>
+        <div class="wx-cell"><div class="left">❓ 帮助中心</div><div class="right"></div></div>
+        <div class="wx-cell" onclick="doLogout()"><div class="left" style="color:var(--red);">🚪 退出登录</div><div class="right"></div></div>
+      </div>
+    </div>
+
+    <!-- Ship Modal -->
+    <div class="modal-overlay" id="ship-modal">
+      <div class="modal-sheet">
+        <h3>确认发货</h3>
+        <input class="wx-input" id="ship-driver" placeholder="请输入司机姓名" value="张伟">
+        <input class="wx-input" id="ship-vehicle" placeholder="请输入车牌号" value="甘A·88756">
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button style="flex:1;height:44px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:15px;cursor:pointer;" onclick="closeShipModal()">取消</button>
+          <button class="wx-btn" style="flex:1;height:44px;margin-top:0;" onclick="confirmShip()">确认</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabbar" id="tabbar" style="display:none;">
+      <div class="tab active" onclick="switchTab('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>首页</span>
+      </div>
+      <div class="tab" onclick="switchTab('inventory')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        <span>库存</span>
+      </div>
+      <div class="tab" onclick="switchTab('orders')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>配货</span>
+      </div>
+      <div class="tab" onclick="switchTab('mine')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>我的</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const screens = ['login','home','inventory','inv-detail','ai','orders','order-detail','mine'];
+    const tabMap = { home:0, inventory:1, orders:2, mine:3 };
+
+    function showScreen(name) {
+      screens.forEach(s => { const el=document.getElementById(s+'-screen'); if(el){el.classList.remove('active');el.style.display='none';} });
+      const el=document.getElementById(name+'-screen'); if(el){el.classList.add('active');el.style.display='flex';}
+    }
+    function switchTab(name) {
+      showScreen(name); document.getElementById('tabbar').style.display='flex';
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      if(tabMap[name]!==undefined) document.querySelectorAll('.tab')[tabMap[name]].classList.add('active');
+    }
+    function doLogin() { switchTab('home'); }
+    function doLogout() { document.getElementById('tabbar').style.display='none'; showScreen('login'); }
+    function showInvDetail(id) {
+      const data={
+        1:{packageNo:'PK-2025-A0312',batchNo:'N2025-0156',grade:'Ni9996',productType:'电积镍',spec:'1000×500×8mm',weight:'2.45 t',pieceCount:'12 件',location:'A-03-12',nickel:'≥99.96%',impurity:'C≤0.01%',inspDate:'2025-04-20',certNo:'QC-2025-0892',remark:'-'},
+        2:{packageNo:'PK-2025-B0105',batchNo:'N2025-0163',grade:'Ni9999',productType:'电积镍',spec:'1000×500×10mm',weight:'3.12 t',pieceCount:'16 件',location:'B-01-05',nickel:'≥99.99%',impurity:'C≤0.005%',inspDate:'2025-04-21',certNo:'QC-2025-0901',remark:'高纯度'},
+        3:{packageNo:'PK-2025-A0508',batchNo:'N2025-0178',grade:'Ni9990',productType:'电积镍',spec:'800×400×6mm',weight:'1.86 t',pieceCount:'8 件',location:'A-05-08',nickel:'≥99.90%',impurity:'C≤0.02%',inspDate:'-',certNo:'-',remark:'待检验'},
+        4:{packageNo:'PK-2025-C0211',batchNo:'N2025-0182',grade:'Ni9996',productType:'电积镍',spec:'1000×500×8mm',weight:'2.78 t',pieceCount:'14 件',location:'C-02-11',nickel:'≥99.96%',impurity:'C≤0.01%',inspDate:'2025-04-22',certNo:'QC-2025-0915',remark:'-'},
+      };
+      const d=data[id]||data[1];
+      ['packageNo','batchNo','grade','productType','spec','weight','pieceCount','location','nickel','impurity','inspDate','certNo','remark'].forEach(k=>{
+        const el=document.getElementById('d-'+k); if(el) el.textContent=d[k];
+      });
+      showScreen('inv-detail');
+    }
+    function backTo(s) { switchTab(s); }
+    function doRecognize() { document.getElementById('ai-capture').style.display='none'; document.getElementById('ai-results').style.display='block'; }
+    function resetAI() { document.getElementById('ai-capture').style.display='flex'; document.getElementById('ai-results').style.display='none'; }
+    function confirmImport() { alert('✅ 已成功导入 3 条库存记录！'); resetAI(); switchTab('inventory'); }
+    function switchOrderTab(el,status) {
+      document.querySelectorAll('.wx-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
+      ['draft','shipping','shipped'].forEach(s=>{ document.getElementById('order-list-'+s).style.display=s===status?'block':'none'; });
+    }
+    function showOrderDetail(orderNo,status) {
+      document.getElementById('od-no').textContent=orderNo;
+      const sm={draft:'待发货',shipping:'已发货',shipped:'已完成'},bm={draft:'badge-draft',shipping:'badge-shipping',shipped:'badge-shipped'};
+      document.getElementById('od-status').innerHTML=`<span class="badge ${bm[status]}">${sm[status]}</span>`;
+      const cm={'PO-2025-0138':'金川集团','PO-2025-0141':'新疆新鑫','PO-2025-0139':'广西银亿','PO-2025-0143':'吉林吉恩','PO-2025-0135':'金川集团'};
+      document.getElementById('od-customer').textContent=cm[orderNo]||'客户';
+      const actions=document.getElementById('od-actions'),dc=document.getElementById('od-driver-card');
+      if(status==='draft'){dc.style.display='none';actions.innerHTML=`<button class="wx-btn" style="flex:1;" onclick="openShipModal()">确认发货</button><button class="wx-btn-warn" style="flex:1;">取消配货</button>`;}
+      else if(status==='shipping'){dc.style.display='block';actions.innerHTML=`<button class="wx-btn" style="flex:1;background:var(--green);">确认发运</button><button class="wx-btn-warn" style="flex:1;">取消</button>`;}
+      else{dc.style.display='none';actions.innerHTML=`<button style="flex:1;height:44px;border-radius:8px;background:var(--bg);color:var(--text2);font-size:15px;border:none;">查看详情</button>`;}
+      showScreen('order-detail');
+    }
+    function openShipModal(){document.getElementById('ship-modal').classList.add('show');}
+    function closeShipModal(){document.getElementById('ship-modal').classList.remove('show');}
+    function confirmShip(){closeShipModal();alert('✅ 发货成功！');}
+  </script>
+</body>
+</html>

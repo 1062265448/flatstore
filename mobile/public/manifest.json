@@ -1,0 +1,16 @@
+{
+  "name": "平面库配货",
+  "short_name": "Flatstore",
+  "description": "平面库库存配货管理系统",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAFA",
+  "theme_color": "#0066FF",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

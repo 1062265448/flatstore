@@ -265,7 +265,6 @@
     <!-- AI 识别对话框 -->
     <el-dialog v-model="showAiRecognize" title="AI 图像识别" width="600px" destroy-on-close>
       <el-upload
-        ref="uploadRef"
         class="upload-area"
         drag
         :auto-upload="false"
@@ -294,7 +293,6 @@ import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import * as api from '@/api/distribution'
-import type { AxiosError, AxiosResponse } from 'axios'
 
 interface LogItem {
   time: string
@@ -310,7 +308,6 @@ interface LogItem {
 const activeTab = ref('statistics')
 const loading = ref(false)
 const logs = ref<LogItem[]>([])
-const uploadRef = ref()
 const selectedFile = ref<File | null>(null)
 const previewUrl = ref('')
 
@@ -483,7 +480,7 @@ const handleBatchCreateInventory = async () => {
         location: location?.trim() || '',
       }
     })
-    const res = await api.batchCreateInventory(items)
+    const res = await api.batchCreateInventory({ items })
     addLog({
       method: 'POST',
       url: '/distribution/inventory/batch',

@@ -12,8 +12,8 @@ export const useOrderStore = defineStore('order', () => {
   const fetchOrders = async (params: OrderQuery = {}) => {
     loading.value = true
     try {
-      // ⚠️ Axios 已解包，res.data 直接是数组
-      const res = await api.getOrderList(params)
+      // ⚠️ Axios 已解包，res 直接是 PaginatedResponse
+      const res = await api.getOrderList(params) as any
       orderList.value = res.data
       total.value = res.total
     } finally {
@@ -24,8 +24,8 @@ export const useOrderStore = defineStore('order', () => {
   const fetchOrderById = async (id: number) => {
     loading.value = true
     try {
-      const res = await api.getOrderById(id)
-      currentOrder.value = res as DistributionOrder
+      const res = await api.getOrderById(id) as any
+      currentOrder.value = res
       return res
     } finally {
       loading.value = false

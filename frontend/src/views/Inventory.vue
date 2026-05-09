@@ -238,7 +238,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, inject, onMounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import type { InventoryStock, CreateInventoryDto } from '@/types'
 
 const inventoryStore = useInventoryStore()
