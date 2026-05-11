@@ -14,19 +14,47 @@
             v-model="queryForm.keyword"
             type="text"
             class="search-input"
-            placeholder="搜索批号、品级、规格..."
+            placeholder="搜索批号、规格、位置..."
             @keyup.enter="handleSearch"
           />
           <button v-if="queryForm.keyword" class="search-clear" @click="clearSearch">✕</button>
         </div>
 
-        <input
-          v-model="queryForm.grade"
-          type="text"
-          class="filter-input"
-          placeholder="品级"
-          @keyup.enter="handleSearch"
-        />
+        <select v-model="queryForm.grade" class="filter-select">
+          <option value="">全部品级</option>
+          <option value="9997">Ni9997</option>
+          <option value="9996">Ni9996</option>
+          <option value="9950">Ni9950</option>
+          <option value="9920">Ni9920</option>
+        </select>
+
+        <select v-model="queryForm.productType" class="filter-select">
+          <option value="">全部类型</option>
+          <option value="电解镍">电解镍</option>
+          <option value="电积镍">电积镍</option>
+          <option value="不锈钢专用镍">不锈钢专用镍</option>
+          <option value="电镀专用镍">电镀专用镍</option>
+        </select>
+
+        <select v-model="queryForm.specification" class="filter-select">
+          <option value="">全部规格</option>
+          <option value="整板">整板</option>
+          <option value="镍条">镍条</option>
+          <option value="100*100">100*100</option>
+          <option value="50*50">50*50</option>
+          <option value="25*25">25*25</option>
+        </select>
+
+        <div class="date-picker-wrap">
+          <span v-if="!queryForm.dateFrom" class="date-placeholder" @click="focusDateInput">全部日期</span>
+          <input
+            ref="dateInputRef"
+            v-model="queryForm.dateFrom"
+            type="date"
+            class="filter-input filter-date date-input-native"
+            title="创建日期"
+          />
+        </div>
 
         <select v-model="queryForm.status" class="filter-select">
           <option value="">全部状态</option>
@@ -244,12 +272,18 @@ import type { InventoryStock, CreateInventoryDto } from '@/types'
 const inventoryStore = useInventoryStore()
 const showToast = inject('showToast') as (message: string, type?: string) => void
 
+const dateInputRef = ref<HTMLInputElement | null>(null)
+const focusDateInput = () => dateInputRef.value?.showPicker?.()
+
 const queryForm = reactive({
   page: 1,
   limit: 20,
   keyword: '',
   grade: '',
+  productType: '',
+  specification: '',
   status: '',
+  dateFrom: '',
 })
 
 const selectedRows = ref<InventoryStock[]>([])
@@ -300,14 +334,20 @@ const handleSearch = () => {
     limit: queryForm.limit,
     keyword: queryForm.keyword || undefined,
     grade: queryForm.grade || undefined,
+    productType: queryForm.productType || undefined,
+    specification: queryForm.specification || undefined,
     status: queryForm.status || undefined,
+    dateFrom: queryForm.dateFrom || undefined,
   })
 }
 
 const handleReset = () => {
   queryForm.keyword = ''
   queryForm.grade = ''
+  queryForm.productType = ''
+  queryForm.specification = ''
   queryForm.status = ''
+  queryForm.dateFrom = ''
   queryForm.page = 1
   handleSearch()
 }
@@ -510,6 +550,44 @@ onMounted(() => {
 
 .filter-select {
   cursor: pointer;
+}
+
+.date-picker-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 130px;
+}
+.date-picker-wrap .date-placeholder {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  pointer-events: auto;
+  transition: all var(--transition-fast);
+  user-select: none;
+  z-index: 2;
+}
+.date-picker-wrap .date-placeholder:hover {
+  border-color: var(--color-primary);
+}
+.date-picker-wrap .filter-date {
+  min-width: 130px;
+  font-size: var(--font-size-sm);
+  padding-left: 10px;
+  padding-right: 10px;
+  width: 100%;
+  z-index: 1;
+  position: relative;
 }
 
 .action-section {

@@ -62,6 +62,8 @@ export interface InventoryQuery {
   grade?: string
   status?: string
   productType?: string
+  specification?: string
+  dateFrom?: string
 }
 
 // 客户
@@ -194,6 +196,7 @@ export interface RecognitionHistoryQuery {
   page?: number
   limit?: number
   status?: string
+  timeRange?: string
 }
 
 // 统计

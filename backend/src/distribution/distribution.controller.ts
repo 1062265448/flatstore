@@ -51,8 +51,10 @@ export class DistributionController {
     @Query('grade') grade?: string,
     @Query('status') status?: string,
     @Query('productType') productType?: string,
+    @Query('specification') specification?: string,
+    @Query('dateFrom') dateFrom?: string,
   ) {
-    return this.service.getInventoryList({ page, limit, keyword, grade, status, productType });
+    return this.service.getInventoryList({ page, limit, keyword, grade, status, productType, specification, dateFrom });
   }
 
   @Get('inventory/search')
@@ -258,8 +260,9 @@ export class DistributionController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('status') status?: string,
+    @Query('timeRange') timeRange?: string,
   ) {
-    return this.service.getRecognitionHistory({ page, limit, status });
+    return this.service.getRecognitionHistory({ page, limit, status, timeRange });
   }
 
   @Delete('recognition-history/:id')

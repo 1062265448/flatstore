@@ -104,6 +104,8 @@ export class DistributionService {
     grade?: string;
     status?: string;
     productType?: string;
+    specification?: string;
+    dateFrom?: string;
   }) {
     const page = Math.max(1, Number(params.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(params.limit) || 20));
@@ -121,6 +123,13 @@ export class DistributionService {
     if (params.grade) where.grade = params.grade;
     if (params.status) where.status = params.status;
     if (params.productType) where.productType = params.productType;
+    if (params.specification) where.specification = { contains: params.specification };
+    if (params.dateFrom) {
+      const from = new Date(params.dateFrom);
+      const to = new Date(params.dateFrom);
+      to.setHours(23, 59, 59, 999);
+      where.createdAt = { gte: from, lte: to } as any;
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.inventoryStock.findMany({
@@ -654,13 +663,20 @@ export class DistributionService {
 
   // ==================== AI 识别历史 ====================
 
-  async getRecognitionHistory(params: { page?: number; limit?: number; status?: string }) {
+  async getRecognitionHistory(params: { page?: number; limit?: number; status?: string; timeRange?: string }) {
     const page = Math.max(1, Number(params.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(params.limit) || 20));
     const skip = (page - 1) * limit;
 
     const where: Prisma.AiRecognitionHistoryWhereInput = {};
     if (params.status) where.status = params.status;
+    if (params.timeRange === 'today') {
+      const start = new Date(); start.setHours(0, 0, 0, 0);
+      where.createdAt = { gte: start } as any;
+    } else if (params.timeRange === 'week') {
+      const start = new Date(); start.setDate(start.getDate() - start.getDay()); start.setHours(0, 0, 0, 0);
+      where.createdAt = { gte: start } as any;
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.aiRecognitionHistory.findMany({

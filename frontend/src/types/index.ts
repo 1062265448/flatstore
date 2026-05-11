@@ -62,6 +62,8 @@ export interface InventoryQuery {
   grade?: string
   status?: string
   productType?: string
+  specification?: string
+  dateFrom?: string
 }
 
 // 客户

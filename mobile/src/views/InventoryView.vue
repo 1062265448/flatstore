@@ -5,15 +5,44 @@
       <h1 class="header-title">库存</h1>
     </div>
 
-    <SearchBar v-model="keyword" placeholder="搜索批号、品级、位置" @search="handleSearch" />
+    <SearchBar v-model="keyword" placeholder="搜索批号、规格、位置" @search="handleSearch" />
 
+    <!-- 统计卡片，可点击作为状态筛选 -->
     <div class="stats">
-      <StatCard :value="stats?.inventory.total || 0" label="总批次" />
-      <StatCard :value="stats?.inventory.available || 0" label="可用" value-color="var(--green)" />
-      <StatCard :value="stats?.inventory.reserved || 0" label="预留" value-color="var(--amber)" />
+      <StatCard
+        :value="stats?.inventory.total || 0"
+        label="总批次"
+        :highlight="selectedStatus === ''"
+        @click="selectStatus('')"
+      />
+      <StatCard
+        :value="stats?.inventory.available || 0"
+        label="可用"
+        :highlight="selectedStatus === 'available'"
+        value-color="var(--green)"
+        @click="selectStatus('available')"
+      />
+      <StatCard
+        :value="stats?.inventory.reserved || 0"
+        label="预留"
+        :highlight="selectedStatus === 'reserved'"
+        value-color="var(--amber)"
+        @click="selectStatus('reserved')"
+      />
     </div>
 
     <FilterPills :pills="gradeFilters" v-model="selectedGrade" />
+
+    <div class="filter-row-label">类型</div>
+    <FilterPills :pills="productTypeFilters" v-model="selectedProductType" />
+
+    <div class="filter-row-label">规格</div>
+    <FilterPills :pills="specFilters" v-model="selectedSpec" />
+
+    <div class="filter-row-label">日期</div>
+    <div class="date-row">
+      <input v-model="selectedDate" type="date" class="date-input-single" title="创建日期" />
+    </div>
 
     <div class="list">
       <div v-if="inventoryStore.loading" class="loading-state">
@@ -54,6 +83,10 @@ const stats = ref(statisticsStore.stats)
 
 const keyword = ref('')
 const selectedGrade = ref('')
+const selectedProductType = ref('')
+const selectedSpec = ref('')
+const selectedStatus = ref('')
+const selectedDate = ref('')
 const page = reactive({ current: 1, size: 20 })
 
 const gradeFilters = [
@@ -62,6 +95,23 @@ const gradeFilters = [
   { label: 'Ni9996', value: '9996' },
   { label: 'Ni9950', value: '9950' },
   { label: 'Ni9920', value: '9920' },
+]
+
+const productTypeFilters = [
+  { label: '全部', value: '' },
+  { label: '电解镍', value: '电解镍' },
+  { label: '电积镍', value: '电积镍' },
+  { label: '不锈钢', value: '不锈钢专用镍' },
+  { label: '电镀镍', value: '电镀专用镍' },
+]
+
+const specFilters = [
+  { label: '全部', value: '' },
+  { label: '整板', value: '整板' },
+  { label: '镍条', value: '镍条' },
+  { label: '100*100', value: '100*100' },
+  { label: '50*50', value: '50*50' },
+  { label: '25*25', value: '25*25' },
 ]
 
 const hasMore = ref(false)
@@ -73,6 +123,10 @@ const fetchData = async (reset = false) => {
     limit: page.size,
     keyword: keyword.value || undefined,
     grade: selectedGrade.value || undefined,
+    productType: selectedProductType.value || undefined,
+    specification: selectedSpec.value || undefined,
+    status: selectedStatus.value || undefined,
+    dateFrom: selectedDate.value || undefined,
   })
   hasMore.value = inventoryStore.inventoryList.length < inventoryStore.total
 }
@@ -83,7 +137,13 @@ const loadMore = () => {
   fetchData()
 }
 
-watch(selectedGrade, () => fetchData(true))
+// Watch all filter pills and date for changes
+watch([selectedGrade, selectedProductType, selectedSpec, selectedStatus, selectedDate], () => fetchData(true))
+
+// 点击统计卡片切换状态筛选
+const selectStatus = (status: string) => {
+  selectedStatus.value = status
+}
 
 onMounted(async () => {
   await Promise.all([fetchData(), statisticsStore.fetchStatistics()])
@@ -117,6 +177,34 @@ onMounted(async () => {
   gap: 8px;
   padding: 0 20px 16px;
 }
+
+.filter-row-label {
+  padding: 10px 20px 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+.date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px 8px;
+}
+.date-input-single {
+  flex: 1;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  font-family: inherit;
+}
+.date-input-single:focus { border-color: var(--accent); }
+
 .list {
   padding: 0 20px;
 }

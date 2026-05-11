@@ -35,12 +35,19 @@
       <!-- 操作按钮 -->
       <div class="camera-actions">
         <button class="camera-btn" @click="takePhoto">
-          <span class="btn-icon">📷</span>
+          <svg class="cam-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
           <span class="btn-text">拍照</span>
         </button>
         <button class="camera-btn" @click="pickFromAlbum">
-          <span class="btn-icon">🖼</span>
-          <span class="btn-text">相册选择</span>
+          <svg class="cam-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <span class="btn-text">相册</span>
         </button>
       </div>
 
@@ -58,7 +65,11 @@
 
       <!-- 错误信息 -->
       <div v-if="errorMessage" class="error-msg">
-        <span class="error-icon">✕</span>
+        <svg class="error-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
         <span class="error-text">{{ errorMessage }}</span>
         <button class="error-retry" @click="handleRecognize">重试</button>
       </div>
@@ -73,40 +84,42 @@
           :key="index"
           class="result-card"
         >
-          <div class="result-card-header">
-            <span class="result-index">{{ index + 1 }}</span>
-            <span class="result-batch">{{ item.batchNo || '-' }}</span>
-            <span class="result-grade">{{ item.grade }}</span>
+          <div class="result-card-top">
+            <div class="result-index">#{{ index + 1 }}</div>
+            <div class="result-batch">{{ item.batchNo || '-' }}</div>
+            <span class="result-grade-tag">{{ item.grade }}</span>
           </div>
           <div class="result-card-body">
-            <div class="result-field">
-              <span class="field-label">包号</span>
-              <span class="field-value">{{ item.packageNo || '-' }}</span>
+            <div class="result-row">
+              <span class="row-label">包号</span>
+              <span class="row-value">{{ item.packageNo || '-' }}</span>
             </div>
-            <div class="result-field">
-              <span class="field-label">产品类型</span>
-              <span class="field-value">{{ item.productType || '-' }}</span>
+            <div class="result-row">
+              <span class="row-label">产品类型</span>
+              <span class="row-value">{{ item.productType || '-' }}</span>
             </div>
-            <div class="result-field">
-              <span class="field-label">净重</span>
-              <span class="field-value">{{ item.netWeight ? item.netWeight.toFixed(3) + ' 吨' : '-' }}</span>
+            <div class="result-row-group">
+              <div class="result-row-inline">
+                <span class="row-label">净重</span>
+                <span class="row-value highlight">{{ item.netWeight ? item.netWeight.toFixed(3) + 't' : '-' }}</span>
+              </div>
+              <div class="result-row-inline">
+                <span class="row-label">块数</span>
+                <span class="row-value highlight">{{ item.pieceCount || '-' }}</span>
+              </div>
             </div>
-            <div class="result-field">
-              <span class="field-label">块数</span>
-              <span class="field-value">{{ item.pieceCount || '-' }}</span>
+            <div v-if="item.inspector" class="result-row">
+              <span class="row-label">检验员</span>
+              <span class="row-value">{{ item.inspector }}</span>
             </div>
-            <div class="result-field" v-if="item.inspector">
-              <span class="field-label">检验员</span>
-              <span class="field-value">{{ item.inspector }}</span>
-            </div>
-            <div class="result-field" v-if="item.date">
-              <span class="field-label">日期</span>
-              <span class="field-value">{{ item.date }}</span>
+            <div v-if="item.date" class="result-row">
+              <span class="row-label">日期</span>
+              <span class="row-value">{{ item.date }}</span>
             </div>
           </div>
         </div>
         <button class="btn-import" :disabled="importing" @click="handleImport">
-          {{ importing ? '导入中...' : '导入全部到库存' }}
+          导入全部到库存 ({{ recognizeResults.length }})
         </button>
       </div>
       <button
@@ -155,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { Capacitor } from '@capacitor/core'
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { aiRecognize, getRecognitionHistory, batchCreateInventory } from '@/api/distribution'
@@ -193,7 +206,7 @@ const results = ref<{ label: string; value: string }[]>([])
 const fetchHistory = async () => {
   historyLoading.value = true
   try {
-    const res = await getRecognitionHistory({ limit: 50, status: undefined }) as any
+    const res = await getRecognitionHistory({ limit: 50, status: undefined, timeRange: selectedTime.value || undefined }) as any
     historyList.value = res.data || []
     historyTotal.value = res.total || 0
   } catch (e: any) {
@@ -202,6 +215,9 @@ const fetchHistory = async () => {
     historyLoading.value = false
   }
 }
+
+// 监听时间筛选变化
+watch(selectedTime, () => fetchHistory())
 
 const viewHistoryDetail = (item: AiRecognitionHistory) => {
   currentHistory.value = item
@@ -446,7 +462,7 @@ onMounted(fetchHistory)
   color: var(--text-secondary);
   border: 1px solid var(--border);
 }
-.btn-icon { font-size: 18px; }
+.cam-icon { opacity: 0.8; }
 .btn-text { font-size: 14px; font-weight: 500; }
 
 /* 预览 */
@@ -497,7 +513,7 @@ onMounted(fetchHistory)
   border-radius: 12px;
   margin: 12px 0;
 }
-.error-icon { color: var(--red); font-size: 14px; }
+.error-icon-svg { color: var(--red); flex-shrink: 0; }
 .error-text { flex: 1; font-size: 13px; color: var(--red); }
 .error-retry {
   padding: 6px 14px;
@@ -509,16 +525,104 @@ onMounted(fetchHistory)
 }
 
 /* 结果 */
-.results { margin-top: 20px; }
-.result-line {
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.result-header {
+  display: flex;
+  align-items: center;
+  padding-bottom: 4px;
+}
+.result-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.result-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.result-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.result-index {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 2px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.result-batch {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.result-grade-tag {
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--green-soft);
+  color: var(--green);
+  padding: 3px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.result-card-body {
+  padding: 4px 0;
+}
+.result-row {
   display: flex;
   justify-content: space-between;
-  padding: 12px 0;
+  align-items: center;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--border);
-  font-size: 14px;
 }
-.rl { color: var(--text-tertiary); }
-.rv { font-weight: 600; font-variant-numeric: tabular-nums; }
+.result-row:last-child { border-bottom: none; }
+.row-label {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.row-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.row-value.highlight {
+  font-weight: 600;
+  color: var(--accent);
+}
+.result-row-group {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+.result-row-inline {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+}
+.result-row-inline:first-child {
+  border-right: 1px solid var(--border);
+}
 
 .btn-import, .btn-recognize {
   width: 100%;
