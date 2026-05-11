@@ -64,6 +64,23 @@ router.beforeEach((to, _from, next) => {
   document.title = `${to.meta.title || '平面库'} — 平面库配货`
   const requiresAuth = to.matched.some(r => r.meta.requiresAuth)
   const token = localStorage.getItem('token')
+
+  // Token 过期验证
+  if (requiresAuth && token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      if (payload.exp && Date.now() >= payload.exp * 1000) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        next({ path: '/login', query: { redirect: to.fullPath } })
+        return
+      }
+    } catch {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+    }
+  }
+
   if (requiresAuth && !token) {
     next({ path: '/login', query: { redirect: to.fullPath } })
   } else if (to.path === '/login' && token) {

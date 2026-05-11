@@ -340,7 +340,7 @@ const handleImport = async () => {
       batchNo: r.batchNo || '',
       grade: r.grade || '',
       productType: r.productType || '',
-      weight: r.netWeight || 0,
+      weight: (r.netWeight || 0) * 1000,
       pieceCount: r.pieceCount || 0,
       packageNo: String(r.packageNo || ''),
     }))

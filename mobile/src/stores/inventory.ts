@@ -11,9 +11,15 @@ export const useInventoryStore = defineStore('inventory', () => {
   const fetchInventory = async (params: InventoryQuery = {}, append = false) => {
     loading.value = true
     try {
-      const res = await api.getInventoryList(params) as any
+      const res = await api.getInventoryList(params) as { data: InventoryStock[]; total: number }
       inventoryList.value = append ? [...inventoryList.value, ...res.data] : res.data
       total.value = res.total
+    } catch (error) {
+      // 错误已在 API 拦截器中提示
+      if (!append) {
+        inventoryList.value = []
+        total.value = 0
+      }
     } finally {
       loading.value = false
     }

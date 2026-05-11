@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import * as api from '@/api/distribution'
-import type { LoginRequest, RegisterRequest, LoginResponse } from '@/types'
+import type { LoginRequest, LoginResponse } from '@/types'
 import router from '@/router'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -41,16 +41,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const register = async (credentials: RegisterRequest) => {
-    loading.value = true
-    try {
-      await api.register(credentials)
-      await login({ username: credentials.username, password: credentials.password })
-    } finally {
-      loading.value = false
-    }
-  }
-
   const logout = () => {
     clearAuth()
     router.push('/login')
@@ -70,5 +60,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { token, user, loading, isAuthenticated, login, register, logout, initAuth }
+  return { token, user, loading, isAuthenticated, login, logout, initAuth }
 })
