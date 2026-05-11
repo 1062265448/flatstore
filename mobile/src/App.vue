@@ -23,7 +23,12 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import TabBar from '@/components/TabBar.vue'
-import { toasts } from '@/composables/useToast'
+import { useToast, toasts } from '@/composables/useToast'
+
+const { show: showToast, success, warning, danger } = useToast()
+
+// Expose toast globally for components that don't import useToast
+;(window as any).__toast = { show: showToast, success, warning, danger }
 
 const route = useRoute()
 

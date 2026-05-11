@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import * as api from '@/api/distribution'
 import type { DistributionOrder, CreateOrderDto, ShipOrderDto, OrderQuery } from '@/types'
 
@@ -13,9 +13,13 @@ export const useOrderStore = defineStore('order', () => {
   const fetchOrders = async (params: OrderQuery = {}) => {
     loadingList.value = true
     try {
-      const res = await api.getOrderList(params) as any
+      const res = await api.getOrderList(params) as { data: DistributionOrder[]; total: number }
       orderList.value = res.data
       total.value = res.total
+    } catch (error) {
+      // 错误已在 API 拦截器中提示
+      orderList.value = []
+      total.value = 0
     } finally {
       loadingList.value = false
     }
@@ -24,9 +28,12 @@ export const useOrderStore = defineStore('order', () => {
   const fetchOrderById = async (id: number) => {
     loadingDetail.value = true
     try {
-      const res = await api.getOrderById(id) as any
+      const res = await api.getOrderById(id) as DistributionOrder
       currentOrder.value = res
       return res
+    } catch (error) {
+      // 错误已在 API 拦截器中提示
+      currentOrder.value = null
     } finally {
       loadingDetail.value = false
     }
@@ -53,8 +60,5 @@ export const useOrderStore = defineStore('order', () => {
     await api.deleteOrder(id)
   }
 
-  // Backward compat: expose `loading` as computed from both
-  const loading = ref(false)
-
-  return { orderList, currentOrder, total, loading, loadingList, loadingDetail, fetchOrders, fetchOrderById, createOrder, shipOrder, deliverOrder, cancelOrder, deleteOrder }
+  return { orderList, currentOrder, total, loading: computed(() => loadingList.value || loadingDetail.value), loadingList, loadingDetail, fetchOrders, fetchOrderById, createOrder, shipOrder, deliverOrder, cancelOrder, deleteOrder }
 })

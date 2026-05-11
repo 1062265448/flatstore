@@ -47,6 +47,13 @@ request.interceptors.response.use(
       localStorage.removeItem('user')
       window.location.href = '/login'
     }
+    // 网络错误检测（无 response 且非超时）
+    if (!error.response && !error.message.includes('timeout')) {
+      if (!navigator.onLine) {
+        error.response = error.response || {}
+        error.response.data = { message: '网络连接已断开，请检查网络设置' }
+      }
+    }
     // 确保错误信息能被正确读取
     if (!error.response?.data?.message && error.message) {
       error.response = error.response || {}
