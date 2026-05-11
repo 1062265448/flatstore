@@ -21,7 +21,7 @@ async function bootstrap() {
       // 允许无 origin 的请求（如 Capacitor、Postman）
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
-      callback(null, true); // 开发环境允许所有来源
+      callback(new Error('CORS 拒绝: 不允许的来源 ' + origin));
     },
     credentials: true,
   });

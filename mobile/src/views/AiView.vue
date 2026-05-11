@@ -63,14 +63,50 @@
         <button class="error-retry" @click="handleRecognize">重试</button>
       </div>
 
-      <!-- 识别结果 -->
-      <div v-if="results.length" class="results">
-        <div class="result-line" v-for="(r, i) in results" :key="i">
-          <span class="rl">{{ r.label }}</span>
-          <span class="rv">{{ r.value }}</span>
+      <!-- 识别结果列表 -->
+      <div v-if="recognizeResults.length" class="results-list">
+        <div class="result-header">
+          <span class="result-count">识别到 {{ recognizeResults.length }} 条记录</span>
+        </div>
+        <div
+          v-for="(item, index) in recognizeResults"
+          :key="index"
+          class="result-card"
+        >
+          <div class="result-card-header">
+            <span class="result-index">{{ index + 1 }}</span>
+            <span class="result-batch">{{ item.batchNo || '-' }}</span>
+            <span class="result-grade">{{ item.grade }}</span>
+          </div>
+          <div class="result-card-body">
+            <div class="result-field">
+              <span class="field-label">包号</span>
+              <span class="field-value">{{ item.packageNo || '-' }}</span>
+            </div>
+            <div class="result-field">
+              <span class="field-label">产品类型</span>
+              <span class="field-value">{{ item.productType || '-' }}</span>
+            </div>
+            <div class="result-field">
+              <span class="field-label">净重</span>
+              <span class="field-value">{{ item.netWeight ? item.netWeight.toFixed(3) + ' 吨' : '-' }}</span>
+            </div>
+            <div class="result-field">
+              <span class="field-label">块数</span>
+              <span class="field-value">{{ item.pieceCount || '-' }}</span>
+            </div>
+            <div class="result-field" v-if="item.inspector">
+              <span class="field-label">检验员</span>
+              <span class="field-value">{{ item.inspector }}</span>
+            </div>
+            <div class="result-field" v-if="item.date">
+              <span class="field-label">日期</span>
+              <span class="field-value">{{ item.date }}</span>
+            </div>
+          </div>
         </div>
         <button class="btn-import" :disabled="importing" @click="handleImport">
-          {{ importing ? '导入中...' : '导入到库存' }}
+          {{ importing ? '导入中...' : '导入全部到库存' }}
         </button>
       </div>
       <button
@@ -277,7 +313,6 @@ const handleRecognize = async () => {
   if (!selectedFile.value) return
   recognizing.value = true
   errorMessage.value = ''
-  results.value = []
 
   try {
     // 后端返回 { results: [...], historyId: N }
@@ -285,22 +320,7 @@ const handleRecognize = async () => {
     const aiResults = (res as any)?.results || []
     recognizeResults.value = Array.isArray(aiResults) ? aiResults : []
 
-    if (recognizeResults.value.length) {
-      // 显示所有识别结果
-      results.value = []
-      recognizeResults.value.forEach((item, index) => {
-        results.value.push(
-          { label: `#${index + 1} 包号`, value: String(item.packageNo || '-') },
-          { label: `#${index + 1} 批号`, value: item.batchNo || '-' },
-          { label: `#${index + 1} 品级`, value: item.grade || '-' },
-          { label: `#${index + 1} 重量`, value: item.netWeight ? item.netWeight.toFixed(3) + ' 吨' : '-' },
-          { label: `#${index + 1} 块数`, value: String(item.pieceCount || '-') },
-        )
-        if (index < recognizeResults.value.length - 1) {
-          results.value.push({ label: '---', value: '' })
-        }
-      })
-    } else {
+    if (!recognizeResults.value.length) {
       errorMessage.value = '未识别到结果，请重试'
     }
   } catch (e: any) {

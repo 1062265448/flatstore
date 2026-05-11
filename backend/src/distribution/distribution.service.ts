@@ -12,23 +12,32 @@ import { customAlphabet } from 'nanoid';
 const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 10);
 const generateOrderNo = () => `ORD-${nanoid()}`;
 
-// 统计缓存
 const STATS_CACHE_TTL = 30000; // 30 秒
-let statsCache: { data: any; timestamp: number } | null = null;
 
 @Injectable()
 export class DistributionService {
+  private statsCache: { data: any; timestamp: number } | null = null;
+
   constructor(
     private prisma: PrismaService,
     private qwenAI: QwenAIService,
   ) {}
 
+  /** 主动清除统计缓存 */
+  private invalidateStatsCache() {
+    this.statsCache = null;
+  }
+
+  private setStatsCache(data: any) {
+    this.statsCache = { data, timestamp: Date.now() };
+  }
+
   // ==================== 统计 ====================
 
   async getStatistics() {
     const now = Date.now();
-    if (statsCache && now - statsCache.timestamp < STATS_CACHE_TTL) {
-      return statsCache.data;
+    if (this.statsCache && now - this.statsCache.timestamp < STATS_CACHE_TTL) {
+      return this.statsCache.data;
     }
 
     const [inventoryStats, orderStats, customerCount] = await Promise.all([
@@ -82,7 +91,7 @@ export class DistributionService {
     }
 
     const result = { inventory, order, customer: { total: customerCount } };
-    statsCache = { data: result, timestamp: now };
+    this.setStatsCache(result);
     return result;
   }
 
@@ -168,6 +177,7 @@ export class DistributionService {
   }
 
   async createInventory(dto: CreateInventoryDto) {
+    this.invalidateStatsCache();
     return this.prisma.inventoryStock.create({
       data: {
         ...dto,
@@ -212,6 +222,7 @@ export class DistributionService {
       }
     }
 
+    this.invalidateStatsCache();
     return result;
   }
 
@@ -222,6 +233,7 @@ export class DistributionService {
       throw new BadRequestException('已发货或预留状态的库存不可修改');
     }
 
+    this.invalidateStatsCache();
     return this.prisma.inventoryStock.update({
       where: { id },
       data: dto as Prisma.InventoryStockUpdateInput,
@@ -236,12 +248,13 @@ export class DistributionService {
     if (!item) throw new NotFoundException('库存记录不存在');
 
     const hasActiveOrders = item.orderItems.some(
-      (oi) => oi.order?.status !== 'shipped' && oi.order?.status !== 'cancelled',
+      (oi) => !oi.order?.deletedAt && oi.order?.status !== 'shipped' && oi.order?.status !== 'cancelled',
     );
     if (hasActiveOrders) {
       throw new BadRequestException('该库存被有效配货单引用，无法删除');
     }
 
+    this.invalidateStatsCache();
     return this.prisma.inventoryStock.delete({ where: { id } });
   }
 
@@ -251,27 +264,44 @@ export class DistributionService {
       include: { orderItems: { include: { order: true } } },
     });
 
-    const unreferenced = items.filter(
-      (item) => !item.orderItems.some((oi) =>
-        oi.order?.status !== 'shipped' && oi.order?.status !== 'cancelled'
-      ),
-    );
+    // 精确校验：逐个检查每个 id 的状态
+    const notFound: number[] = [];
+    const referenced: number[] = [];
 
-    if (unreferenced.length < ids.length) {
-      throw new BadRequestException('部分库存被有效配货单引用，无法删除');
+    for (const item of items) {
+      const hasActiveOrders = item.orderItems.some(
+        (oi) => !oi.order?.deletedAt && oi.order?.status !== 'shipped' && oi.order?.status !== 'cancelled',
+      );
+      if (hasActiveOrders) {
+        referenced.push(item.id);
+      }
     }
 
+    // 检查传入的 id 是否有未找到的
+    const foundIds = new Set(items.map(i => i.id));
+    for (const id of ids) {
+      if (!foundIds.has(id)) {
+        notFound.push(id);
+      }
+    }
+
+    if (notFound.length > 0) {
+      throw new BadRequestException(`以下库存记录不存在：${notFound.join(', ')}`);
+    }
+    if (referenced.length > 0) {
+      throw new BadRequestException(`以下库存被有效配货单引用，无法删除：${referenced.join(', ')}`);
+    }
+
+    this.invalidateStatsCache();
     return this.prisma.inventoryStock.deleteMany({
       where: { id: { in: ids } },
     });
   }
 
   async aiRecognize(file: Express.Multer.File) {
-    console.log('[AI] 后端收到文件:', file);
     if (!file) {
       throw new Error('请上传图片文件');
     }
-    console.log('[AI] 文件信息:', file.originalname, file.size, file.mimetype, file.path);
 
     const buffer = await fs.promises.readFile(file.path);
     const base64 = buffer.toString('base64');
@@ -337,6 +367,7 @@ export class DistributionService {
   }
 
   async createCustomer(dto: CreateCustomerDto) {
+    this.invalidateStatsCache();
     return this.prisma.customer.create({ data: dto });
   }
 
@@ -344,6 +375,7 @@ export class DistributionService {
     const customer = await this.prisma.customer.findUnique({ where: { id } });
     if (!customer) throw new NotFoundException('客户不存在');
 
+    this.invalidateStatsCache();
     return this.prisma.customer.update({
       where: { id },
       data: dto as Prisma.CustomerUpdateInput,
@@ -354,6 +386,7 @@ export class DistributionService {
     const customer = await this.prisma.customer.findUnique({ where: { id } });
     if (!customer) throw new NotFoundException('客户不存在');
 
+    this.invalidateStatsCache();
     return this.prisma.customer.update({
       where: { id },
       data: { deletedAt: new Date() },
@@ -461,16 +494,19 @@ export class DistributionService {
         },
       });
 
-      await tx.inventoryStock.updateMany({
-        where: { id: { in: stockIds } },
+      const updateResult = await tx.inventoryStock.updateMany({
+        where: { id: { in: stockIds }, status: 'available' },
         data: { status: 'reserved' },
       });
+      if (updateResult.count !== stockIds.length) {
+        throw new BadRequestException('部分库存已被其他订单占用');
+      }
 
       return newOrder;
     });
 
     // 清除统计缓存
-    statsCache = null;
+    this.invalidateStatsCache();
     return order;
   }
 
@@ -484,6 +520,7 @@ export class DistributionService {
       throw new BadRequestException('只有草稿状态的订单可以修改');
     }
 
+    this.invalidateStatsCache();
     return this.prisma.distributionOrder.update({
       where: { id },
       data: dto as Prisma.DistributionOrderUpdateInput,
@@ -508,7 +545,7 @@ export class DistributionService {
       },
     });
 
-    statsCache = null;
+    this.invalidateStatsCache();
     return result;
   }
 
@@ -538,7 +575,7 @@ export class DistributionService {
       return tx.distributionOrder.findUnique({ where: { id } });
     });
 
-    statsCache = null;
+    this.invalidateStatsCache();
     return result;
   }
 
@@ -568,41 +605,29 @@ export class DistributionService {
       return tx.distributionOrder.findUnique({ where: { id } });
     });
 
-    statsCache = null;
+    this.invalidateStatsCache();
     return result;
   }
 
   async deleteOrder(id: number) {
     const order = await this.prisma.distributionOrder.findUnique({
       where: { id },
-      include: { items: true },
     });
     if (!order) throw new NotFoundException('订单不存在');
     if (order.status !== 'shipped' && order.status !== 'cancelled') {
       throw new BadRequestException('只能删除已发货或已取消的订单');
     }
 
-    const stockIds = order.items.map((i) => i.stockId);
-
-    return this.prisma.$transaction(async (tx) => {
-      if (order.status === 'shipped') {
-        await tx.inventoryStock.updateMany({
-          where: { id: { in: stockIds } },
-          data: { status: 'available' },
-        });
-      }
-
-      return tx.distributionOrder.update({
-        where: { id },
-        data: { deletedAt: new Date() },
-      });
+    this.invalidateStatsCache();
+    return this.prisma.distributionOrder.update({
+      where: { id },
+      data: { deletedAt: new Date() },
     });
   }
 
   async batchDeleteOrders(ids: number[]) {
     const orders = await this.prisma.distributionOrder.findMany({
       where: { id: { in: ids } },
-      include: { items: true },
     });
 
     const deletableOrders = orders.filter(
@@ -618,24 +643,12 @@ export class DistributionService {
       );
     }
 
-    const shippedOrders = deletableOrders.filter((o) => o.status === 'shipped');
+    const deletableIds = deletableOrders.map((o) => o.id);
 
-    return this.prisma.$transaction(async (tx) => {
-      if (shippedOrders.length > 0) {
-        const allStockIds = shippedOrders.flatMap((o) => o.items.map((i) => i.stockId));
-        await tx.inventoryStock.updateMany({
-          where: { id: { in: allStockIds } },
-          data: { status: 'available' },
-        });
-      }
-
-      const deletableIds = deletableOrders.map((o) => o.id);
-      await tx.distributionOrder.updateMany({
-        where: { id: { in: deletableIds } },
-        data: { deletedAt: new Date() },
-      });
-
-      return { deletedCount: deletableIds.length };
+    this.invalidateStatsCache();
+    return this.prisma.distributionOrder.updateMany({
+      where: { id: { in: deletableIds } },
+      data: { deletedAt: new Date() },
     });
   }
 

@@ -25,6 +25,7 @@ model Customer {
 
   @@map("distribution_customer")
   @@index([name])
+  @@index([deletedAt])  // 软删除高频查询
 }
 
 // 库存批次
@@ -68,7 +69,7 @@ model DistributionOrder {
   targetGrade  String?   @map("target_grade") @db.VarChar(20)
   totalWeight  Decimal?  @map("total_weight") @db.Decimal(10, 3)
   totalPieces  Int?      @map("total_pieces")
-  status       String    @default("draft") @db.VarChar(20)
+  status     String    @default("draft") @db.VarChar(20)  // draft/shipping/shipped/cancelled
   shippedAt    DateTime? @map("shipped_at")
   driverName   String?   @map("driver_name") @db.VarChar(50)
   vehicleNo    String?   @map("vehicle_no") @db.VarChar(20)

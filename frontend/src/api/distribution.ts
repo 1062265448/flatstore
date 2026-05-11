@@ -69,10 +69,8 @@ export const searchInventory = (keyword: string, limit?: number) => {
 export const aiRecognize = (file: File) => {
   const formData = new FormData()
   formData.append('file', file)
-  console.log('[AI] 上传文件:', file.name, file.size, file.type)
-  // ⚠️ 不设置 Content-Type，让浏览器自动添加 boundary
-  return request.post<AiRecognizeResult[]>('/distribution/inventory/ai-recognize', formData, {
-    timeout: 120000,  // 统一 120s，与后端一致
+  return request.post<{ results: AiRecognizeResult[]; historyId: number }>('/distribution/inventory/ai-recognize', formData, {
+    timeout: 120000,
   } as any)
 }
 

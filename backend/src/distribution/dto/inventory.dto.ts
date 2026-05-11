@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsNumber, Min, MinLength } from 'class-validator';
+import { IsOptional, IsString, IsNumber, Min, MinLength, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateInventoryDto {
@@ -154,8 +155,10 @@ export class UpdateInventoryDto {
 
 export class BatchCreateInventoryDto {
   @ApiProperty({ type: [CreateInventoryDto] })
-  @IsOptional()
-  items?: CreateInventoryDto[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateInventoryDto)
+  items: CreateInventoryDto[];
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -11,10 +11,13 @@ export const useInventoryStore = defineStore('inventory', () => {
   const fetchInventory = async (params: InventoryQuery = {}) => {
     loading.value = true
     try {
-      // ⚠️ Axios 已解包，res.data 直接是数组
-      const res = await api.getInventoryList(params) as any
+      const res = await api.getInventoryList(params) as { data: InventoryStock[]; total: number }
       inventoryList.value = res.data
       total.value = res.total
+    } catch (error) {
+      // 错误已在 API 响应拦截器中提示，此处仅重置数据
+      inventoryList.value = []
+      total.value = 0
     } finally {
       loading.value = false
     }

@@ -12,10 +12,13 @@ export const useOrderStore = defineStore('order', () => {
   const fetchOrders = async (params: OrderQuery = {}) => {
     loading.value = true
     try {
-      // ⚠️ Axios 已解包，res 直接是 PaginatedResponse
-      const res = await api.getOrderList(params) as any
+      const res = await api.getOrderList(params) as { data: DistributionOrder[]; total: number }
       orderList.value = res.data
       total.value = res.total
+    } catch (error) {
+      // 错误已在 API 响应拦截器中提示，此处仅重置数据
+      orderList.value = []
+      total.value = 0
     } finally {
       loading.value = false
     }
@@ -24,9 +27,12 @@ export const useOrderStore = defineStore('order', () => {
   const fetchOrderById = async (id: number) => {
     loading.value = true
     try {
-      const res = await api.getOrderById(id) as any
+      const res = await api.getOrderById(id) as DistributionOrder
       currentOrder.value = res
       return res
+    } catch (error) {
+      currentOrder.value = null
+      throw error
     } finally {
       loading.value = false
     }
