@@ -231,7 +231,7 @@ onMounted(refresh)
 .detail-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
 .loading-state { display: flex; justify-content: center; padding: 60px 0; }
 
-.detail-body { padding-bottom: 120px; }
+.detail-body { padding-top: calc(56px + var(--safe-top)); padding-bottom: 120px; }
 .detail-card {
   background: var(--surface);
   border-radius: var(--radius);

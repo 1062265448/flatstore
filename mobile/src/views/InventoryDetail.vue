@@ -262,6 +262,7 @@ const confirmDelete = async () => {
 }
 .detail-body {
   padding: 20px;
+  padding-top: calc(56px + var(--safe-top));
   padding-bottom: 100px;
 }
 .detail-card {

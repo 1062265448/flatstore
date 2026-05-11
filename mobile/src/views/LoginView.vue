@@ -76,6 +76,7 @@ const handleSubmit = async () => {
   justify-content: center;
   background: var(--surface);
   padding: 40px 24px;
+  padding-top: calc(40px + var(--safe-top));
 }
 .login-content {
   width: 100%;

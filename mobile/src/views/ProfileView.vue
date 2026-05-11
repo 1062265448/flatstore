@@ -1,5 +1,10 @@
 <template>
   <div class="profile-view">
+    <div class="page-header">
+      <div class="header-label">平面库配货</div>
+      <h1 class="header-title">我的</h1>
+    </div>
+
     <div class="profile-header">
       <div class="avatar">{{ initial }}</div>
       <div class="user-info">
@@ -52,8 +57,24 @@ const handleLogout = () => {
 
 <style scoped>
 .profile-view {
-  padding: 20px;
   padding-bottom: calc(var(--tab-height) + 20px);
+  padding-top: var(--page-header-top);
+}
+.page-header {
+  padding: 12px 20px 16px;
+}
+.header-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+.header-title {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--text);
 }
 .profile-header {
   display: flex;

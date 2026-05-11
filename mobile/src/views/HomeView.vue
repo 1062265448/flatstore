@@ -92,7 +92,7 @@ onMounted(async () => {
 <style scoped>
 .home-view {
   padding-bottom: calc(var(--tab-height) + 20px);
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: var(--page-header-top);
 }
 .page-header {
   padding: 12px 20px 16px;

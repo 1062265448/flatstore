@@ -185,9 +185,10 @@ watch(showCreateSheet, async (v) => {
 <style scoped>
 .orders-view {
   padding-bottom: calc(var(--tab-height) + 20px);
+  padding-top: var(--page-header-top);
 }
 .page-header {
-  padding: 4px 20px 16px;
+  padding: 12px 20px 16px;
 }
 .header-label {
   font-size: 11px;
