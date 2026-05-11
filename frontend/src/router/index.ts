@@ -58,7 +58,12 @@ const devRoutes = DEV ? [
   },
 ] : []
 
-const routes = [...baseRoutes, ...devRoutes]
+const notFoundRoute = {
+  path: '/:pathMatch(.*)*',
+  redirect: '/',
+}
+
+const routes = [...baseRoutes, ...devRoutes, notFoundRoute]
 
 const router = createRouter({
   history: createWebHistory(),
@@ -72,10 +77,28 @@ router.beforeEach((to, _from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const token = localStorage.getItem('token')
 
-  if (requiresAuth && !token) {
+  if (requiresAuth && token) {
+    // 验证 token 是否过期
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      if (payload.exp && Date.now() >= payload.exp * 1000) {
+        // token 已过期
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        next({ path: '/login', query: { redirect: to.fullPath } })
+        return
+      }
+    } catch {
+      // token 格式无效，当作无 token 处理
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+    }
+  }
+
+  if (requiresAuth && !localStorage.getItem('token')) {
     // 如果需要认证且没有 token，重定向到登录页
     next({ path: '/login', query: { redirect: to.fullPath } })
-  } else if (to.path === '/login' && token) {
+  } else if (to.path === '/login' && localStorage.getItem('token')) {
     // 如果已登录却访问登录页，重定向到首页
     next({ path: '/' })
   } else {

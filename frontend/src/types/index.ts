@@ -6,7 +6,7 @@ export interface InventoryStock {
   grade: string
   productType?: string
   specification?: string
-  weight: string | number
+  weight: string | number  // Prisma Decimal 序列化后为 string，前端类型已兼容
   pieceCount: number
   location?: string
   nickelContent?: string
@@ -35,6 +35,8 @@ export interface CreateInventoryDto {
   remark?: string
   inspectionDate?: string
   certificateNo?: string
+  sourceType?: string
+  sourceImage?: string
 }
 
 export interface UpdateInventoryDto {
@@ -131,8 +133,12 @@ export interface OrderItemDto {
 export interface CreateOrderDto {
   customerId: number
   customerName?: string
+  productType?: string
+  specification?: string
   productSpec?: string
   targetGrade?: string
+  totalWeight?: number
+  totalPieces?: number
   remark?: string
   items: OrderItemDto[]
 }
@@ -140,6 +146,8 @@ export interface CreateOrderDto {
 export interface UpdateOrderDto {
   customerId?: number
   customerName?: string
+  productType?: string
+  specification?: string
   productSpec?: string
   targetGrade?: string
   remark?: string

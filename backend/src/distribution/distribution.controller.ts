@@ -17,7 +17,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { DistributionService } from './distribution.service';
-import { CreateInventoryDto, UpdateInventoryDto } from './dto/inventory.dto';
+import { CreateInventoryDto, UpdateInventoryDto, BatchCreateInventoryDto } from './dto/inventory.dto';
 import { CreateOrderDto, UpdateOrderDto, ShipOrderDto } from './dto/order.dto';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
@@ -75,7 +75,7 @@ export class DistributionController {
 
   @Post('inventory/batch')
   @ApiOperation({ summary: '批量创建库存' })
-  batchCreateInventory(@Body() body: { items: CreateInventoryDto[]; recognitionHistoryId?: number }) {
+  batchCreateInventory(@Body() body: BatchCreateInventoryDto) {
     return this.service.batchCreateInventory(body.items, body.recognitionHistoryId);
   }
 

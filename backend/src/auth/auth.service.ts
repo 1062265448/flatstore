@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, UnauthorizedException } from '@nestjs/common';
+import { Injectable, OnModuleInit, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -46,7 +46,7 @@ export class AuthService implements OnModuleInit {
   async register(username: string, password: string) {
     const existing = await this.prisma.user.findUnique({ where: { username } });
     if (existing) {
-      throw new UnauthorizedException('用户名已存在');
+      throw new ConflictException('用户名已存在');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -68,7 +68,7 @@ export class AuthService implements OnModuleInit {
     const admin = await this.prisma.user.findUnique({ where: { username: 'admin' } });
     if (!admin) {
       await this.register('admin', 'admin123');
-      console.log('[Auth] 默认管理员账户已创建: admin / admin123');
+      console.log('[Auth] 默认管理员账户已创建');
     }
   }
 }

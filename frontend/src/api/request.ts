@@ -54,6 +54,7 @@ request.interceptors.response.use(
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       router.push('/login')
+      return Promise.reject(error)
     }
 
     const message = error.response?.data?.message || error.message || '请求失败'

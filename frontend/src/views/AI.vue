@@ -88,21 +88,25 @@
               <table class="data-table">
                 <thead>
                   <tr>
+                    <th>包号</th>
                     <th>批号</th>
                     <th>品级</th>
                     <th>产品类型</th>
                     <th>片数</th>
                     <th>净重(吨)</th>
+                    <th>检验员</th>
                     <th>日期</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="(item, index) in recognizeResults" :key="index">
+                    <td>{{ item.packageNo || '-' }}</td>
                     <td class="batch-no">{{ item.batchNo || '-' }}</td>
                     <td><span class="tag tag-info">{{ item.grade || '-' }}</span></td>
                     <td>{{ item.productType || '-' }}</td>
                     <td>{{ item.pieceCount || '-' }}</td>
                     <td class="weight">{{ (item.netWeight || 0).toFixed(3) }}</td>
+                    <td>{{ item.inspector || '-' }}</td>
                     <td>{{ item.date || '-' }}</td>
                   </tr>
                 </tbody>
@@ -351,6 +355,7 @@ const previewUrl = ref<string>('')
 const uploading = ref(false)
 const isDragOver = ref(false)
 const recognizeResults = ref<AiRecognizeResult[]>([])
+const currentHistoryId = ref<number | null>(null)
 
 const historyList = ref<AiRecognitionHistory[]>([])
 const historyTotal = ref(0)
@@ -434,7 +439,8 @@ const handleRecognize = async () => {
   uploading.value = true
   try {
     const res = await aiRecognize(selectedFile.value)
-    recognizeResults.value = res as any
+    recognizeResults.value = (res as any).results || res as any
+    currentHistoryId.value = (res as any).historyId || null
     if (!recognizeResults.value.length) {
       showToast?.('未识别到任何数据', 'warning')
     } else {
@@ -464,13 +470,13 @@ const handleImportSubmit = async () => {
       batchNo: importForm.batchNo || String(r.batchNo || ''),
       grade: importForm.grade || r.grade || '',
       productType: r.productType || '',
-      weight: r.netWeight || 0,
+      weight: ((r.netWeight || 0) as number) * 1000,
       pieceCount: r.pieceCount || 0,
       location: importForm.location,
       sourceType: 'ai_recognize',
     }))
 
-    await batchCreateInventory({ items })
+    await batchCreateInventory({ items, recognitionHistoryId: currentHistoryId.value || undefined })
     showToast?.(`成功导入 ${items.length} 条库存记录`, 'success')
     importVisible.value = false
     handleReset()
@@ -515,16 +521,18 @@ const handleViewHistory = (row: AiRecognitionHistory) => {
 }
 
 const handleDeleteHistory = async (id: number) => {
+  if (!confirm('确定要删除这条识别记录吗？')) return
   try {
     await deleteRecognitionHistory(id)
     showToast?.('删除成功', 'success')
     fetchHistory()
   } catch {
-    // 用户取消
+    // 错误已在 API 层处理
   }
 }
 
 const handleBatchDeleteHistory = async () => {
+  if (!confirm(`确定要删除选中的 ${selectedHistory.value.length} 条记录吗？`)) return
   try {
     const ids = selectedHistory.value.map((r) => r.id)
     await batchDeleteRecognitionHistory(ids)
@@ -532,7 +540,7 @@ const handleBatchDeleteHistory = async () => {
     selectedHistory.value = []
     fetchHistory()
   } catch {
-    // 用户取消
+    // 错误已在 API 层处理
   }
 }
 
