@@ -16,11 +16,18 @@ async function bootstrap() {
     .split(',')
     .map(s => s.trim())
     .filter(Boolean);
+  // Capacitor 原生 App 的 origin
+  const capacitorOrigins = [
+    'https://localhost',       // Capacitor Android WebView
+    'http://localhost',        // Capacitor 部分版本
+    'capacitor://localhost',   // Capacitor iOS
+  ];
   app.enableCors({
     origin: (origin, callback) => {
-      // 允许无 origin 的请求（如 Capacitor、Postman）
+      // 允许无 origin 的请求（如 Postman、curl）
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (capacitorOrigins.includes(origin)) return callback(null, true);
       callback(new Error('CORS 拒绝: 不允许的来源 ' + origin));
     },
     credentials: true,
