@@ -13,6 +13,7 @@
         :key="stat.label"
         class="stat-card glass-card"
         :style="{ animationDelay: `${index * 0.1}s` }"
+        @click="stat.route ? router.push(stat.route) : undefined"
       >
         <div class="stat-content">
           <div class="stat-label">{{ stat.label }}</div>
@@ -95,11 +96,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useStatisticsStore } from '@/stores/statistics'
 import { useThemeStore } from '@/stores/theme'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 
+const router = useRouter()
 const statisticsStore = useStatisticsStore()
 const themeStore = useThemeStore()
 
@@ -116,24 +119,28 @@ const statCards = computed(() => [
     value: stats.value?.inventory.total || 0,
     sub: `可用 ${stats.value?.inventory.available || 0} 批次`,
     gradient: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+    route: '/inventory',
   },
   {
     label: '配货单',
     value: stats.value?.order.total || 0,
     sub: `进行中 ${(stats.value?.order.draft || 0) + (stats.value?.order.shipping || 0)} 单`,
     gradient: 'linear-gradient(135deg, #EC4899 0%, #F43F5E 100%)',
+    route: '/orders',
   },
   {
     label: '已发货',
     value: stats.value?.order.shipped || 0,
     sub: '配货单完成',
     gradient: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)',
+    route: '/orders',
   },
   {
     label: '客户数',
     value: stats.value?.customer.total || 0,
     sub: '合作客户',
     gradient: 'linear-gradient(135deg, #10B981 0%, #14B8A6 100%)',
+    route: '/customers',
   },
 ])
 
@@ -301,7 +308,7 @@ onUnmounted(() => {
   opacity: 0;
   position: relative;
   overflow: hidden;
-  cursor: default;
+  cursor: pointer;
 
   .stat-content {
     flex: 1;

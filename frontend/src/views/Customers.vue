@@ -259,10 +259,11 @@ onMounted(() => {
 // ==================== 表格 ====================
 .table-card {
   overflow: hidden;
+  animation: slideUp 0.6s ease forwards;
   opacity: 0;
 
-  &.fade-in {
-    animation: slideUp 0.6s ease forwards;
+  .data-table {
+    min-width: 900px;
   }
 }
 

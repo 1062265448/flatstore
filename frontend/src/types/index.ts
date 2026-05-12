@@ -19,6 +19,16 @@ export interface InventoryStock {
   sourceImage?: string
   createdAt: string
   updatedAt: string
+  linkedOrders?: LinkedOrder[]
+}
+
+export interface LinkedOrder {
+  id: number
+  orderNo: string
+  status: string
+  customerName?: string
+  totalWeight?: string | number
+  createdAt: string
 }
 
 export interface CreateInventoryDto {
@@ -153,6 +163,7 @@ export interface UpdateOrderDto {
   productSpec?: string
   targetGrade?: string
   remark?: string
+  items?: OrderItemDto[]
 }
 
 export interface ShipOrderDto {

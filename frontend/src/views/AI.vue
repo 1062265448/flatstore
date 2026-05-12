@@ -94,7 +94,6 @@
                     <th>产品类型</th>
                     <th>片数</th>
                     <th>净重(吨)</th>
-                    <th>检验员</th>
                     <th>日期</th>
                   </tr>
                 </thead>
@@ -106,7 +105,6 @@
                     <td>{{ item.productType || '-' }}</td>
                     <td>{{ item.pieceCount || '-' }}</td>
                     <td class="weight">{{ (item.netWeight || 0).toFixed(3) }}</td>
-                    <td>{{ item.inspector || '-' }}</td>
                     <td>{{ item.date || '-' }}</td>
                   </tr>
                 </tbody>
@@ -363,6 +361,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, inject, onMounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { aiRecognize, batchCreateInventory, getRecognitionHistory, deleteRecognitionHistory, batchDeleteRecognitionHistory } from '@/api/distribution'
 import type { AiRecognizeResult, AiRecognitionHistory, CreateInventoryDto } from '@/types'
 
@@ -543,26 +542,26 @@ const handleViewHistory = (row: AiRecognitionHistory) => {
 }
 
 const handleDeleteHistory = async (id: number) => {
-  if (!confirm('确定要删除这条识别记录吗？')) return
   try {
+    await ElMessageBox.confirm('确定要删除这条识别记录吗？', '提示', { type: 'warning' })
     await deleteRecognitionHistory(id)
     showToast?.('删除成功', 'success')
     fetchHistory()
   } catch {
-    // 错误已在 API 层处理
+    // 用户取消或 API 错误
   }
 }
 
 const handleBatchDeleteHistory = async () => {
-  if (!confirm(`确定要删除选中的 ${selectedHistory.value.length} 条记录吗？`)) return
   try {
+    await ElMessageBox.confirm(`确定要删除选中的 ${selectedHistory.value.length} 条记录吗？`, '提示', { type: 'warning' })
     const ids = selectedHistory.value.map((r) => r.id)
     await batchDeleteRecognitionHistory(ids)
     showToast?.('批量删除成功', 'success')
     selectedHistory.value = []
     fetchHistory()
   } catch {
-    // 错误已在 API 层处理
+    // 用户取消或 API 错误
   }
 }
 

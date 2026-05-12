@@ -225,11 +225,11 @@ const themeVars = computed(() => ({
 
 const toggleTheme = () => {
   theme.value = theme.value === 'dark' ? 'light' : 'dark'
-  localStorage.setItem('login-theme', theme.value)
+  localStorage.setItem('theme', theme.value)
 }
 
 onMounted(() => {
-  const saved = localStorage.getItem('login-theme')
+  const saved = localStorage.getItem('theme')
   if (saved === 'dark') {
     theme.value = 'dark'
   }

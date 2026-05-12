@@ -129,8 +129,12 @@
           <tr v-if="!orderStore.orderList.length">
             <td colspan="10" class="empty-cell">
               <div class="empty-state">
-                <span class="empty-icon">📋</span>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.4">
+                  <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
                 <span class="empty-text">暂无配货单数据</span>
+                <span class="empty-hint">点击上方「+ 新增配货单」创建第一笔订单</span>
               </div>
             </td>
           </tr>
@@ -219,7 +223,7 @@
                     选择库存
                   </h4>
                   <div class="stock-search">
-                    <input v-model="stockKeyword" type="text" placeholder="搜索批号、品级..." />
+                    <input v-model="stockKeyword" type="text" placeholder="搜索批号、品级..." @input="handleStockSearch(stockKeyword)" />
                   </div>
                 </div>
 
@@ -411,11 +415,11 @@
             <div class="modal-body">
               <div class="form-grid">
                 <div class="form-item">
-                  <label>司机姓名</label>
+                  <label>司机姓名 <span class="required">*</span></label>
                   <input v-model="shipForm.driverName" type="text" placeholder="请输入司机姓名" />
                 </div>
                 <div class="form-item">
-                  <label>车牌号</label>
+                  <label>车牌号 <span class="required">*</span></label>
                   <input v-model="shipForm.vehicleNo" type="text" placeholder="请输入车牌号" />
                 </div>
               </div>
@@ -437,6 +441,7 @@ import { ref, reactive, computed, inject, onMounted } from 'vue'
 import { useOrderStore } from '@/stores/order'
 import { useCustomerStore } from '@/stores/customer'
 import { useInventoryStore } from '@/stores/inventory'
+import { searchInventory } from '@/api/distribution'
 import { ElMessageBox } from 'element-plus'
 import type { DistributionOrder, CreateOrderDto, OrderItemDto, ShipOrderDto, InventoryStock } from '@/types'
 
@@ -495,7 +500,8 @@ const specificationOptions = [
   '镍包',
 ]
 
-// 计算属性：过滤库存
+// 计算属性：过滤库存（远程搜索 + 本地回退）
+let searchTimer: ReturnType<typeof setTimeout> | null = null
 const filteredStocks = computed(() => {
   if (!stockKeyword.value) return availableStocks.value
   const kw = stockKeyword.value.toLowerCase()
@@ -506,6 +512,26 @@ const filteredStocks = computed(() => {
     s.location?.toLowerCase().includes(kw)
   )
 })
+
+// 远程搜索库存
+const handleStockSearch = (keyword: string) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  if (!keyword.trim()) {
+    // 清空搜索时重新加载初始数据
+    inventoryStore.fetchInventory({ page: 1, limit: 50, status: 'available' }).then(() => {
+      availableStocks.value = inventoryStore.inventoryList
+    })
+    return
+  }
+  searchTimer = setTimeout(async () => {
+    try {
+      const results = await searchInventory(keyword, 50) as InventoryStock[]
+      availableStocks.value = results
+    } catch {
+      // 回退到本地筛选
+    }
+  }, 300)
+}
 
 // 计算属性：总计
 const totalWeight = computed(() => {
@@ -660,7 +686,8 @@ const handleCreate = async () => {
     remark: '',
     items: [],
   })
-  await inventoryStore.fetchInventory({ page: 1, limit: 1000, status: 'available' })
+  // 搜索加载可用库存（初始加载前50条）
+  await inventoryStore.fetchInventory({ page: 1, limit: 50, status: 'available' })
   availableStocks.value = inventoryStore.inventoryList
   dialogVisible.value = true
 }
@@ -772,6 +799,14 @@ const handleShip = (row: DistributionOrder) => {
 
 const handleShipSubmit = async () => {
   if (!shipOrderId.value) return
+  if (!shipForm.driverName?.trim()) {
+    showToast?.('请输入司机姓名', 'warning')
+    return
+  }
+  if (!shipForm.vehicleNo?.trim()) {
+    showToast?.('请输入车牌号', 'warning')
+    return
+  }
   await orderStore.shipOrder(shipOrderId.value, shipForm)
   shipVisible.value = false
   showToast?.('发货成功', 'success')
@@ -791,9 +826,13 @@ const handleDeliver = async (id: number) => {
 
 const handleCancel = async (id: number) => {
   try {
-    await ElMessageBox.confirm('确定取消该配货单?', '提示', { type: 'warning' })
+    await ElMessageBox.confirm(
+      '确定取消该配货单？此操作不可撤销，关联库存将被释放回可用状态。',
+      '取消配货单',
+      { type: 'warning', confirmButtonText: '确认取消', cancelButtonText: '再想想' }
+    )
     await orderStore.cancelOrder(id)
-    showToast?.('已取消', 'success')
+    showToast?.('已取消，库存已释放', 'success')
     handleSearch()
   } catch {
     // 用户取消
@@ -880,6 +919,10 @@ onMounted(() => {
 // ==================== 表格 ====================
 .table-card {
   overflow: hidden;
+
+  .data-table {
+    min-width: 900px;
+  }
 }
 
 .loading-state {
@@ -1013,10 +1056,15 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 
   .empty-text {
     color: var(--color-text-secondary);
+  }
+
+  .empty-hint {
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
   }
 }
 
@@ -1171,6 +1219,11 @@ onMounted(() => {
 
 .form-select {
   cursor: pointer;
+}
+
+.required {
+  color: var(--color-danger);
+  margin-left: 2px;
 }
 
 // 配货明细

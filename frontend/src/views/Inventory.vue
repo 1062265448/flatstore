@@ -141,6 +141,7 @@
             </td>
             <td class="time">{{ formatDate(row.createdAt) }}</td>
             <td class="action-col">
+              <button class="action-btn" @click="handleViewDetail(row)">详情</button>
               <button class="action-btn" @click="handleEdit(row)">编辑</button>
               <button class="action-btn danger" @click="handleDelete(row.id)">删除</button>
             </td>
@@ -148,7 +149,13 @@
           <tr v-if="!inventoryStore.inventoryList.length">
             <td colspan="10" class="empty-cell">
               <div class="empty-state">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.4">
+                  <path d="M20 7L12 3L4 7V17L12 21L20 17V7Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                  <path d="M4 7L12 11L20 7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                  <path d="M12 11V21" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
                 <span class="empty-text">暂无库存数据</span>
+                <span class="empty-hint">点击上方「+ 新增库存」或使用 AI 识别添加</span>
               </div>
             </td>
           </tr>
@@ -179,6 +186,90 @@
         </div>
       </div>
     </div>
+
+    <!-- 库存详情弹窗 -->
+    <Teleport to="body">
+      <transition name="modal">
+        <div v-if="detailVisible" class="modal-overlay" @click.self="detailVisible = false">
+          <div class="modal-content modal-lg glass-card">
+            <div class="modal-header">
+              <h3 class="modal-title">库存详情</h3>
+              <button class="modal-close" @click="detailVisible = false">✕</button>
+            </div>
+
+            <div class="modal-body" v-if="detailStock">
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">批号</span>
+                  <span class="detail-value batch-no">{{ detailStock.batchNo }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">包号</span>
+                  <span class="detail-value">{{ detailStock.packageNo || '-' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">品级</span>
+                  <span class="tag tag-info">{{ detailStock.grade }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">状态</span>
+                  <span :class="['tag', statusTagClass[detailStock.status]]">{{ statusLabel[detailStock.status] }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">产品类型</span>
+                  <span class="detail-value">{{ detailStock.productType || '-' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">规格</span>
+                  <span class="detail-value">{{ detailStock.specification || '-' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">重量(吨)</span>
+                  <span class="detail-value weight">{{ Number(detailStock.weight).toFixed(3) }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">片数</span>
+                  <span class="detail-value">{{ detailStock.pieceCount }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">存放位置</span>
+                  <span class="detail-value">{{ detailStock.location || '-' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">镍含量</span>
+                  <span class="detail-value">{{ detailStock.nickelContent ? Number(detailStock.nickelContent).toFixed(2) + '%' : '-' }}</span>
+                </div>
+                <div class="detail-item full-width">
+                  <span class="detail-label">备注</span>
+                  <span class="detail-value">{{ detailStock.remark || '-' }}</span>
+                </div>
+              </div>
+
+              <!-- 关联订单 -->
+              <div v-if="detailStock.linkedOrders && detailStock.linkedOrders.length" class="linked-section">
+                <h4>关联配货单 ({{ detailStock.linkedOrders.length }})</h4>
+                <div class="linked-list">
+                  <div v-for="order in detailStock.linkedOrders" :key="order.id" class="linked-card" @click="goToOrder(order.id)">
+                    <div class="linked-info">
+                      <span class="linked-order-no">{{ order.orderNo || `#${order.id}` }}</span>
+                      <span :class="['tag', orderStatusTagClass[order.status]]">{{ orderStatusLabel[order.status] || order.status }}</span>
+                    </div>
+                    <div class="linked-meta">
+                      <span v-if="order.customerName">{{ order.customerName }}</span>
+                      <span v-if="order.totalWeight">{{ Number(order.totalWeight).toFixed(3) }}吨</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-pill btn-ghost" @click="detailVisible = false">关闭</button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
 
     <!-- 新增/编辑弹窗 -->
     <Teleport to="body">
@@ -238,16 +329,15 @@
                 <div class="form-item full-width">
                   <label>存放位置</label>
                   <div class="location-select-wrap">
-                    <select v-model="form.location" class="form-select">
-                      <option value="">请选择存放位置</option>
+                    <select v-model="locationPreset" class="form-select" @change="onLocationPresetChange">
+                      <option value="">自定义位置</option>
                       <option value="三厂区">三厂区</option>
                       <option value="二厂区">二厂区</option>
                     </select>
                     <input
-                      v-if="!form.location || (!['三厂区', '二厂区'].includes(form.location))"
                       v-model="form.location"
                       type="text"
-                      placeholder="或输入其他位置"
+                      placeholder="输入或选择位置"
                       class="location-input"
                     />
                   </div>
@@ -272,10 +362,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, inject, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useInventoryStore } from '@/stores/inventory'
+import { getInventoryById } from '@/api/distribution'
 import { ElMessageBox } from 'element-plus'
-import type { InventoryStock, CreateInventoryDto } from '@/types'
+import type { InventoryStock, CreateInventoryDto, LinkedOrder } from '@/types'
 
+const router = useRouter()
 const inventoryStore = useInventoryStore()
 const showToast = inject('showToast') as (message: string, type?: string) => void
 
@@ -293,6 +386,38 @@ const queryForm = reactive({
   dateFrom: '',
 })
 
+const detailVisible = ref(false)
+const detailStock = ref<InventoryStock | null>(null)
+
+// 订单状态映射
+const orderStatusTagClass: Record<string, string> = {
+  draft: 'tag-default',
+  shipping: 'tag-info',
+  shipped: 'tag-success',
+  cancelled: 'tag-danger',
+}
+const orderStatusLabel: Record<string, string> = {
+  draft: '草稿',
+  shipping: '发货中',
+  shipped: '已发货',
+  cancelled: '已取消',
+}
+
+const handleViewDetail = async (row: InventoryStock) => {
+  try {
+    const res = await getInventoryById(row.id) as InventoryStock
+    detailStock.value = res
+    detailVisible.value = true
+  } catch {
+    showToast?.('获取详情失败', 'danger')
+  }
+}
+
+const goToOrder = (orderId: number) => {
+  detailVisible.value = false
+  router.push({ path: '/orders', query: { highlight: String(orderId) } })
+}
+
 const selectedRows = ref<InventoryStock[]>([])
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增库存')
@@ -309,6 +434,13 @@ const form = reactive<CreateInventoryDto>({
   location: '',
   remark: '',
 })
+
+const locationPreset = ref('')
+const onLocationPresetChange = () => {
+  if (locationPreset.value) {
+    form.location = locationPreset.value
+  }
+}
 
 const statusTagClass: Record<string, string> = {
   available: 'tag-success',
@@ -402,6 +534,7 @@ const handleCreate = () => {
     nickelContent: '',
     remark: '',
   })
+  locationPreset.value = ''
   dialogVisible.value = true
 }
 
@@ -419,6 +552,7 @@ const handleEdit = (row: InventoryStock) => {
     location: row.location || '',
     remark: row.remark || '',
   })
+  locationPreset.value = ['三厂区', '二厂区'].includes(row.location || '') ? row.location! : ''
   dialogVisible.value = true
 }
 
@@ -605,6 +739,10 @@ onMounted(() => {
 // ==================== 表格 ====================
 .table-card {
   overflow: hidden;
+
+  .data-table {
+    min-width: 960px;
+  }
 }
 
 .loading-state {
@@ -686,7 +824,7 @@ onMounted(() => {
   }
 
   .action-col {
-    width: 140px;
+    width: 180px;
   }
 }
 
@@ -721,10 +859,15 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 
   .empty-text {
     color: var(--color-text-secondary);
+  }
+
+  .empty-hint {
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
   }
 }
 
@@ -880,6 +1023,99 @@ onMounted(() => {
   .location-input {
     flex: 1;
   }
+}
+
+// 详情弹窗
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+
+  &.full-width {
+    grid-column: span 2;
+  }
+
+  .detail-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .detail-value {
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+
+    &.batch-no {
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+
+    &.weight {
+      font-family: var(--font-mono);
+    }
+  }
+}
+
+// 关联订单
+.linked-section {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-divider);
+
+  h4 {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+  }
+}
+
+.linked-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.linked-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: var(--color-bg-hover);
+    transform: translateX(4px);
+  }
+}
+
+.linked-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.linked-order-no {
+  font-weight: 500;
+  font-family: var(--font-mono);
+  color: var(--color-primary);
+}
+
+.linked-meta {
+  display: flex;
+  gap: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 // 弹窗动画
