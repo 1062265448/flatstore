@@ -83,6 +83,8 @@ model DistributionOrder {
   orderNo      String      @unique @map("order_no") @db.VarChar(50)
   customerId   Int         @map("customer_id")
   customerName String?     @map("customer_name") @db.VarChar(100)
+  productType  String?     @map("product_type") @db.VarChar(50)
+  specification String?    @map("specification") @db.VarChar(50)
   productSpec  String?     @map("product_spec") @db.VarChar(100)
   targetGrade  String?     @map("target_grade") @db.VarChar(20)
   totalWeight  Decimal?    @map("total_weight") @db.Decimal(10, 3)

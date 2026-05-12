@@ -60,6 +60,16 @@
         </div>
       </div>
 
+      <!-- 关联配货单 -->
+      <div v-if="(item as any).linkedOrders?.length" class="linked-card">
+        <div class="section-label">关联配货单</div>
+        <div v-for="lo in (item as any).linkedOrders" :key="lo.orderId" class="linked-item" @click="router.push(`/orders/${lo.orderId}`)">
+          <span class="linked-no">{{ lo.orderNo }}</span>
+          <span class="linked-customer">{{ lo.customerName || '-' }}</span>
+          <span class="linked-status" :class="'ls-' + lo.status">{{ orderStatusText(lo.status) }}</span>
+        </div>
+      </div>
+
       <!-- 操作按钮 -->
       <div class="detail-actions">
         <button class="action-btn edit" @click="showEditSheet = true">编辑</button>
@@ -181,6 +191,11 @@ const statusType = computed(() => {
   const map: Record<string, 'green' | 'amber' | 'gray'> = { available: 'green', reserved: 'amber', shipped: 'gray' }
   return map[item.value?.status || ''] || 'gray'
 })
+
+const orderStatusText = (status: string) => {
+  const map: Record<string, string> = { draft: '草稿', shipping: '发货中', shipped: '已完成', cancelled: '已取消' }
+  return map[status] || status
+}
 
 const statusLabel = computed(() => {
   const map: Record<string, string> = { available: '可用', reserved: '预留', shipped: '已发货' }
@@ -330,6 +345,38 @@ const confirmDelete = async () => {
   font-weight: 500;
   color: var(--text);
 }
+
+/* Linked orders */
+.linked-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4) var(--space-5);
+  margin: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.linked-card .section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
+}
+.linked-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.linked-item:last-child { border-bottom: none; }
+.linked-no { font-size: 13px; font-weight: 600; font-family: var(--font-mono); color: var(--accent); }
+.linked-customer { font-size: 13px; color: var(--text-secondary); flex: 1; }
+.linked-status { font-size: 11px; font-weight: 600; padding: 2px var(--space-2); border-radius: var(--radius-xs); }
+.ls-draft { background: var(--surface-alt); color: var(--text-secondary); }
+.ls-shipping { background: var(--amber-soft); color: var(--amber); }
+.ls-shipped { background: var(--green-soft); color: var(--green); }
+.ls-cancelled { background: var(--red-soft); color: var(--red); }
 
 .detail-actions {
   display: flex;

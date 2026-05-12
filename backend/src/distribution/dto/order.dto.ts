@@ -114,16 +114,21 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsString()
   remark?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemDto)
+  items?: OrderItemDto[];
 }
 
 export class ShipOrderDto {
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsString()
-  driverName?: string;
+  driverName: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsString()
-  vehicleNo?: string;
+  vehicleNo: string;
 }

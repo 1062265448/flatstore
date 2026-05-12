@@ -100,11 +100,11 @@
       <h2 class="sheet-title">发货信息</h2>
       <div class="ship-form">
         <div class="form-group">
-          <label>司机姓名</label>
+          <label>司机姓名 *</label>
           <input v-model="shipForm.driverName" class="form-input" placeholder="请输入司机姓名" />
         </div>
         <div class="form-group">
-          <label>车牌号</label>
+          <label>车牌号 *</label>
           <input v-model="shipForm.vehicleNo" class="form-input" placeholder="请输入车牌号" />
         </div>
         <button class="btn-submit" :disabled="shipping" @click="handleShip">
@@ -173,6 +173,8 @@ const refresh = async () => {
 
 const handleShip = async () => {
   if (!order.value) return
+  if (!shipForm.driverName.trim()) { danger('请填写司机姓名'); return }
+  if (!shipForm.vehicleNo.trim()) { danger('请填写车牌号'); return }
   shipping.value = true
   try {
     await orderStore.shipOrder(order.value.id, shipForm)
@@ -199,6 +201,7 @@ const handleDeliver = async () => {
 
 const handleCancel = async () => {
   if (!order.value) return
+  if (!confirm('确认取消该配货单？取消后库存将被释放，此操作不可撤销。')) return
   try {
     await orderStore.cancelOrder(order.value.id)
     success('订单已取消')
