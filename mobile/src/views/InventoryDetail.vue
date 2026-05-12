@@ -78,10 +78,30 @@
         <div class="form-group">
           <label>品级</label>
           <select v-model="editForm.grade" class="form-input">
+            <option value="">请选择品级</option>
             <option value="9997">9997</option>
             <option value="9996">9996</option>
             <option value="9950">9950</option>
             <option value="9920">9920</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>规格</label>
+          <select v-model="editForm.specification" class="form-input">
+            <option value="">请选择规格</option>
+            <option value="整板">整板</option>
+            <option value="镍条">镍条</option>
+            <option value="100*100">100*100</option>
+            <option value="50*50">50*50</option>
+            <option value="25*25">25*25</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>存放位置</label>
+          <select v-model="editForm.location" class="form-input">
+            <option value="">请选择存放位置</option>
+            <option value="二厂区">二厂区</option>
+            <option value="三厂区">三厂区</option>
           </select>
         </div>
         <div class="form-group">
@@ -91,10 +111,6 @@
         <div class="form-group">
           <label>块数</label>
           <input v-model.number="editForm.pieceCount" type="number" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label>位置</label>
-          <input v-model="editForm.location" class="form-input" />
         </div>
         <div class="form-group">
           <label>备注</label>
@@ -237,7 +253,7 @@ const confirmDelete = async () => {
   height: 56px;
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 var(--space-5);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -247,21 +263,18 @@ const confirmDelete = async () => {
 .back-btn {
   font-size: 15px;
   color: var(--accent);
-  font-weight: 500;
-  margin-right: 16px;
+  font-weight: 600;
+  margin-right: var(--space-4);
 }
 .detail-title {
   font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  font-family: var(--font-display);
 }
-.loading-state {
-  display: flex;
-  justify-content: center;
-  padding: 60px 0;
-}
+
 .detail-body {
-  padding: 20px;
+  padding: var(--space-5);
   padding-top: calc(56px + var(--safe-top));
   padding-bottom: 100px;
 }
@@ -269,24 +282,27 @@ const confirmDelete = async () => {
   background: var(--surface);
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  padding: 20px;
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
 }
 .detail-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
   border-bottom: 1px solid var(--border);
 }
 .detail-batch {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
+  font-family: var(--font-mono);
+  letter-spacing: -0.4px;
 }
 .detail-tag {
-  padding: 4px 12px;
-  border-radius: 6px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-xs);
   font-size: 12px;
   font-weight: 600;
   font-family: var(--font-mono);
@@ -298,16 +314,10 @@ const confirmDelete = async () => {
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: var(--space-4);
 }
-.detail-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.detail-field.full {
-  grid-column: 1 / -1;
-}
+.detail-field { display: flex; flex-direction: column; gap: var(--space-1); }
+.detail-field.full { grid-column: 1 / -1; }
 .field-lbl {
   font-size: 11px;
   text-transform: uppercase;
@@ -323,21 +333,23 @@ const confirmDelete = async () => {
 
 .detail-actions {
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
 }
 .action-btn {
   flex: 1;
   height: 48px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   font-size: 15px;
   font-weight: 600;
-  transition: all 0.15s;
+  font-family: var(--font-body);
+  transition: all var(--duration-micro) var(--ease-out);
 }
-.action-btn:active { transform: scale(0.98); }
+.action-btn:active { transform: scale(0.97); }
 .action-btn.edit {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-sm);
 }
 .action-btn.delete {
   background: var(--red-soft);
@@ -347,19 +359,20 @@ const confirmDelete = async () => {
 /* Edit sheet */
 .sheet-title {
   font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-  margin-bottom: 20px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin-bottom: var(--space-5);
+  font-family: var(--font-display);
 }
 .edit-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-4);
 }
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 .form-group label {
   font-size: 13px;
@@ -367,28 +380,34 @@ const confirmDelete = async () => {
   color: var(--text-secondary);
 }
 .form-input {
-  height: 44px;
+  height: 48px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0 14px;
-  font-size: 14px;
+  padding: 0 var(--space-4);
+  font-size: 15px;
   color: var(--text);
-  background: var(--bg);
+  background: var(--surface);
   outline: none;
+  font-family: var(--font-body);
+  transition: border-color var(--duration-micro) var(--ease-out), box-shadow var(--duration-micro) var(--ease-out);
 }
-.form-input:focus { border-color: var(--accent); }
-textarea.form-input { height: auto; padding: 10px 14px; resize: none; }
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+textarea.form-input { height: auto; padding: var(--space-3) var(--space-4); resize: none; }
 select.form-input { cursor: pointer; }
 .btn-submit {
   height: 48px;
-  background: var(--text);
-  color: white;
-  border-radius: 14px;
+  background: var(--accent);
+  color: var(--text-inverse);
+  border-radius: var(--radius-sm);
   font-size: 15px;
   font-weight: 600;
-  margin-top: 8px;
+  margin-top: var(--space-2);
+  box-shadow: var(--shadow-sm);
 }
-.btn-submit:active { transform: scale(0.98); }
+.btn-submit:active { transform: scale(0.97); }
 .btn-submit:disabled { opacity: 0.5; }
 
 /* Confirm dialog */
@@ -400,36 +419,40 @@ select.form-input { cursor: pointer; }
   align-items: center;
   justify-content: center;
   z-index: 200;
-  padding: 20px;
+  padding: var(--space-5);
 }
 .confirm-dialog {
   background: var(--surface);
   border-radius: var(--radius);
-  padding: 24px;
+  padding: var(--space-6);
   width: 100%;
   max-width: 320px;
+  box-shadow: var(--shadow-xl);
 }
 .confirm-dialog h3 {
   font-size: 17px;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+  font-family: var(--font-display);
 }
 .confirm-dialog p {
   font-size: 14px;
   color: var(--text-secondary);
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
+  line-height: 1.6;
 }
 .confirm-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
 }
 .confirm-btn {
   flex: 1;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   font-size: 15px;
   font-weight: 600;
+  font-family: var(--font-body);
 }
-.confirm-btn.cancel { background: var(--border); color: var(--text); }
-.confirm-btn.danger { background: var(--red); color: white; }
+.confirm-btn.cancel { background: var(--surface-alt); color: var(--text); }
+.confirm-btn.danger { background: var(--red); color: var(--text-inverse); }
 </style>

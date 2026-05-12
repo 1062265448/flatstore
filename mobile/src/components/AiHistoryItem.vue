@@ -37,19 +37,20 @@ const formatTime = (dateStr: string) => {
 .ai-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 0;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
+  transition: opacity var(--duration-micro) var(--ease-out);
 }
 .ai-item:active {
   opacity: 0.7;
 }
 .ai-thumb {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: var(--border);
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -58,6 +59,7 @@ const formatTime = (dateStr: string) => {
   color: var(--text-tertiary);
   flex-shrink: 0;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 .ai-thumb-img {
   width: 100%;
@@ -79,8 +81,8 @@ const formatTime = (dateStr: string) => {
   margin-top: 2px;
 }
 .ai-badge {
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-xs);
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;

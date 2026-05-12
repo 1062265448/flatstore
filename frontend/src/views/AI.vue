@@ -225,9 +225,24 @@
                   <label>统一品级</label>
                   <input v-model="importForm.grade" type="text" placeholder="为空则使用识别结果中的品级" />
                 </div>
-                <div class="form-item full-width">
+                <div class="form-item">
+                  <label>规格</label>
+                  <select v-model="importForm.specification" class="form-select">
+                    <option value="">请选择规格（可选）</option>
+                    <option value="整板">整板</option>
+                    <option value="镍条">镍条</option>
+                    <option value="100*100">100*100</option>
+                    <option value="50*50">50*50</option>
+                    <option value="25*25">25*25</option>
+                  </select>
+                </div>
+                <div class="form-item">
                   <label>存放位置</label>
-                  <input v-model="importForm.location" type="text" placeholder="请输入存放位置" />
+                  <select v-model="importForm.location" class="form-select">
+                    <option value="">请选择存放位置（可选）</option>
+                    <option value="二厂区">二厂区</option>
+                    <option value="三厂区">三厂区</option>
+                  </select>
                 </div>
               </div>
 
@@ -238,18 +253,22 @@
                     <tr>
                       <th>批号</th>
                       <th>品级</th>
+                      <th>规格</th>
                       <th>产品类型</th>
                       <th>片数</th>
                       <th>净重(吨)</th>
+                      <th>存放位置</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="(item, index) in recognizeResults" :key="index">
                       <td>{{ importForm.batchNo || item.batchNo || '-' }}</td>
                       <td>{{ importForm.grade || item.grade || '-' }}</td>
+                      <td>{{ importForm.specification || '-' }}</td>
                       <td>{{ item.productType || '-' }}</td>
                       <td>{{ item.pieceCount || '-' }}</td>
                       <td>{{ (item.netWeight || 0).toFixed(3) }}</td>
+                      <td>{{ importForm.location || '-' }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -372,6 +391,7 @@ const importing = ref(false)
 const importForm = reactive({
   batchNo: '',
   grade: '',
+  specification: '',
   location: '',
 })
 
@@ -457,6 +477,7 @@ const handleRecognize = async () => {
 const handleBatchCreate = () => {
   importForm.batchNo = ''
   importForm.grade = ''
+  importForm.specification = ''
   importForm.location = ''
   importVisible.value = true
 }
@@ -469,6 +490,7 @@ const handleImportSubmit = async () => {
     const items: CreateInventoryDto[] = recognizeResults.value.map((r) => ({
       batchNo: importForm.batchNo || String(r.batchNo || ''),
       grade: importForm.grade || r.grade || '',
+      specification: importForm.specification || '',
       productType: r.productType || '',
       weight: ((r.netWeight || 0) as number) * 1000,
       pieceCount: r.pieceCount || 0,
@@ -608,12 +630,12 @@ onMounted(() => {
 .upload-area {
   border: 2px dashed var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 40px 20px;
+  padding: 48px 24px;
   text-align: center;
   cursor: pointer;
   transition: all var(--transition-normal);
   background: var(--color-bg-tertiary);
-  min-height: 200px;
+  min-height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -645,15 +667,16 @@ onMounted(() => {
 }
 
 .upload-icon-wrap {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   background: var(--color-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
   transition: all var(--transition-normal);
+  box-shadow: var(--glass-shadow);
 
   .upload-area:hover & {
     transform: scale(1.05);
@@ -908,7 +931,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   background: var(--color-bg);
-  font-size: 20px;
+  color: var(--color-text-tertiary);
 }
 
 .history-info {
@@ -1025,22 +1048,11 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-xl);
-
-  .empty-icon {
-    font-size: 36px;
-    opacity: 0.5;
-    animation: float 3s ease-in-out infinite;
-  }
+  padding: var(--spacing-2xl);
 
   .empty-text {
     color: var(--color-text-secondary);
   }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
 }
 
 .loading-state {

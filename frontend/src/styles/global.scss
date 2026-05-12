@@ -1,5 +1,6 @@
 // ==============================================
-// 平面库配货系统 - 全局样式
+// 平面库配货系统 - 全局样式（优化版）
+// 统一设计语言：排版层次 / 组件规范 / 状态样式
 // ==============================================
 
 // ==================== 基础重置 ====================
@@ -26,6 +27,13 @@ body {
   min-height: 100vh;
 }
 
+// ==================== 排版层级 ====================
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
 // ==================== 链接 ====================
 a {
   color: var(--color-primary);
@@ -45,8 +53,8 @@ a {
 
 // ==================== 滚动条美化 ====================
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -55,22 +63,67 @@ a {
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-border-strong);
-  border-radius: 4px;
+  border-radius: 3px;
 
   &:hover {
     background: var(--color-text-tertiary);
   }
 }
 
-// Firefox
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border-strong) transparent;
 }
 
+// ==================== 统一表格设计 ====================
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-divider);
+  }
+
+  th {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--color-bg-tertiary);
+    position: sticky;
+    top: 0;
+  }
+
+  tbody tr {
+    transition: background var(--transition-fast);
+
+    &:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+}
+
+// ==================== 统一输入框 ====================
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  font-family: inherit;
+  transition: all var(--transition-fast);
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-100);
+  }
+}
+
 // ==================== 通用类 ====================
 
-// 卡片样式
+// 卡片样式 — 更精致的玻璃态
 .glass-card {
   background: var(--glass-bg-solid);
   border: 1px solid var(--glass-border);
@@ -81,7 +134,6 @@ a {
     box-shadow var(--transition-normal);
 
   &:hover {
-    transform: scale(1.01);
     box-shadow: var(--glass-shadow-hover);
   }
 }
@@ -139,7 +191,7 @@ a {
     color: var(--color-text-inverse);
 
     &:hover {
-      background: #e63629;
+      background: #DC2626;
     }
   }
 
@@ -164,12 +216,12 @@ a {
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
+  padding: 3px 10px;
   border-radius: var(--radius-pill);
-  font-size: var(--font-size-xs);
+  font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
 
   &.tag-success {
     background: var(--color-success-bg);
@@ -210,14 +262,16 @@ a {
 
   .page-title {
     font-size: var(--font-size-3xl);
-    font-weight: 600;
-    letter-spacing: -0.5px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
     margin-bottom: var(--spacing-xs);
+    color: var(--color-text-primary);
   }
 
   .page-subtitle {
     font-size: var(--font-size-md);
     color: var(--color-text-secondary);
+    line-height: 1.5;
   }
 }
 
@@ -259,46 +313,23 @@ a {
 }
 
 .fade-in {
-  animation: fadeIn 0.4s ease forwards;
+  animation: fadeIn 0.4s var(--transition-slow) forwards;
 }
 
 // 页面切换动画
 .page-enter-active,
 .page-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity var(--transition-page), transform var(--transition-page);
 }
 
 .page-enter-from {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(8px);
 }
 
 .page-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
-}
-
-// Toast动画
-@keyframes toastIn {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-@keyframes toastOut {
-  from {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-20px);
-  }
+  transform: translateY(-8px);
 }
 
 // 脉冲动画
@@ -335,6 +366,40 @@ a {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-sm);
+}
+
+// ==================== Loading / Empty / Error 统一状态 ====================
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: var(--color-text-secondary);
+  gap: var(--spacing-md);
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2.5px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-2xl);
+  color: var(--color-text-secondary);
 }
 
 // ==================== 工具类 ====================
@@ -395,8 +460,12 @@ a {
   color: var(--color-danger);
 }
 
+.font-mono {
+  font-family: var(--font-mono);
+}
+
 // ==================== 响应式 ====================
-@media (max-width: $breakpoint-md) {
+@media (max-width: 768px) {
   .page-container {
     padding: 0 var(--spacing-md);
   }
@@ -408,7 +477,7 @@ a {
   }
 }
 
-@media (max-width: $breakpoint-sm) {
+@media (max-width: 640px) {
   .page-container {
     padding: 0 var(--spacing-sm);
   }

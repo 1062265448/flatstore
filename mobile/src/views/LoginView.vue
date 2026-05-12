@@ -74,8 +74,8 @@ const handleSubmit = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface);
-  padding: 40px 24px;
+  background: var(--bg);
+  padding: 40px var(--space-6);
   padding-top: calc(40px + var(--safe-top));
 }
 .login-content {
@@ -84,36 +84,38 @@ const handleSubmit = async () => {
 }
 .login-header {
   text-align: center;
-  margin-bottom: 48px;
+  margin-bottom: var(--space-12, 48px);
 }
 .brand-label {
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  color: var(--text-tertiary);
-  font-weight: 500;
-  margin-bottom: 8px;
+  letter-spacing: 2.5px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
 }
 .brand-title {
   font-size: 28px;
-  font-weight: 600;
-  letter-spacing: -0.5px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
   color: var(--text);
+  font-family: var(--font-display);
 }
 .brand-sub {
   font-size: 14px;
   color: var(--text-tertiary);
-  margin-top: 6px;
+  margin-top: var(--space-2);
+  font-weight: 400;
 }
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 .form-label {
   font-size: 13px;
@@ -124,35 +126,39 @@ const handleSubmit = async () => {
   height: 48px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0 16px;
+  padding: 0 var(--space-4);
   font-size: 15px;
   color: var(--text);
-  background: var(--bg);
+  background: var(--surface);
   outline: none;
-  transition: border-color 0.2s;
+  font-family: var(--font-body);
+  transition: border-color var(--duration-micro) var(--ease-out), box-shadow var(--duration-micro) var(--ease-out);
 }
 .form-input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 .form-input::placeholder {
   color: var(--text-tertiary);
 }
 .btn-primary {
   height: 50px;
-  background: var(--text);
+  background: var(--accent);
   color: white;
-  border-radius: 14px;
+  border: none;
+  border-radius: var(--radius-sm);
   font-size: 15px;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-top: 8px;
-  transition: all 0.2s;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  transition: all var(--duration-micro) var(--ease-out);
+  box-shadow: var(--shadow-md);
 }
 .btn-primary:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 .btn-primary:disabled {
   opacity: 0.5;

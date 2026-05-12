@@ -61,7 +61,11 @@
           <tr v-if="!customerStore.customers.length">
             <td colspan="8" class="empty-cell">
               <div class="empty-state">
-                <span class="empty-icon">👥</span>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.4">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
                 <span class="empty-text">暂无客户数据</span>
                 <span class="empty-hint">点击上方按钮添加客户</span>
               </div>
@@ -273,9 +277,9 @@ onMounted(() => {
 }
 
 .loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--color-border);
+  width: 28px;
+  height: 28px;
+  border: 2.5px solid var(--color-border);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -307,7 +311,7 @@ onMounted(() => {
   .table-row {
     animation: fadeIn 0.4s ease forwards;
     opacity: 0;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast);
 
     &:hover {
       background: var(--color-bg-hover);
@@ -378,7 +382,7 @@ onMounted(() => {
 }
 
 .empty-cell {
-  padding: 60px !important;
+  padding: 48px !important;
 }
 
 .empty-state {
@@ -386,12 +390,6 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-sm);
-
-  .empty-icon {
-    font-size: 48px;
-    opacity: 0.5;
-    animation: float 3s ease-in-out infinite;
-  }
 
   .empty-text {
     color: var(--color-text-secondary);
@@ -404,14 +402,7 @@ onMounted(() => {
   }
 }
 
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
+
 
 // ==================== 弹窗 ====================
 .modal-overlay {
@@ -513,7 +504,7 @@ onMounted(() => {
     &:focus {
       outline: none;
       border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+      box-shadow: 0 0 0 3px var(--color-primary-100);
     }
 
     &::placeholder {
@@ -530,10 +521,10 @@ onMounted(() => {
 // 弹窗动画
 .modal-enter-active,
 .modal-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-slow);
 
   .modal-content {
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    transition: transform var(--transition-slow), opacity var(--transition-slow);
   }
 }
 

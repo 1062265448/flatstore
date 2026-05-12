@@ -40,45 +40,51 @@ const badgeClass = computed(() => {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
-  margin: 0 20px 8px;
+  padding: var(--space-4) var(--space-5);
+  margin: 0 var(--space-5) var(--space-2);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--duration-normal) var(--ease-out);
 }
 .order-card:active {
   transform: scale(0.985);
+  box-shadow: var(--shadow-md);
 }
 
 .order-head {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 6px;
+  align-items: center;
+  margin-bottom: var(--space-2);
 }
 .order-no {
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
+  font-family: var(--font-mono);
+  letter-spacing: -0.2px;
 }
 .order-badge {
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-xs);
   font-size: 11px;
   font-weight: 600;
 }
 .badge-green { background: var(--green-soft); color: var(--green); }
 .badge-amber { background: var(--amber-soft); color: var(--amber); }
-.badge-gray { background: #F5F5F5; color: var(--text-secondary); }
+.badge-gray { background: var(--surface-alt); color: var(--text-secondary); }
 .badge-red { background: var(--red-soft); color: var(--red); }
 
 .order-cust {
   font-size: 13px;
   color: var(--text-secondary);
-  margin-bottom: 10px;
+  margin-bottom: var(--space-3);
 }
 .order-meta {
   display: flex;
-  gap: 16px;
+  gap: var(--space-4);
   font-size: 12px;
   color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 </style>

@@ -37,3 +37,6 @@ Thumbs.db
 # 临时文件
 *.tmp
 *.temp
+
+# Vite deps cache
+mobile/.vite/

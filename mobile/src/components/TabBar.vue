@@ -67,12 +67,12 @@ const switchTab = (name: string) => {
   left: 0;
   right: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   display: flex;
   align-items: flex-start;
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--border);
   z-index: 50;
 }
@@ -86,24 +86,44 @@ const switchTab = (name: string) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   color: var(--text-tertiary);
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color var(--duration-micro) var(--ease-out);
   -webkit-user-select: none;
   user-select: none;
   min-height: 44px;
+  padding: 6px 0 12px;
+  position: relative;
 }
 .tab.active {
   color: var(--accent);
 }
+.tab.active::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
 .tab-icon {
   width: 22px;
   height: 22px;
+  transition: transform var(--duration-micro) var(--ease-out);
+}
+.tab:active .tab-icon {
+  transform: scale(0.92);
 }
 .tab-label {
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.2px;
+}
+.tab.active .tab-label {
   font-weight: 600;
-  font-size: 11px;
-  letter-spacing: 0.3px;
 }
 </style>

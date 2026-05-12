@@ -773,17 +773,18 @@ onUnmounted(() => {
     color: #fff;
     flex-shrink: 0;
 
-    &.blue { background: linear-gradient(135deg, #0071e3, #0056b3); }
-    &.green { background: linear-gradient(135deg, #34c759, #248a3d); }
-    &.orange { background: linear-gradient(135deg, #ff9500, #d97706); }
-    &.purple { background: linear-gradient(135deg, #af52de, #8b5cf6); }
+    &.blue { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+    &.green { background: linear-gradient(135deg, #10B981, #059669); }
+    &.orange { background: linear-gradient(135deg, #F59E0B, #D97706); }
+    &.purple { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
   }
 
   .stat-content {
     .stat-value {
-      font-size: var(--font-size-xl);
-      font-weight: 600;
+      font-size: 24px;
+      font-weight: 700;
       color: var(--color-text-primary);
+      letter-spacing: -0.02em;
     }
 
     .stat-label {
@@ -894,10 +895,10 @@ onUnmounted(() => {
 
 .placeholder-status {
   padding: var(--spacing-xs) var(--spacing-md);
-  background: rgba(245, 158, 11, 0.1);
+  background: var(--color-warning-bg);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
-  color: var(--color-primary);
+  color: var(--color-warning);
 }
 
 // ==================== 响应式 ====================

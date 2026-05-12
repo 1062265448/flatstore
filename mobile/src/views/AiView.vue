@@ -118,8 +118,29 @@
             </div>
           </div>
         </div>
+
+        <!-- 导入设置 -->
+        <div class="import-section">
+          <div class="import-section-title">导入设置</div>
+          <div class="import-fields">
+            <div class="import-field">
+              <label>规格</label>
+              <select v-model="importForm.specification" class="import-select">
+                <option v-for="opt in specOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+            </div>
+            <div class="import-field">
+              <label>存放位置</label>
+              <select v-model="importForm.location" class="import-select">
+                <option v-for="opt in locationOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <button class="btn-import" :disabled="importing" @click="handleImport">
-          导入全部到库存 ({{ recognizeResults.length }})
+          <span v-if="importing" class="btn-import-spinner"></span>
+          {{ importing ? '导入中...' : '导入全部到库存 (' + recognizeResults.length + ')' }}
         </button>
       </div>
       <button
@@ -168,7 +189,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { Capacitor } from '@capacitor/core'
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { aiRecognize, getRecognitionHistory, batchCreateInventory } from '@/api/distribution'
@@ -202,6 +223,26 @@ const importing = ref(false)
 const errorMessage = ref('')
 const recognizeResults = ref<AiRecognizeResult[]>([])
 const results = ref<{ label: string; value: string }[]>([])
+
+const importForm = reactive({
+  specification: '',
+  location: '',
+})
+
+const specOptions = [
+  { label: '请选择规格（可选）', value: '' },
+  { label: '整板', value: '整板' },
+  { label: '镍条', value: '镍条' },
+  { label: '100*100', value: '100*100' },
+  { label: '50*50', value: '50*50' },
+  { label: '25*25', value: '25*25' },
+]
+
+const locationOptions = [
+  { label: '请选择存放位置（可选）', value: '' },
+  { label: '二厂区', value: '二厂区' },
+  { label: '三厂区', value: '三厂区' },
+]
 
 const fetchHistory = async () => {
   historyLoading.value = true
@@ -355,10 +396,12 @@ const handleImport = async () => {
     const items = recognizeResults.value.map(r => ({
       batchNo: r.batchNo || '',
       grade: r.grade || '',
+      specification: importForm.specification || '',
       productType: r.productType || '',
       weight: (r.netWeight || 0) * 1000,
       pieceCount: r.pieceCount || 0,
       packageNo: String(r.packageNo || ''),
+      location: importForm.location || '',
     }))
     await batchCreateInventory({ items })
     success('导入成功')
@@ -377,110 +420,111 @@ onMounted(fetchHistory)
 
 <style scoped>
 .ai-view {
-  padding-bottom: calc(var(--tab-height) + 20px);
+  padding-bottom: calc(var(--tab-height) + var(--space-5));
   padding-top: var(--page-header-top);
 }
 .page-header {
-  padding: 12px 20px 16px;
+  padding: var(--space-3) var(--space-5) var(--space-4);
 }
 .header-label {
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
   color: var(--text-tertiary);
   font-weight: 500;
 }
 .header-title {
   font-size: 28px;
-  font-weight: 600;
-  letter-spacing: -0.5px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
   color: var(--text);
+  font-family: var(--font-display);
 }
-.ai-list {
-  padding: 0 20px;
-}
-.loading-state { display: flex; justify-content: center; padding: 60px 0; }
-.empty-hint { text-align: center; padding: 60px 0; font-size: 14px; color: var(--text-tertiary); }
 
 .ai-fab {
   position: fixed;
-  bottom: calc(var(--tab-height) + 16px);
-  right: 20px;
-  width: 52px;
-  height: 52px;
+  bottom: calc(var(--tab-height) + var(--space-4));
+  right: var(--space-5);
+  width: 56px;
+  height: 56px;
   background: var(--text);
   color: white;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
   font-weight: 700;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  font-family: var(--font-display);
+  box-shadow: var(--shadow-fab);
   z-index: 60;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--duration-slow) var(--ease-out-expo);
 }
-.ai-fab:active { transform: scale(0.9); }
+.ai-fab:active { transform: scale(0.9) rotate(8deg); }
 
 /* Sheet */
 .sheet-title {
   font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-  margin-bottom: 4px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin-bottom: var(--space-1);
+  font-family: var(--font-display);
 }
 .sheet-sub {
   font-size: 14px;
   color: var(--text-tertiary);
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 /* 操作按钮 */
 .camera-actions {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 .camera-btn {
   flex: 1;
-  height: 50px;
-  border-radius: 14px;
+  height: 52px;
+  border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-2);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--duration-micro) var(--ease-out);
+  border: 1px solid transparent;
 }
 .camera-btn:active { transform: scale(0.96); }
 .camera-btn:first-child {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
 }
 .camera-btn:last-child {
-  background: var(--bg);
+  background: var(--surface);
   color: var(--text-secondary);
-  border: 1px solid var(--border);
+  border-color: var(--border);
 }
-.cam-icon { opacity: 0.8; }
+.cam-icon { opacity: 0.9; }
 .btn-text { font-size: 14px; font-weight: 500; }
 
 /* 预览 */
 .preview-area {
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 .preview-img {
   width: 100%;
   max-height: 240px;
   object-fit: contain;
   border-radius: var(--radius);
-  background: #111;
+  background: var(--surface-alt);
 }
 .preview-remove {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: var(--space-2);
+  right: var(--space-2);
   width: 32px;
   height: 32px;
   background: rgba(0, 0, 0, 0.6);
@@ -490,6 +534,7 @@ onMounted(fetchHistory)
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
 }
 
 /* 识别中 */
@@ -497,8 +542,8 @@ onMounted(fetchHistory)
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 20px 0;
+  gap: var(--space-2);
+  padding: var(--space-5) 0;
   font-size: 14px;
   color: var(--text-secondary);
 }
@@ -507,34 +552,35 @@ onMounted(fetchHistory)
 .error-msg {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 14px 16px;
+  gap: var(--space-2);
+  padding: var(--space-4);
   background: var(--red-soft);
-  border-radius: 12px;
-  margin: 12px 0;
+  border-radius: var(--radius-sm);
+  margin: var(--space-3) 0;
 }
 .error-icon-svg { color: var(--red); flex-shrink: 0; }
-.error-text { flex: 1; font-size: 13px; color: var(--red); }
+.error-text { flex: 1; font-size: 13px; color: var(--red); font-weight: 500; }
 .error-retry {
-  padding: 6px 14px;
+  padding: var(--space-2) var(--space-4);
   background: var(--red);
   color: white;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   font-size: 12px;
   font-weight: 500;
+  border: none;
 }
 
 /* 结果 */
 .results-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 16px;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
 }
 .result-header {
   display: flex;
   align-items: center;
-  padding-bottom: 4px;
+  padding-bottom: var(--space-1);
 }
 .result-count {
   font-size: 13px;
@@ -542,16 +588,17 @@ onMounted(fetchHistory)
   color: var(--text-secondary);
 }
 .result-card {
-  background: var(--bg);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 .result-card-top {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: var(--space-3);
+  padding: var(--space-4);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
@@ -560,8 +607,8 @@ onMounted(fetchHistory)
   font-weight: 600;
   color: var(--accent);
   background: var(--accent-soft);
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-xs);
   flex-shrink: 0;
 }
 .result-batch {
@@ -579,18 +626,18 @@ onMounted(fetchHistory)
   font-weight: 600;
   background: var(--green-soft);
   color: var(--green);
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-xs);
   flex-shrink: 0;
 }
 .result-card-body {
-  padding: 4px 0;
+  padding: var(--space-1) 0;
 }
 .result-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
 }
 .result-row:last-child { border-bottom: none; }
@@ -618,7 +665,7 @@ onMounted(fetchHistory)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
+  padding: var(--space-3) var(--space-4);
 }
 .result-row-inline:first-child {
   border-right: 1px solid var(--border);
@@ -627,29 +674,115 @@ onMounted(fetchHistory)
 .btn-import, .btn-recognize {
   width: 100%;
   height: 50px;
-  background: var(--text);
+  background: var(--accent);
   color: white;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   font-size: 15px;
   font-weight: 600;
-  margin-top: 20px;
+  margin-top: var(--space-5);
   cursor: pointer;
   letter-spacing: -0.2px;
+  box-shadow: var(--shadow-sm);
 }
-.btn-import:active, .btn-recognize:active { transform: scale(0.98); }
+.btn-import:active, .btn-recognize:active { transform: scale(0.97); }
 .btn-import:disabled { opacity: 0.5; }
 
-.detail-info { margin-bottom: 16px; }
+.detail-info { margin-bottom: var(--space-4); }
 .detail-image {
   border-radius: var(--radius);
   overflow: hidden;
-  margin-top: 16px;
+  margin-top: var(--space-4);
 }
 .detail-image img {
   width: 100%;
   max-height: 300px;
   object-fit: contain;
-  background: #f5f5f5;
+  background: var(--surface-alt);
+}
+.result-line {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.result-line:last-child { border-bottom: none; }
+.rl { font-size: 13px; color: var(--text-tertiary); }
+.rv { font-size: 14px; font-weight: 500; }
+
+/* Import section */
+.import-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin-top: var(--space-3);
+}
+.import-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-3);
+}
+.import-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.import-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.import-field label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+.import-select {
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-3);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface-alt);
+  outline: none;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: border-color var(--duration-micro) var(--ease-out), box-shadow var(--duration-micro) var(--ease-out);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-2) center;
+  background-size: 14px;
+}
+.import-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Import button spinner */
+.btn-import {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-import-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-right: var(--space-2);
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

@@ -827,17 +827,18 @@ const handleAiRecognize = async () => {
     padding: 16px 0;
   }
   .log-container {
-    background: #1e1e1e;
-    border-radius: 8px;
+    background: #0F172A;
+    border-radius: var(--radius-md);
     padding: 16px;
     max-height: 400px;
     overflow-y: auto;
-    font-family: 'Consolas', 'Monaco', monospace;
+    font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
     font-size: 13px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
   }
   .log-item {
     padding: 8px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
     &:last-child {
       border-bottom: none;
     }
@@ -873,24 +874,24 @@ const handleAiRecognize = async () => {
     .log-response {
       margin-top: 8px;
       pre {
-        background: #2d2d2d;
+        background: rgba(30, 41, 59, 0.5);
         padding: 12px;
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         overflow-x: auto;
-        color: #9cdcfe;
+        color: #9CDCFE;
         max-height: 200px;
       }
     }
     .log-error {
       margin-top: 8px;
-      color: #f93e3e;
+      color: #F87171;
       padding: 8px;
-      background: rgba(249, 62, 62, 0.1);
-      border-radius: 4px;
+      background: rgba(239, 68, 68, 0.1);
+      border-radius: var(--radius-sm);
     }
   }
   .log-empty {
-    color: #666;
+    color: var(--color-text-secondary);
     text-align: center;
     padding: 40px;
   }
@@ -921,16 +922,16 @@ const handleAiRecognize = async () => {
 html.dark {
   .test-page {
     .log-container {
-      background: #0d0d0d;
+      background: #020617;
     }
     .log-item {
-      border-bottom-color: #222;
+      border-bottom-color: rgba(148, 163, 184, 0.06);
       .log-response pre {
-        background: #1a1a1a;
+        background: rgba(15, 23, 42, 0.5);
       }
     }
     .upload-area :deep(.el-upload-dragger) {
-      background: #1f1f1f;
+      background: var(--color-bg-tertiary);
     }
   }
 }

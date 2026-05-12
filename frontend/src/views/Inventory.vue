@@ -208,7 +208,14 @@
                 </div>
                 <div class="form-item">
                   <label>规格</label>
-                  <input v-model="form.specification" type="text" placeholder="请输入规格" />
+                  <select v-model="form.specification" class="form-select">
+                    <option value="">请选择规格</option>
+                    <option value="整板">整板</option>
+                    <option value="镍条">镍条</option>
+                    <option value="100*100">100*100</option>
+                    <option value="50*50">50*50</option>
+                    <option value="25*25">25*25</option>
+                  </select>
                 </div>
                 <div class="form-item">
                   <label>产品类型</label>
@@ -611,9 +618,9 @@ onMounted(() => {
 }
 
 .loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--color-border);
+  width: 28px;
+  height: 28px;
+  border: 2.5px solid var(--color-border);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -628,7 +635,7 @@ onMounted(() => {
   border-collapse: collapse;
 
   th, td {
-    padding: 14px 16px;
+    padding: 12px 16px;
     text-align: left;
     border-bottom: 1px solid var(--color-divider);
   }
@@ -666,11 +673,11 @@ onMounted(() => {
 
   .batch-no {
     font-weight: 500;
-    font-family: monospace;
+    font-family: var(--font-mono);
   }
 
   .weight {
-    font-family: monospace;
+    font-family: var(--font-mono);
   }
 
   .time {
@@ -707,7 +714,7 @@ onMounted(() => {
 }
 
 .empty-cell {
-  padding: 60px !important;
+  padding: 48px !important;
 }
 
 .empty-state {
@@ -789,12 +796,15 @@ onMounted(() => {
   border-radius: 50%;
   border: none;
   background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
   font-size: 14px;
   cursor: pointer;
   transition: all var(--transition-fast);
 
   &:hover {
-    background: var(--color-bg-hover);
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+    transform: rotate(90deg);
   }
 }
 
@@ -845,7 +855,7 @@ onMounted(() => {
     &:focus {
       outline: none;
       border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+      box-shadow: 0 0 0 3px var(--color-primary-100);
     }
 
     &::placeholder {
@@ -875,10 +885,10 @@ onMounted(() => {
 // 弹窗动画
 .modal-enter-active,
 .modal-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-slow);
 
   .modal-content {
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    transition: transform var(--transition-slow), opacity var(--transition-slow);
   }
 }
 

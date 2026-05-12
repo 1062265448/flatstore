@@ -273,13 +273,13 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 16px;
-  border-radius: var(--radius-lg);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   text-decoration: none;
   transition: all var(--transition-normal);
-  animation: slideDown 0.4s ease backwards;
+  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 
   &:hover {
     background: var(--color-bg-hover);
@@ -291,10 +291,10 @@ onUnmounted(() => {
     color: var(--color-text-inverse);
 
     .nav-link-indicator {
-      width: 20px;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.5);
-      border-radius: 2px;
+      width: 16px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 1px;
       position: absolute;
       bottom: 4px;
       left: 50%;
@@ -361,11 +361,11 @@ onUnmounted(() => {
   top: 60px;
   left: 0;
   right: 0;
-  height: 32px;
+  height: 36px;
   display: flex;
   align-items: center;
   padding: 0 var(--spacing-2xl);
-  background: var(--glass-bg);
+  background: var(--nav-bg);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--color-border);
   z-index: calc(var(--z-nav) - 1);
@@ -418,7 +418,7 @@ onUnmounted(() => {
 .toast {
   background: var(--color-text-primary);
   color: var(--color-bg-secondary);
-  padding: 12px 20px;
+  padding: 10px 18px;
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -497,7 +497,7 @@ onUnmounted(() => {
 
 /* 用户菜单样式 */
 .user-menu {
-  margin-left: 16px;
+  margin-left: 12px;
 
   .user-avatar {
     display: flex;
@@ -544,13 +544,14 @@ onUnmounted(() => {
 
   :deep(.el-dropdown-menu) {
     margin-top: 8px;
-    border-radius: 12px;
-    padding: 8px;
-    box-shadow: var(--glass-shadow-hover);
+    border-radius: var(--radius-md);
+    padding: 6px;
+    box-shadow: var(--glass-shadow-lg);
+    border: 1px solid var(--color-border);
 
     .el-dropdown-menu__item {
-      padding: 10px 16px;
-      border-radius: 8px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
       display: flex;
       align-items: center;
       gap: 8px;
@@ -568,7 +569,7 @@ onUnmounted(() => {
 }
 
 .auth-buttons {
-  margin-left: 16px;
+  margin-left: 12px;
   display: flex;
   align-items: center;
   gap: 12px;

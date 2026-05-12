@@ -91,57 +91,52 @@ onMounted(async () => {
 
 <style scoped>
 .home-view {
-  padding-bottom: calc(var(--tab-height) + 20px);
+  padding-bottom: calc(var(--tab-height) + var(--space-5));
   padding-top: var(--page-header-top);
 }
 .page-header {
-  padding: 12px 20px 16px;
+  padding: var(--space-3) var(--space-5) var(--space-4);
 }
 .header-label {
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
   color: var(--text-tertiary);
   font-weight: 500;
 }
 .header-title {
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -0.5px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
   color: var(--text);
+  font-family: var(--font-display);
 }
 .header-date {
   font-size: 13px;
   color: var(--text-tertiary);
   margin-top: 2px;
+  font-weight: 400;
 }
 
 .stats {
   display: flex;
-  gap: 8px;
-  padding: 0 20px 16px;
-}
-
-.section-label {
-  padding: 0 20px 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-tertiary);
+  gap: var(--space-2);
+  padding: 0 var(--space-5) var(--space-4);
 }
 
 .status-bar-section {
-  padding: 0 20px 20px;
+  padding: 0 var(--space-5) var(--space-5);
 }
 .status-bar {
-  height: 8px;
-  border-radius: 4px;
-  background: var(--border);
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--surface-alt);
   display: flex;
   overflow: hidden;
 }
 .bar-segment {
   height: 100%;
-  transition: width 0.5s ease;
+  transition: width 0.5s var(--ease-out);
 }
 .bar-segment.available { background: var(--green); }
 .bar-segment.reserved { background: var(--amber); }
@@ -149,19 +144,20 @@ onMounted(async () => {
 
 .status-legend {
   display: flex;
-  gap: 16px;
-  margin-top: 8px;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
 }
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   font-size: 12px;
   color: var(--text-secondary);
+  font-weight: 500;
 }
 .legend-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
 }
 .legend-dot.available { background: var(--green); }
@@ -169,31 +165,32 @@ onMounted(async () => {
 .legend-dot.shipped { background: var(--text-tertiary); }
 
 .recent-orders {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 .empty-hint {
-  padding: 0 20px;
+  padding: 0 var(--space-5);
   font-size: 13px;
   color: var(--text-tertiary);
 }
 
 .ai-fab {
   position: fixed;
-  bottom: calc(var(--tab-height) + 16px);
-  right: 20px;
-  width: 52px;
-  height: 52px;
+  bottom: calc(var(--tab-height) + var(--space-4));
+  right: var(--space-5);
+  width: 56px;
+  height: 56px;
   background: var(--text);
   color: white;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
   font-weight: 700;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  font-family: var(--font-display);
+  box-shadow: var(--shadow-fab);
   z-index: 60;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--duration-slow) var(--ease-out-expo);
 }
 .ai-fab:active {
   transform: scale(0.9);

@@ -115,25 +115,25 @@ const statCards = computed(() => [
     label: '库存总数',
     value: stats.value?.inventory.total || 0,
     sub: `可用 ${stats.value?.inventory.available || 0} 批次`,
-    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    gradient: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
   },
   {
     label: '配货单',
     value: stats.value?.order.total || 0,
     sub: `进行中 ${(stats.value?.order.draft || 0) + (stats.value?.order.shipping || 0)} 单`,
-    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    gradient: 'linear-gradient(135deg, #EC4899 0%, #F43F5E 100%)',
   },
   {
     label: '已发货',
     value: stats.value?.order.shipped || 0,
     sub: '配货单完成',
-    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    gradient: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)',
   },
   {
     label: '客户数',
     value: stats.value?.customer.total || 0,
     sub: '合作客户',
-    gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    gradient: 'linear-gradient(135deg, #10B981 0%, #14B8A6 100%)',
   },
 ])
 
@@ -311,16 +311,18 @@ onUnmounted(() => {
   }
 
   .stat-label {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xs);
     color: var(--color-text-secondary);
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: 6px;
+    font-weight: 500;
   }
 
   .stat-value {
-    font-size: var(--font-size-3xl);
-    font-weight: 600;
+    font-size: 28px;
+    font-weight: 700;
     color: var(--color-text-primary);
-    line-height: 1.2;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
     transition: transform 0.3s ease;
   }
 
@@ -345,13 +347,9 @@ onUnmounted(() => {
 
   &:hover {
     .stat-glow {
-      width: 200%;
-      height: 200%;
-      opacity: 0.1;
-    }
-
-    .stat-value {
-      transform: scale(1.05);
+      width: 250%;
+      height: 250%;
+      opacity: 0.08;
     }
   }
 }
@@ -374,7 +372,7 @@ onUnmounted(() => {
 }
 
 .chart-card {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   opacity: 0;
 
   &.fade-in {
@@ -405,7 +403,7 @@ onUnmounted(() => {
 }
 
 .weight-card {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   opacity: 0;
 
   &.fade-in {
@@ -436,9 +434,10 @@ onUnmounted(() => {
 }
 
 .weight-value {
-  font-size: var(--font-size-2xl);
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
   color: var(--color-text-primary);
+  letter-spacing: -0.02em;
 }
 
 .weight-label {
@@ -476,9 +475,10 @@ onUnmounted(() => {
   }
 
   .badge-count {
-    font-size: var(--font-size-2xl);
-    font-weight: 600;
+    font-size: 24px;
+    font-weight: 700;
     color: var(--color-text-primary);
+    letter-spacing: -0.02em;
     transition: color 0.3s ease;
   }
 

@@ -68,7 +68,7 @@ watch(() => props.visible, (v) => {
 .sheet-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.3);
   z-index: 90;
 }
 .sheet {
@@ -77,23 +77,27 @@ watch(() => props.visible, (v) => {
   left: 0;
   right: 0;
   background: var(--surface);
-  border-radius: 24px 24px 0 0;
-  padding: 8px 24px calc(48px + var(--safe-bottom));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--space-2) var(--space-6) calc(var(--space-12, 48px) + var(--safe-bottom));
   z-index: 100;
-  max-height: 80vh;
+  max-height: 85vh;
   overflow-y: auto;
   transition: transform 0.15s ease-out;
 }
 .sheet-bar {
   display: flex;
   justify-content: center;
-  padding: 8px 0 16px;
+  padding: var(--space-2) 0 var(--space-4);
   cursor: pointer;
 }
 .sheet-bar-indicator {
-  width: 36px;
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
+  width: 40px;
+  height: 5px;
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+  transition: background var(--duration-micro) var(--ease-out);
+}
+.sheet-bar:active .sheet-bar-indicator {
+  background: var(--border-hover);
 }
 </style>

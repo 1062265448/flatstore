@@ -82,13 +82,15 @@ const formatWeight = (w: string | number) => {
   background: var(--surface);
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  padding: 18px;
-  margin-bottom: 8px;
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-2);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--duration-normal) var(--ease-out);
 }
 .inventory-card:active {
   transform: scale(0.985);
+  box-shadow: var(--shadow-md);
   border-color: var(--border-strong);
 }
 
@@ -96,17 +98,18 @@ const formatWeight = (w: string | number) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: var(--space-4);
 }
 .card-batch {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.3px;
   color: var(--text);
+  font-family: var(--font-mono);
 }
 .card-tag {
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-xs);
   font-size: 11px;
   font-weight: 600;
   font-family: var(--font-mono);
@@ -119,7 +122,7 @@ const formatWeight = (w: string | number) => {
 .card-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  gap: var(--space-3);
 }
 .card-field .field-lbl {
   font-size: 10px;
@@ -137,29 +140,30 @@ const formatWeight = (w: string | number) => {
 .card-field .field-val.mono {
   font-family: var(--font-mono);
   font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 .card-foot {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 14px;
-  padding-top: 14px;
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
   border-top: 1px solid var(--border);
 }
 
 .card-actions {
   display: flex;
-  gap: 6px;
+  gap: var(--space-2);
 }
 .btn-sm {
-  padding: 5px 14px;
-  border-radius: 8px;
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-xs);
   font-size: 12px;
   font-weight: 500;
   border: none;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-micro) var(--ease-out);
 }
 .btn-sm:active {
   transform: scale(0.95);

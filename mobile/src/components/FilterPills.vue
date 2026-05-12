@@ -26,16 +26,16 @@ defineEmits<{
 <style scoped>
 .filter-row {
   display: flex;
-  gap: 6px;
-  padding: 0 20px 16px;
+  gap: var(--space-2);
+  padding: 0 var(--space-5) var(--space-4);
   overflow-x: auto;
 }
 .filter-pill {
   min-height: 44px;
   display: flex;
   align-items: center;
-  padding: 7px 14px;
-  border-radius: 20px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
@@ -43,14 +43,16 @@ defineEmits<{
   border: 1px solid var(--border);
   white-space: nowrap;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--duration-micro) var(--ease-out);
+  box-shadow: var(--shadow-sm);
 }
 .filter-pill:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 .filter-pill.active {
   background: var(--text);
-  color: white;
+  color: var(--text-inverse);
   border-color: var(--text);
+  box-shadow: var(--shadow-md);
 }
 </style>

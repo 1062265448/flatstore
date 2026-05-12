@@ -57,34 +57,36 @@ const handleLogout = () => {
 
 <style scoped>
 .profile-view {
-  padding-bottom: calc(var(--tab-height) + 20px);
+  padding-bottom: calc(var(--tab-height) + var(--space-5));
   padding-top: var(--page-header-top);
 }
 .page-header {
-  padding: 12px 20px 16px;
+  padding: var(--space-3) var(--space-5) var(--space-4);
 }
 .header-label {
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
   color: var(--text-tertiary);
   font-weight: 500;
 }
 .header-title {
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -0.5px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
   color: var(--text);
+  font-family: var(--font-display);
 }
 .profile-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
+  gap: var(--space-4);
+  padding: var(--space-5);
   background: var(--surface);
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-sm);
 }
 .avatar {
   width: 56px;
@@ -98,6 +100,7 @@ const handleLogout = () => {
   font-size: 22px;
   font-weight: 600;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
 .user-info { flex: 1; }
 .username {
@@ -116,32 +119,38 @@ const handleLogout = () => {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   overflow: hidden;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-sm);
 }
 .menu-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 18px;
+  padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--border);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--duration-micro) var(--ease-out);
 }
 .menu-item:last-child { border-bottom: none; }
-.menu-item:active { background: var(--bg); }
+.menu-item:active { background: var(--surface-alt); }
 .menu-label { font-size: 15px; font-weight: 500; color: var(--text); }
-.menu-arrow { font-size: 14px; color: var(--text-tertiary); }
+.menu-arrow {
+  font-size: 16px;
+  color: var(--text-tertiary);
+  font-weight: 300;
+}
 
 .logout-btn {
   width: 100%;
   height: 50px;
   background: var(--red-soft);
   color: var(--red);
-  border-radius: 14px;
+  border-radius: var(--radius);
   font-size: 15px;
   font-weight: 600;
-  transition: all 0.15s;
-  margin-bottom: 24px;
+  transition: all var(--duration-micro) var(--ease-out);
+  margin-bottom: var(--space-6);
+  border: 1px solid transparent;
 }
 .logout-btn:active { transform: scale(0.98); }
 
@@ -149,5 +158,6 @@ const handleLogout = () => {
   text-align: center;
   font-size: 12px;
   color: var(--text-tertiary);
+  font-weight: 500;
 }
 </style>

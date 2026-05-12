@@ -153,99 +153,96 @@ onMounted(async () => {
 
 <style scoped>
 .inventory-view {
-  padding-bottom: calc(var(--tab-height) + 20px);
+  padding-bottom: calc(var(--tab-height) + var(--space-5));
   padding-top: var(--page-header-top);
 }
 .page-header {
-  padding: 12px 20px 16px;
+  padding: var(--space-3) var(--space-5) var(--space-4);
 }
 .header-label {
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
   color: var(--text-tertiary);
   font-weight: 500;
 }
 .header-title {
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -0.5px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
   color: var(--text);
+  font-family: var(--font-display);
 }
 .stats {
   display: flex;
-  gap: 8px;
-  padding: 0 20px 16px;
+  gap: var(--space-2);
+  padding: 0 var(--space-5) var(--space-4);
 }
 
 .filter-row-label {
-  padding: 10px 20px 4px;
+  padding: var(--space-3) var(--space-5) var(--space-1);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-tertiary);
+  letter-spacing: 0.3px;
 }
 
 .date-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 20px 8px;
+  gap: var(--space-2);
+  padding: 0 var(--space-5) var(--space-2);
 }
 .date-input-single {
   flex: 1;
-  height: 36px;
+  height: 44px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0 12px;
+  padding: 0 var(--space-4);
   font-size: 14px;
   color: var(--text);
-  background: var(--bg);
+  background: var(--surface);
   outline: none;
-  font-family: inherit;
+  font-family: var(--font-body);
+  transition: border-color var(--duration-micro) var(--ease-out), box-shadow var(--duration-micro) var(--ease-out);
 }
-.date-input-single:focus { border-color: var(--accent); }
+.date-input-single:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
 
 .list {
-  padding: 0 20px;
-}
-.loading-state {
-  display: flex;
-  justify-content: center;
-  padding: 40px 0;
-}
-.empty-hint {
-  text-align: center;
-  padding: 40px 0;
-  font-size: 13px;
-  color: var(--text-tertiary);
+  padding: 0 var(--space-5);
 }
 .load-more {
   text-align: center;
-  padding: 16px 0;
+  padding: var(--space-4) 0;
   font-size: 13px;
   color: var(--accent);
   cursor: pointer;
+  font-weight: 500;
 }
 .load-more:active {
   opacity: 0.6;
 }
 .ai-fab {
   position: fixed;
-  bottom: calc(var(--tab-height) + 16px);
-  right: 20px;
-  width: 52px;
-  height: 52px;
+  bottom: calc(var(--tab-height) + var(--space-4));
+  right: var(--space-5);
+  width: 56px;
+  height: 56px;
   background: var(--text);
   color: white;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
   font-weight: 700;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  font-family: var(--font-display);
+  box-shadow: var(--shadow-fab);
   z-index: 60;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--duration-slow) var(--ease-out-expo);
 }
 .ai-fab:active {
   transform: scale(0.9);

@@ -52,19 +52,19 @@ const showTabBar = computed(() => {
   z-index: 300;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   pointer-events: none;
 }
 .toast {
   background: var(--text);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 12px;
+  color: var(--text-inverse);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
   pointer-events: auto;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
 }
 .toast.success { background: var(--green); }
 .toast.warning { background: var(--amber); }
