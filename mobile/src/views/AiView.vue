@@ -5,7 +5,7 @@
       <h1 class="header-title">AI 识别</h1>
     </div>
 
-    <div style="padding:0 20px 8px">
+    <div class="filter-bar">
       <FilterPills :pills="timeFilters" v-model="selectedTime" />
     </div>
 
@@ -28,7 +28,7 @@
     <button class="ai-fab" @click="showSheet = true">AI</button>
 
     <!-- AI Bottom Sheet -->
-    <BottomSheet :visible="showSheet" @close="closeSheet">
+    <BottomSheet :visible="showSheet" :dismissible="false" @close="closeSheet">
       <h2 class="sheet-title">AI 识别</h2>
       <p class="sheet-sub">拍照或选择图片，AI 将自动识别</p>
 
@@ -52,7 +52,7 @@
       </div>
 
       <!-- 预览 -->
-      <div v-if="previewUrl" class="preview-area">
+      <div v-if="previewUrl" class="preview-area" @click="openImageViewer(previewUrl)">
         <img :src="previewUrl" class="preview-img" />
         <button class="preview-remove" @click="handleRemove">✕</button>
       </div>
@@ -77,44 +77,27 @@
       <!-- 识别结果列表 -->
       <div v-if="recognizeResults.length" class="results-list">
         <div class="result-header">
-          <span class="result-count">识别到 {{ recognizeResults.length }} 条记录</span>
+          <span class="result-count">识别到 {{ recognizeResults.length }} 条</span>
+          <span class="result-summary">合计 {{ resultTotalWeight }}t / {{ resultTotalPieces }}块</span>
         </div>
-        <div
-          v-for="(item, index) in recognizeResults"
-          :key="index"
-          class="result-card"
-        >
-          <div class="result-card-top">
-            <div class="result-index">#{{ index + 1 }}</div>
-            <div class="result-batch">{{ item.batchNo || '-' }}</div>
-            <span class="result-grade-tag">{{ item.grade }}</span>
-          </div>
-          <div class="result-card-body">
-            <div class="result-row">
-              <span class="row-label">包号</span>
-              <span class="row-value">{{ item.packageNo || '-' }}</span>
+        <div class="result-list-box">
+          <div
+            v-for="(item, index) in recognizeResults"
+            :key="index"
+            class="rl-item"
+          >
+            <div class="rl-primary">
+              <span class="rl-idx">{{ index + 1 }}</span>
+              <span class="rl-batch">{{ item.batchNo || '-' }}</span>
+              <span class="rl-pkg">包号{{ item.packageNo || '-' }}</span>
+              <span class="rl-grade" :class="gradeClass(item.grade)">{{ item.grade }}</span>
+              <span class="rl-weight">{{ item.netWeight ? item.netWeight.toFixed(3) : '-' }}t</span>
+              <span class="rl-pieces">{{ item.pieceCount || '-' }}块</span>
             </div>
-            <div class="result-row">
-              <span class="row-label">产品类型</span>
-              <span class="row-value">{{ item.productType || '-' }}</span>
-            </div>
-            <div class="result-row-group">
-              <div class="result-row-inline">
-                <span class="row-label">净重</span>
-                <span class="row-value highlight">{{ item.netWeight ? item.netWeight.toFixed(3) + 't' : '-' }}</span>
-              </div>
-              <div class="result-row-inline">
-                <span class="row-label">块数</span>
-                <span class="row-value highlight">{{ item.pieceCount || '-' }}</span>
-              </div>
-            </div>
-            <div v-if="item.inspector" class="result-row">
-              <span class="row-label">检验员</span>
-              <span class="row-value">{{ item.inspector }}</span>
-            </div>
-            <div v-if="item.date" class="result-row">
-              <span class="row-label">日期</span>
-              <span class="row-value">{{ item.date }}</span>
+            <div class="rl-secondary">
+              <span class="rl-meta">
+                <template v-if="item.productType">{{ item.productType }}</template>
+              </span>
             </div>
           </div>
         </div>
@@ -142,6 +125,18 @@
           <span v-if="importing" class="btn-import-spinner"></span>
           {{ importing ? '导入中...' : '导入全部到库存 (' + recognizeResults.length + ')' }}
         </button>
+
+        <!-- 取消 & 重新识别 -->
+        <div class="result-actions">
+          <button class="btn-action btn-cancel" @click="handleCancelResult">取消</button>
+          <button class="btn-action btn-retry" :disabled="recognizing" @click="handleRetryRecognize">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            重新识别
+          </button>
+        </div>
       </div>
       <button
         v-else-if="selectedFile && !recognizing && !errorMessage"
@@ -150,6 +145,11 @@
       >
         开始识别
       </button>
+
+      <!-- 识别中/错误时的取消按钮 -->
+      <div v-if="recognizing || errorMessage" class="result-actions" style="margin-top: var(--space-4)">
+        <button class="btn-action btn-cancel" @click="handleCancelResult">取消</button>
+      </div>
     </BottomSheet>
 
     <!-- 历史详情 Sheet -->
@@ -157,39 +157,90 @@
       <template v-if="currentHistory">
         <h2 class="sheet-title">识别详情</h2>
         <div class="detail-info">
-          <div class="result-line">
-            <span class="rl">状态</span>
-            <span class="rv" :style="{ color: currentHistory.status === 'success' ? 'var(--green)' : 'var(--red)' }">
+          <div class="di-row">
+            <span class="di-label">状态</span>
+            <span class="di-value" :style="{ color: currentHistory.status === 'success' ? 'var(--green)' : 'var(--red)' }">
               {{ currentHistory.status === 'success' ? '成功' : '失败' }}
             </span>
           </div>
-          <div class="result-line">
-            <span class="rl">批号</span>
-            <span class="rv">{{ currentHistory.batchNo || '-' }}</span>
+          <div class="di-row">
+            <span class="di-label">记录数</span>
+            <span class="di-value">{{ currentHistory.itemCount }} 条</span>
           </div>
-          <div class="result-line">
-            <span class="rl">品级</span>
-            <span class="rv">{{ currentHistory.grade || '-' }}</span>
+          <div class="di-row">
+            <span class="di-label">批号</span>
+            <span class="di-value di-mono">{{ currentHistory.batchNo || '-' }}</span>
           </div>
-          <div class="result-line">
-            <span class="rl">记录数</span>
-            <span class="rv">{{ currentHistory.itemCount }}</span>
+          <div class="di-row">
+            <span class="di-label">品级</span>
+            <span class="di-value">{{ currentHistory.grade || '-' }}</span>
           </div>
-          <div class="result-line">
-            <span class="rl">时间</span>
-            <span class="rv">{{ formatDate(currentHistory.createdAt) }}</span>
+          <div v-if="detailFirstResult?.productType" class="di-row">
+            <span class="di-label">产品类型</span>
+            <span class="di-value">{{ detailFirstResult.productType }}</span>
+          </div>
+          <div v-if="detailFirstResult?.specification" class="di-row">
+            <span class="di-label">规格</span>
+            <span class="di-value">{{ detailFirstResult.specification }}</span>
+          </div>
+          <div v-if="detailFirstResult?.location" class="di-row">
+            <span class="di-label">存放位置</span>
+            <span class="di-value">{{ detailFirstResult.location }}</span>
+          </div>
+          <div v-if="detailFirstResult?.date" class="di-row">
+            <span class="di-label">日期</span>
+            <span class="di-value">{{ detailFirstResult.date }}</span>
+          </div>
+          <div class="di-row">
+            <span class="di-label">识别时间</span>
+            <span class="di-value">{{ formatDate(currentHistory.createdAt) }}</span>
           </div>
         </div>
-        <div v-if="currentHistory.imageUrl" class="detail-image">
-          <img :src="currentHistory.imageUrl" />
+        <div v-if="currentHistory.imageUrl" class="detail-image" @click="openImageViewer(resolveImageUrl(currentHistory.imageUrl))">
+          <img :src="resolveImageUrl(currentHistory.imageUrl)" />
+        </div>
+        <div v-if="detailResults.length" class="detail-results">
+          <div class="detail-results-label">识别结果 ({{ detailResults.length }})</div>
+          <div class="result-list-box">
+            <div
+              v-for="(item, index) in detailResults"
+              :key="index"
+              class="rl-item"
+            >
+              <div class="rl-primary">
+                <span class="rl-idx">{{ index + 1 }}</span>
+                <span class="rl-batch">{{ item.batchNo || '-' }}</span>
+                <span class="rl-pkg">包号{{ item.packageNo || '-' }}</span>
+                <span class="rl-grade" :class="gradeClass(item.grade)">{{ item.grade }}</span>
+                <span class="rl-weight">{{ item.netWeight ? Number(item.netWeight).toFixed(3) : '-' }}t</span>
+                <span class="rl-pieces">{{ item.pieceCount || '-' }}块</span>
+              </div>
+              <div class="rl-secondary">
+                <span class="rl-meta">
+                  <template v-if="item.productType">{{ item.productType }}</template>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else-if="currentHistory.errorMessage" class="detail-error">
+          <svg class="error-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          <span class="error-text">{{ currentHistory.errorMessage }}</span>
         </div>
       </template>
     </BottomSheet>
+
+    <!-- 全屏图片查看器 -->
+    <ImageViewer :visible="showImageViewer" :src="viewerImageUrl" @close="showImageViewer = false" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { Capacitor } from '@capacitor/core'
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { aiRecognize, getRecognitionHistory, batchCreateInventory } from '@/api/distribution'
@@ -198,6 +249,7 @@ import type { AiRecognizeResult, AiRecognitionHistory } from '@/types'
 import FilterPills from '@/components/FilterPills.vue'
 import AiHistoryItem from '@/components/AiHistoryItem.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
+import ImageViewer from '@/components/ImageViewer.vue'
 
 const { success, danger } = useToast()
 
@@ -215,6 +267,28 @@ const historyLoading = ref(false)
 const showSheet = ref(false)
 const showDetailSheet = ref(false)
 const currentHistory = ref<AiRecognitionHistory | null>(null)
+
+const showImageViewer = ref(false)
+const viewerImageUrl = ref('')
+
+const openImageViewer = (url: string) => {
+  if (!url) return
+  viewerImageUrl.value = url
+  showImageViewer.value = true
+}
+
+const resolveImageUrl = (url: string) => {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  const base = Capacitor.isNativePlatform() ? 'http://localhost:3002' : ''
+  return base + url
+}
+
+const gradeClass = (grade: string) => {
+  if (grade.includes('9997') || grade.includes('9996')) return 'g-high'
+  if (grade.includes('9950')) return 'g-mid'
+  return 'g-other'
+}
 
 const selectedFile = ref<File | null>(null)
 const previewUrl = ref('')
@@ -270,10 +344,43 @@ const formatDate = (d: string) => {
   return new Date(d).toLocaleString('zh-CN')
 }
 
+const detailResults = computed(() => {
+  if (!currentHistory.value?.result) return []
+  try {
+    const parsed = JSON.parse(currentHistory.value.result)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+})
+
+const detailFirstResult = computed(() => {
+  return detailResults.value[0] || null
+})
+
+const resultTotalWeight = computed(() =>
+  recognizeResults.value.reduce((s, r) => s + (r.netWeight || 0), 0).toFixed(3)
+)
+const resultTotalPieces = computed(() =>
+  recognizeResults.value.reduce((s, r) => s + (r.pieceCount || 0), 0)
+)
+
 const closeSheet = () => {
   showSheet.value = false
   handleRemove()
   errorMessage.value = ''
+}
+
+const handleCancelResult = () => {
+  showSheet.value = false
+  handleRemove()
+  errorMessage.value = ''
+}
+
+const handleRetryRecognize = () => {
+  recognizeResults.value = []
+  errorMessage.value = ''
+  handleRecognize()
 }
 
 const handleRemove = () => {
@@ -441,6 +548,14 @@ onMounted(fetchHistory)
   font-family: var(--font-display);
 }
 
+.filter-bar {
+  padding: 0 var(--space-5) var(--space-2);
+}
+
+.ai-list {
+  padding: 0 var(--space-5);
+}
+
 .ai-fab {
   position: fixed;
   bottom: calc(var(--tab-height) + var(--space-4));
@@ -513,6 +628,7 @@ onMounted(fetchHistory)
 .preview-area {
   position: relative;
   margin-bottom: var(--space-4);
+  cursor: pointer;
 }
 .preview-img {
   width: 100%;
@@ -520,6 +636,9 @@ onMounted(fetchHistory)
   object-fit: contain;
   border-radius: var(--radius);
   background: var(--surface-alt);
+}
+.preview-area:active .preview-img {
+  opacity: 0.8;
 }
 .preview-remove {
   position: absolute;
@@ -570,7 +689,7 @@ onMounted(fetchHistory)
   border: none;
 }
 
-/* 结果 */
+/* 结果列表 */
 .results-list {
   display: flex;
   flex-direction: column;
@@ -579,96 +698,96 @@ onMounted(fetchHistory)
 }
 .result-header {
   display: flex;
-  align-items: center;
-  padding-bottom: var(--space-1);
+  align-items: baseline;
+  justify-content: space-between;
 }
 .result-count {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
 }
-.result-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-}
-.result-card-top {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-}
-.result-index {
+.result-summary {
   font-size: 12px;
   font-weight: 600;
   color: var(--accent);
-  background: var(--accent-soft);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 统一的紧凑行列表（与 InventoryTable 同设计语言）*/
+.result-list-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.rl-item {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.rl-item:last-child { border-bottom: none; }
+
+.rl-primary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.rl-idx {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  min-width: 18px;
   flex-shrink: 0;
 }
-.result-batch {
-  flex: 1;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
+.rl-batch {
   font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.result-grade-tag {
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--green-soft);
-  color: var(--green);
-  padding: var(--space-1) var(--space-2);
+.rl-pkg {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.rl-grade {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
   border-radius: var(--radius-xs);
   flex-shrink: 0;
+  letter-spacing: 0.3px;
 }
-.result-card-body {
-  padding: var(--space-1) 0;
-}
-.result-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border);
-}
-.result-row:last-child { border-bottom: none; }
-.row-label {
+.g-high { background: var(--accent-soft); color: var(--accent); }
+.g-mid { background: var(--amber-soft); color: var(--amber); }
+.g-other { background: var(--green-soft); color: var(--green); }
+
+.rl-weight {
   font-size: 13px;
-  color: var(--text-tertiary);
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
-.row-value {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
+.rl-pieces {
+  font-size: 12px;
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
-.row-value.highlight {
-  font-weight: 600;
-  color: var(--accent);
+
+.rl-secondary {
+  margin-top: var(--space-1);
 }
-.result-row-group {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-}
-.result-row-inline {
-  flex: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-3) var(--space-4);
-}
-.result-row-inline:first-child {
-  border-right: 1px solid var(--border);
+.rl-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
 }
 
 .btn-import, .btn-recognize {
@@ -688,11 +807,23 @@ onMounted(fetchHistory)
 .btn-import:active, .btn-recognize:active { transform: scale(0.97); }
 .btn-import:disabled { opacity: 0.5; }
 
-.detail-info { margin-bottom: var(--space-4); }
+.detail-info { margin-bottom: var(--space-3); }
+.di-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+.di-row:last-child { border-bottom: none; }
+.di-label { font-size: 12px; color: var(--text-tertiary); flex-shrink: 0; }
+.di-value { font-size: 13px; font-weight: 500; color: var(--text); text-align: right; }
+.di-mono { font-family: var(--font-mono); }
 .detail-image {
   border-radius: var(--radius);
   overflow: hidden;
   margin-top: var(--space-4);
+  cursor: pointer;
 }
 .detail-image img {
   width: 100%;
@@ -700,15 +831,32 @@ onMounted(fetchHistory)
   object-fit: contain;
   background: var(--surface-alt);
 }
-.result-line {
-  display: flex;
-  justify-content: space-between;
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--border);
+.detail-image:active img {
+  opacity: 0.8;
 }
-.result-line:last-child { border-bottom: none; }
-.rl { font-size: 13px; color: var(--text-tertiary); }
-.rv { font-size: 14px; font-weight: 500; }
+
+
+/* Detail results */
+.detail-results {
+  margin-bottom: var(--space-4);
+}
+.detail-results-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-3);
+}
+.detail-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--red-soft);
+  border-radius: var(--radius-sm);
+  margin: var(--space-3) 0;
+}
 
 /* Import section */
 .import-section {
@@ -766,7 +914,6 @@ onMounted(fetchHistory)
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-/* Import button spinner */
 .btn-import {
   position: relative;
   display: flex;
@@ -782,6 +929,38 @@ onMounted(fetchHistory)
   animation: spin 0.6s linear infinite;
   margin-right: var(--space-2);
 }
+
+/* 取消 & 重新识别按钮 */
+.result-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.btn-action {
+  flex: 1;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  transition: all var(--duration-micro) var(--ease-out);
+}
+.btn-action:active { transform: scale(0.97); }
+.btn-cancel {
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.btn-retry {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid transparent;
+}
+.btn-retry:disabled { opacity: 0.5; }
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

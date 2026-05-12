@@ -1,7 +1,7 @@
 <template>
   <div class="ai-item" @click="$emit('click')">
     <div class="ai-thumb">
-      <img v-if="item.imageUrl" :src="item.imageUrl" class="ai-thumb-img" />
+      <img v-if="item.imageUrl" :src="resolveImageUrl(item.imageUrl)" class="ai-thumb-img" />
       <span v-else>IMG</span>
     </div>
     <div class="ai-info">
@@ -15,10 +15,18 @@
 </template>
 
 <script setup lang="ts">
+import { Capacitor } from '@capacitor/core'
 import type { AiRecognitionHistory } from '@/types'
 
 defineProps<{ item: AiRecognitionHistory }>()
 defineEmits<{ click: [] }>()
+
+const resolveImageUrl = (url: string) => {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  const base = Capacitor.isNativePlatform() ? 'http://localhost:3002' : ''
+  return base + url
+}
 
 const formatTime = (dateStr: string) => {
   if (!dateStr) return '-'

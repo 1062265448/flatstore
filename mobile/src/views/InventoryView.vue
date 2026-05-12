@@ -31,6 +31,12 @@
       />
     </div>
 
+    <!-- 汇总 -->
+    <div class="summary-bar">
+      <span class="summary-item">重量总计 <strong>{{ pageTotalWeight }}t</strong></span>
+      <span class="summary-item">片数总计 <strong>{{ pageTotalPieces }}块</strong></span>
+    </div>
+
     <FilterPills :pills="gradeFilters" v-model="selectedGrade" />
 
     <div class="filter-row-label">类型</div>
@@ -49,16 +55,19 @@
         <div class="spinner spinner-lg"></div>
       </div>
       <template v-else>
-        <InventoryCard
-          v-for="item in inventoryStore.inventoryList"
-          :key="item.id"
-          :item="item"
-          @click="router.push(`/inventory/${item.id}`)"
-          @detail="router.push(`/inventory/${item.id}`)"
+        <InventoryTable
+          :items="inventoryStore.inventoryList"
+          @click="router.push(`/inventory/${$event.id}`)"
         />
         <div v-if="!inventoryStore.inventoryList.length" class="empty-hint">暂无库存数据</div>
-        <div v-if="hasMore" class="load-more" @click="loadMore">加载更多</div>
       </template>
+
+      <!-- 翻页 -->
+      <div v-if="totalPages > 1 && !inventoryStore.loading" class="pagination">
+        <button class="page-btn" :disabled="page.current <= 1" @click="goPage(page.current - 1)">上一页</button>
+        <span class="page-indicator">{{ page.current }} / {{ totalPages }}</span>
+        <button class="page-btn" :disabled="page.current >= totalPages" @click="goPage(page.current + 1)">下一页</button>
+      </div>
     </div>
 
     <!-- AI FAB -->
@@ -67,14 +76,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useInventoryStore } from '@/stores/inventory'
 import { useStatisticsStore } from '@/stores/statistics'
 import SearchBar from '@/components/SearchBar.vue'
 import StatCard from '@/components/StatCard.vue'
 import FilterPills from '@/components/FilterPills.vue'
-import InventoryCard from '@/components/InventoryCard.vue'
+import InventoryTable from '@/components/InventoryTable.vue'
 
 const router = useRouter()
 const inventoryStore = useInventoryStore()
@@ -116,6 +125,15 @@ const specFilters = [
 
 const hasMore = ref(false)
 
+const totalPages = computed(() => Math.max(1, Math.ceil(inventoryStore.total / page.size)))
+
+const pageTotalWeight = computed(() =>
+  inventoryStore.inventoryList.reduce((s, i) => s + Number(i.weight), 0).toFixed(3)
+)
+const pageTotalPieces = computed(() =>
+  inventoryStore.inventoryList.reduce((s, i) => s + (i.pieceCount || 0), 0)
+)
+
 const fetchData = async (reset = false) => {
   if (reset) page.current = 1
   await inventoryStore.fetchInventory({
@@ -132,8 +150,8 @@ const fetchData = async (reset = false) => {
 }
 
 const handleSearch = () => fetchData(true)
-const loadMore = () => {
-  page.current++
+const goPage = (p: number) => {
+  page.current = p
   fetchData()
 }
 
@@ -214,16 +232,48 @@ onMounted(async () => {
 .list {
   padding: 0 var(--space-5);
 }
-.load-more {
-  text-align: center;
-  padding: var(--space-4) 0;
-  font-size: 13px;
-  color: var(--accent);
-  cursor: pointer;
-  font-weight: 500;
+
+.summary-bar {
+  display: flex;
+  gap: var(--space-5);
+  padding: var(--space-2) var(--space-5);
 }
-.load-more:active {
-  opacity: 0.6;
+.summary-item {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+.summary-item strong {
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+}
+.page-btn {
+  height: 36px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all var(--duration-micro) var(--ease-out);
+}
+.page-btn:active:not(:disabled) { background: var(--surface-alt); }
+.page-btn:disabled { opacity: 0.4; cursor: default; }
+.page-indicator {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 .ai-fab {
   position: fixed;

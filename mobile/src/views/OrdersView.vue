@@ -73,6 +73,22 @@
           </div>
         </div>
 
+        <!-- 选中汇总 -->
+        <div v-if="pickedStocks.length" class="pick-summary">
+          <div class="summary-row">
+            <span class="summary-label">已选库存</span>
+            <span class="summary-value">{{ pickedStocks.length }} 项</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">总重量</span>
+            <span class="summary-value summary-highlight">{{ pickedTotalWeight }} 吨</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">总片数</span>
+            <span class="summary-value summary-highlight">{{ pickedTotalPieces }} 块</span>
+          </div>
+        </div>
+
         <button class="btn-submit" :disabled="submitting" @click="handleCreate">
           {{ submitting ? '创建中...' : '创建配货单' }}
         </button>
@@ -82,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOrderStore } from '@/stores/order'
 import { useInventoryStore } from '@/stores/inventory'
@@ -125,6 +141,13 @@ const togglePick = (s: InventoryStock) => {
   if (idx >= 0) pickedStocks.value.splice(idx, 1)
   else pickedStocks.value.push(s)
 }
+
+const pickedTotalWeight = computed(() =>
+  pickedStocks.value.reduce((sum, s) => sum + Number(s.weight), 0).toFixed(3)
+)
+const pickedTotalPieces = computed(() =>
+  pickedStocks.value.reduce((sum, s) => sum + (s.pieceCount || 0), 0)
+)
 
 const fetchData = async () => {
   await orderStore.fetchOrders({
@@ -303,4 +326,34 @@ select.form-input { cursor: pointer; }
 }
 .btn-submit:active { transform: scale(0.97); }
 .btn-submit:disabled { opacity: 0.5; }
+
+/* 选中汇总 */
+.pick-summary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.summary-label {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+.summary-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.summary-highlight {
+  font-weight: 600;
+  color: var(--accent);
+}
 </style>

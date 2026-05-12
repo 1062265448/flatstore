@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-const props = defineProps<{ visible: boolean }>()
+const props = defineProps<{ visible: boolean; dismissible?: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 
 const sheetRef = ref<HTMLElement>()
@@ -34,11 +34,13 @@ const deltaY = ref(0)
 const close = () => emit('close')
 
 const onTouchStart = (e: TouchEvent) => {
+  if (props.dismissible === false) return
   startY.value = e.touches[0].clientY
   deltaY.value = 0
 }
 
 const onTouchMove = (e: TouchEvent) => {
+  if (props.dismissible === false) return
   deltaY.value = e.touches[0].clientY - startY.value
   if (deltaY.value > 0 && sheetRef.value) {
     sheetRef.value.style.transform = `translateY(${deltaY.value}px)`
@@ -46,6 +48,7 @@ const onTouchMove = (e: TouchEvent) => {
 }
 
 const onTouchEnd = () => {
+  if (props.dismissible === false) return
   if (sheetRef.value) {
     sheetRef.value.style.transform = ''
   }
