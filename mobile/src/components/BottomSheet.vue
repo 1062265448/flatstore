@@ -15,7 +15,9 @@
         <div class="sheet-bar" @click="close">
           <div class="sheet-bar-indicator"></div>
         </div>
-        <slot></slot>
+        <div class="sheet-body">
+          <slot></slot>
+        </div>
       </div>
     </transition>
   </Teleport>
@@ -81,17 +83,23 @@ watch(() => props.visible, (v) => {
   right: 0;
   background: var(--surface);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  padding: var(--space-2) var(--space-6) calc(var(--space-12, 48px) + var(--safe-bottom));
   z-index: 100;
   max-height: 85vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   transition: transform 0.15s ease-out;
 }
 .sheet-bar {
   display: flex;
   justify-content: center;
-  padding: var(--space-2) 0 var(--space-4);
+  padding: var(--space-2) var(--space-6) var(--space-4);
   cursor: pointer;
+  flex-shrink: 0;
+}
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--space-6) calc(var(--space-12, 48px) + var(--safe-bottom));
 }
 .sheet-bar-indicator {
   width: 40px;

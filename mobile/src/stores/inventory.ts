@@ -14,8 +14,9 @@ export const useInventoryStore = defineStore('inventory', () => {
       const res = await api.getInventoryList(params) as { data: InventoryStock[]; total: number }
       inventoryList.value = append ? [...inventoryList.value, ...res.data] : res.data
       total.value = res.total
-    } catch (error) {
-      // 错误已在 API 拦截器中提示
+    } catch (error: any) {
+      // 401 已被全局拦截器处理（跳转登录），不清空现有数据
+      if (error?.response?.status === 401) return
       if (!append) {
         inventoryList.value = []
         total.value = 0

@@ -26,6 +26,7 @@
         <span class="inv-status" :class="'st-' + item.status">{{ statusText(item.status) }}</span>
       </div>
     </div>
+    <div v-if="!items.length" class="inv-empty">暂无库存数据</div>
   </div>
 </template>
 
@@ -153,5 +154,12 @@ const formatWeight = (w: string | number) => {
 .st-available { background: var(--green-soft); color: var(--green); }
 .st-reserved { background: var(--amber-soft); color: var(--amber); }
 .st-shipped { background: var(--surface-alt); color: var(--text-tertiary); }
+
+.inv-empty {
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
 
 </style>

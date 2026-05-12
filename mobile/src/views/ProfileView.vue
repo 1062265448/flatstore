@@ -58,10 +58,13 @@ const handleLogout = () => {
 <style scoped>
 .profile-view {
   padding-bottom: calc(var(--tab-height) + var(--space-5));
-  padding-top: var(--page-header-top);
 }
 .page-header {
-  padding: var(--space-3) var(--space-5) var(--space-4);
+  padding: var(--page-header-top) var(--space-5) var(--space-4);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
 }
 .header-label {
   font-size: 11px;

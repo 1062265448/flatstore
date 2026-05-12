@@ -56,7 +56,7 @@
   --tab-height: 80px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --page-header-top: calc(var(--safe-top) + 16px);
+  --page-header-top: calc(var(--safe-top) + 44px);
 
   /* ===== Typography ===== */
   --font-display: 'Sora', 'DM Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
