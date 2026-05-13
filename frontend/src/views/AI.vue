@@ -225,22 +225,31 @@
                 </div>
                 <div class="form-item">
                   <label>规格</label>
-                  <select v-model="importForm.specification" class="form-select">
-                    <option value="">请选择规格（可选）</option>
-                    <option value="整板">整板</option>
-                    <option value="镍条">镍条</option>
-                    <option value="100*100">100*100</option>
-                    <option value="50*50">50*50</option>
-                    <option value="25*25">25*25</option>
-                  </select>
+                  <div class="chip-select">
+                    <button
+                      v-for="opt in specOptions"
+                      :key="opt.value"
+                      :class="['chip', { active: importForm.specification === opt.value }]"
+                      @click="importForm.specification = importForm.specification === opt.value ? '' : opt.value"
+                    >
+                      <span class="chip-icon">{{ opt.icon }}</span>
+                      <span class="chip-label">{{ opt.label }}</span>
+                    </button>
+                  </div>
                 </div>
                 <div class="form-item">
                   <label>存放位置</label>
-                  <select v-model="importForm.location" class="form-select">
-                    <option value="">请选择存放位置（可选）</option>
-                    <option value="二厂区">二厂区</option>
-                    <option value="三厂区">三厂区</option>
-                  </select>
+                  <div class="chip-select">
+                    <button
+                      v-for="opt in locationOptions"
+                      :key="opt.value"
+                      :class="['chip chip-location', { active: importForm.location === opt.value }]"
+                      @click="importForm.location = importForm.location === opt.value ? '' : opt.value"
+                    >
+                      <span class="chip-dot" :style="{ background: opt.color }"></span>
+                      <span class="chip-label">{{ opt.label }}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -396,6 +405,19 @@ const importForm = reactive({
   location: '',
 })
 
+const specOptions = [
+  { value: '整板', label: '整板', icon: '▣' },
+  { value: '镍条', label: '镍条', icon: '▬' },
+  { value: '100×100', label: '100×100', icon: '⊞' },
+  { value: '50×50', label: '50×50', icon: '⊟' },
+  { value: '25×25', label: '25×25', icon: '▪' },
+]
+
+const locationOptions = [
+  { value: '二厂区', label: '二厂区', color: '#3b82f6' },
+  { value: '三厂区', label: '三厂区', color: '#10b981' },
+]
+
 const historyDetailVisible = ref(false)
 const currentHistory = ref<AiRecognitionHistory | null>(null)
 
@@ -503,8 +525,6 @@ const handleImportSubmit = async () => {
     showToast?.(`成功导入 ${items.length} 条库存记录，即将跳转至库存页`, 'success')
     importVisible.value = false
     handleReset()
-    // 自动跳转到库存页查看结果
-    setTimeout(() => router.push('/inventory'), 1500)
   } catch {
     // 错误已在 API 层处理
   } finally {
@@ -522,10 +542,11 @@ const fetchHistory = async () => {
       limit: historyQuery.limit,
       status: historyQuery.status || undefined,
     })
-    // 拼接完整的图片 URL
+    // 拼接完整的图片 URL（uploads 不在 api 路径下，直接用根路径）
+    const imageBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002').replace(/\/api$/, '')
     historyList.value = (res as any).data.map((item: AiRecognitionHistory) => ({
       ...item,
-      imageUrl: item.imageUrl ? `${apiBaseUrl}${item.imageUrl}` : '',
+      imageUrl: item.imageUrl ? `${imageBase}${item.imageUrl}` : '',
     }))
     historyTotal.value = (res as any).total
   } finally {
@@ -1214,6 +1235,65 @@ onMounted(() => {
       color: var(--color-text-tertiary);
     }
   }
+}
+
+/* Chip selector（规格/存放位置） */
+.chip-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  transition: all var(--transition-fast);
+  user-select: none;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(0, 113, 227, 0.04);
+  }
+
+  &.active {
+    border-color: var(--color-primary);
+    background: rgba(0, 113, 227, 0.08);
+    color: var(--color-primary);
+    font-weight: 600;
+    box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.12);
+  }
+
+  .chip-icon {
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .chip-label {
+    line-height: 1;
+  }
+}
+
+.chip-location {
+  &.active .chip-dot {
+    box-shadow: 0 0 0 3px currentColor;
+  }
+}
+
+.chip-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transition: box-shadow var(--transition-fast);
 }
 
 .preview-table {
