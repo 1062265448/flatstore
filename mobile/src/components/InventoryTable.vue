@@ -26,7 +26,15 @@
         <span class="inv-status" :class="'st-' + item.status">{{ statusText(item.status) }}</span>
       </div>
     </div>
-    <div v-if="!items.length" class="inv-empty">暂无库存数据</div>
+    <div v-if="!items.length" class="inv-empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.4">
+        <path d="M20 7L12 3L4 7V17L12 21L20 17V7Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M4 7L12 11L20 7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M12 11V21" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <div class="empty-text">暂无库存数据</div>
+      <div class="empty-hint">添加筛选条件或前往 AI 识别添加</div>
+    </div>
   </div>
 </template>
 
@@ -156,10 +164,23 @@ const formatWeight = (w: string | number) => {
 .st-shipped { background: var(--surface-alt); color: var(--text-tertiary); }
 
 .inv-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   padding: var(--space-8) var(--space-4);
   text-align: center;
-  font-size: 14px;
   color: var(--text-tertiary);
+}
+.inv-empty .empty-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+.inv-empty .empty-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  opacity: 0.8;
 }
 
 </style>

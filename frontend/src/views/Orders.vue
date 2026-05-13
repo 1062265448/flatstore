@@ -9,6 +9,19 @@
     <!-- 搜索和操作区 -->
     <div class="toolbar glass-card">
       <div class="search-section">
+        <!-- 关键词搜索 -->
+        <div class="keyword-search-wrap">
+          <input
+            v-model="queryForm.keyword"
+            type="text"
+            class="search-input"
+            placeholder="搜索单号、客户名..."
+            @input="onKeywordInput"
+            @keyup.enter="handleSearch"
+          />
+          <button v-if="queryForm.keyword" class="search-clear" @click="clearKeyword">✕</button>
+        </div>
+
         <!-- 状态筛选 -->
         <div class="filter-pills">
           <button
@@ -135,6 +148,9 @@
                 </svg>
                 <span class="empty-text">暂无配货单数据</span>
                 <span class="empty-hint">点击上方「+ 新增配货单」创建第一笔订单</span>
+                <div class="empty-actions">
+                  <button class="btn-pill btn-primary" @click="handleCreate">+ 新增配货单</button>
+                </div>
               </div>
             </td>
           </tr>
@@ -259,7 +275,11 @@
                     </div>
                   </div>
                   <div v-if="!filteredStocks.length" class="stock-empty">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" opacity="0.4">
+                      <path d="M20 7L12 3L4 7V17L12 21L20 17V7Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                    </svg>
                     <span>暂无可用库存</span>
+                    <button class="btn-pill btn-primary btn-sm" @click="router.push('/inventory')">去添加库存</button>
                   </div>
                 </div>
               </div>
@@ -438,6 +458,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, inject, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useOrderStore } from '@/stores/order'
 import { useCustomerStore } from '@/stores/customer'
 import { useInventoryStore } from '@/stores/inventory'
@@ -448,6 +469,7 @@ import type { DistributionOrder, CreateOrderDto, OrderItemDto, ShipOrderDto, Inv
 const orderStore = useOrderStore()
 const customerStore = useCustomerStore()
 const inventoryStore = useInventoryStore()
+const router = useRouter()
 const showToast = inject('showToast') as (message: string, type?: string) => void
 
 const queryForm = reactive({
@@ -455,7 +477,10 @@ const queryForm = reactive({
   limit: 20,
   status: '',
   customerId: undefined as number | undefined,
+  keyword: '',
 })
+
+let keywordTimer: ReturnType<typeof setTimeout> | null = null
 
 const selectedRows = ref<DistributionOrder[]>([])
 const dialogVisible = ref(false)
@@ -636,7 +661,21 @@ const filterByStatus = (status: string) => {
 const handleReset = () => {
   queryForm.status = ''
   queryForm.customerId = undefined
+  queryForm.keyword = ''
   queryForm.page = 1
+  handleSearch()
+}
+
+const onKeywordInput = () => {
+  if (keywordTimer) clearTimeout(keywordTimer)
+  keywordTimer = setTimeout(() => {
+    queryForm.page = 1
+    handleSearch()
+  }, 300)
+}
+
+const clearKeyword = () => {
+  queryForm.keyword = ''
   handleSearch()
 }
 
@@ -646,6 +685,7 @@ const handleSearch = () => {
     limit: queryForm.limit,
     status: queryForm.status || undefined,
     customerId: queryForm.customerId,
+    keyword: queryForm.keyword || undefined,
   })
 }
 
@@ -870,6 +910,47 @@ onMounted(() => {
   flex: 1;
 }
 
+.keyword-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.keyword-search-wrap .search-input {
+  width: 200px;
+  padding: 8px 32px 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-sm);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  transition: all var(--transition-fast);
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+  }
+
+  &::placeholder {
+    color: var(--color-text-tertiary);
+  }
+}
+
+.keyword-search-wrap .search-clear {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
+}
+
 .filter-pills {
   display: flex;
   gap: var(--spacing-xs);
@@ -1065,6 +1146,12 @@ onMounted(() => {
   .empty-hint {
     color: var(--color-text-tertiary);
     font-size: var(--font-size-sm);
+  }
+
+  .empty-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
   }
 }
 
@@ -1526,9 +1613,18 @@ onMounted(() => {
 }
 
 .stock-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
   padding: var(--spacing-lg);
   text-align: center;
   color: var(--color-text-tertiary);
+
+  .btn-sm {
+    padding: 6px 16px;
+    font-size: var(--font-size-sm);
+  }
 }
 
 // 弹窗底部

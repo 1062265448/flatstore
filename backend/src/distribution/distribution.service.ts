@@ -447,6 +447,7 @@ export class DistributionService {
     limit?: number;
     status?: string;
     customerId?: number;
+    keyword?: string;
     includeItems?: boolean;
   }) {
     const page = Math.max(1, Number(params.page) || 1);
@@ -454,6 +455,12 @@ export class DistributionService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.DistributionOrderWhereInput = { deletedAt: null };
+    if (params.keyword) {
+      where.OR = [
+        { orderNo: { contains: params.keyword } },
+        { customerName: { contains: params.keyword } },
+      ];
+    }
     if (params.status) where.status = params.status as OrderStatus;
     if (params.customerId) where.customerId = params.customerId;
 

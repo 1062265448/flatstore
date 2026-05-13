@@ -176,6 +176,7 @@ export interface OrderQuery {
   limit?: number
   status?: string
   customerId?: number
+  keyword?: string
 }
 
 // AI 识别

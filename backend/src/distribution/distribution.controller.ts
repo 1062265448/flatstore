@@ -185,6 +185,7 @@ export class DistributionController {
     @Query('limit') limit?: number,
     @Query('status') status?: string,
     @Query('customerId') customerId?: number,
+    @Query('keyword') keyword?: string,
     @Query('includeItems') includeItems?: string,
   ) {
     return this.service.getOrderList({
@@ -192,6 +193,7 @@ export class DistributionController {
       limit,
       status,
       customerId,
+      keyword,
       includeItems: includeItems === 'true',
     });
   }

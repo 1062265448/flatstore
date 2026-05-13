@@ -38,7 +38,14 @@
           @click="router.push(`/orders/${order.id}`)"
         />
       </template>
-      <div v-else class="empty-hint">暂无配货单</div>
+      <div v-else class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.4">
+          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <div class="empty-text">暂无配货单</div>
+        <div class="empty-hint">前往配货页面创建订单</div>
+      </div>
     </div>
 
     <!-- AI FAB -->
@@ -169,6 +176,24 @@ onMounted(async () => {
 
 .recent-orders {
   margin-bottom: var(--space-5);
+}
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+}
+.empty-state .empty-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.empty-state .empty-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
 }
 .empty-hint {
   padding: 0 var(--space-5);

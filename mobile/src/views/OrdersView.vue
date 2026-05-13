@@ -5,6 +5,8 @@
       <h1 class="header-title">配货</h1>
     </div>
 
+    <SearchBar v-model="keyword" placeholder="搜索单号、客户名..." @search="handleSearch" />
+
     <FilterPills :pills="statusFilters" v-model="selectedStatus" />
 
     <div class="order-list">
@@ -18,7 +20,14 @@
           :order="order"
           @click="router.push(`/orders/${order.id}`)"
         />
-        <div v-if="!orderStore.orderList.length" class="empty-hint">暂无配货单</div>
+        <div v-if="!orderStore.orderList.length" class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.4">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <div class="empty-text">暂无配货单</div>
+          <div class="empty-hint">点击右下角「+」创建第一笔订单</div>
+        </div>
       </template>
     </div>
 
@@ -108,6 +117,7 @@ import type { InventoryStock } from '@/types'
 import FilterPills from '@/components/FilterPills.vue'
 import OrderCard from '@/components/OrderCard.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
+import SearchBar from '@/components/SearchBar.vue'
 
 const router = useRouter()
 const orderStore = useOrderStore()
@@ -115,6 +125,7 @@ const inventoryStore = useInventoryStore()
 const customerStore = useCustomerStore()
 const { success, danger } = useToast()
 
+const keyword = ref('')
 const selectedStatus = ref('')
 const showCreateSheet = ref(false)
 const submitting = ref(false)
@@ -152,11 +163,16 @@ const pickedTotalPieces = computed(() =>
 const fetchData = async () => {
   await orderStore.fetchOrders({
     status: selectedStatus.value || undefined,
+    keyword: keyword.value || undefined,
     limit: 50,
   })
 }
 
 watch(selectedStatus, fetchData)
+
+const handleSearch = () => {
+  fetchData()
+}
 
 const handleCreate = async () => {
   if (!createForm.customerId) { danger('请选择客户'); return }

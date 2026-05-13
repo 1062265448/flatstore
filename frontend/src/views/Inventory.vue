@@ -9,15 +9,59 @@
     <!-- 搜索和操作区 -->
     <div class="toolbar glass-card">
       <div class="search-section">
-        <div class="search-input-wrap">
+        <div class="search-input-wrap" ref="searchWrapRef">
           <input
-            v-model="queryForm.keyword"
+            v-model="searchInput"
             type="text"
             class="search-input"
             placeholder="搜索批号、规格、位置..."
-            @keyup.enter="handleSearch"
+            @input="onSearchInput"
+            @focus="onSearchFocus"
+            @blur="onSearchBlur"
+            @keyup.enter="doSearch"
           />
-          <button v-if="queryForm.keyword" class="search-clear" @click="clearSearch">✕</button>
+          <button v-if="searchInput" class="search-clear" @click="clearSearch">✕</button>
+
+          <!-- 搜索建议下拉 -->
+          <div v-if="showSuggestions" class="search-suggestions">
+            <!-- 最近搜索 -->
+            <div v-if="recentSearches.length && !searchInput" class="suggestions-section">
+              <div class="suggestions-header">
+                <span class="suggestions-title">最近搜索</span>
+                <button class="clear-history" @click.mousedown="handleClearHistory">清除历史</button>
+              </div>
+              <div class="suggestions-list">
+                <div
+                  v-for="item in recentSearches"
+                  :key="item"
+                  class="suggestion-item"
+                  @click.mousedown="selectSuggestion(item)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <span>{{ item }}</span>
+                </div>
+              </div>
+            </div>
+            <!-- 匹配结果 -->
+            <div v-if="suggestionResults.length && searchInput" class="suggestions-section">
+              <div class="suggestions-header">
+                <span class="suggestions-title">匹配结果</span>
+              </div>
+              <div class="suggestions-list">
+                <div
+                  v-for="item in suggestionResults"
+                  :key="item.id"
+                  class="suggestion-item"
+                  @click.mousedown="selectSuggestion(item.batchNo)"
+                >
+                  <span class="suggestion-batch">{{ item.batchNo }}</span>
+                  <span class="suggestion-meta">{{ item.grade }} {{ item.specification || '' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <select v-model="queryForm.grade" class="filter-select">
@@ -156,6 +200,10 @@
                 </svg>
                 <span class="empty-text">暂无库存数据</span>
                 <span class="empty-hint">点击上方「+ 新增库存」或使用 AI 识别添加</span>
+                <div class="empty-actions">
+                  <button class="btn-pill btn-primary" @click="handleCreate">+ 新增库存</button>
+                  <button class="btn-pill btn-ghost" @click="router.push('/ai')">AI识别</button>
+                </div>
               </div>
             </td>
           </tr>
@@ -364,8 +412,9 @@
 import { ref, reactive, computed, inject, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useInventoryStore } from '@/stores/inventory'
-import { getInventoryById } from '@/api/distribution'
+import { getInventoryById, searchInventory } from '@/api/distribution'
 import { ElMessageBox } from 'element-plus'
+import { getRecentSearches, addSearch, clearSearches } from '@/utils/searchHistory'
 import type { InventoryStock, CreateInventoryDto, LinkedOrder } from '@/types'
 
 const router = useRouter()
@@ -374,6 +423,14 @@ const showToast = inject('showToast') as (message: string, type?: string) => voi
 
 const dateInputRef = ref<HTMLInputElement | null>(null)
 const focusDateInput = () => dateInputRef.value?.showPicker?.()
+
+const searchWrapRef = ref<HTMLElement | null>(null)
+const searchInput = ref('')
+const showSuggestions = ref(false)
+const recentSearches = ref<string[]>([])
+const suggestionResults = ref<InventoryStock[]>([])
+let suggestionTimer: ReturnType<typeof setTimeout> | null = null
+let blurTimer: ReturnType<typeof setTimeout> | null = null
 
 const queryForm = reactive({
   page: 1,
@@ -492,8 +549,66 @@ const handleReset = () => {
 }
 
 const clearSearch = () => {
+  searchInput.value = ''
   queryForm.keyword = ''
+  suggestionResults.value = []
   handleSearch()
+}
+
+const onSearchInput = () => {
+  showSuggestions.value = true
+  if (suggestionTimer) clearTimeout(suggestionTimer)
+  suggestionTimer = setTimeout(async () => {
+    queryForm.keyword = searchInput.value
+    doSearch()
+    if (searchInput.value.trim()) {
+      try {
+        const results = await searchInventory(searchInput.value, 8) as InventoryStock[]
+        suggestionResults.value = results
+      } catch {
+        suggestionResults.value = []
+      }
+    } else {
+      suggestionResults.value = []
+    }
+  }, 300)
+}
+
+const doSearch = () => {
+  queryForm.keyword = searchInput.value
+  if (searchInput.value.trim()) {
+    addSearch(searchInput.value.trim())
+  }
+  queryForm.page = 1
+  handleSearch()
+  showSuggestions.value = false
+  suggestionResults.value = []
+}
+
+const onSearchFocus = () => {
+  showSuggestions.value = true
+  recentSearches.value = getRecentSearches()
+}
+
+const onSearchBlur = () => {
+  blurTimer = setTimeout(() => {
+    showSuggestions.value = false
+  }, 200)
+}
+
+const selectSuggestion = (value: string) => {
+  searchInput.value = value
+  queryForm.keyword = value
+  addSearch(value)
+  queryForm.page = 1
+  handleSearch()
+  showSuggestions.value = false
+  suggestionResults.value = []
+}
+
+const handleClearHistory = () => {
+  clearSearches()
+  recentSearches.value = getRecentSearches()
 }
 
 const goToPage = (page: number) => {
@@ -671,6 +786,90 @@ onMounted(() => {
   &:hover {
     color: var(--color-text-primary);
   }
+}
+
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.suggestions-section {
+  padding: 8px 0;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--color-divider);
+  }
+}
+
+.suggestions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 14px 6px;
+}
+
+.suggestions-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.clear-history {
+  font-size: 11px;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+
+  &:hover {
+    background: var(--color-bg-hover);
+  }
+
+  span {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+  }
+}
+
+.suggestion-batch {
+  font-weight: 500;
+  font-family: var(--font-mono);
+  color: var(--color-primary) !important;
+}
+
+.suggestion-meta {
+  font-size: var(--font-size-xs) !important;
+  color: var(--color-text-tertiary) !important;
 }
 
 .filter-input,
@@ -868,6 +1067,12 @@ onMounted(() => {
   .empty-hint {
     color: var(--color-text-tertiary);
     font-size: var(--font-size-sm);
+  }
+
+  .empty-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
   }
 }
 
