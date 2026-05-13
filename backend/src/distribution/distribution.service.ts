@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInventoryDto, UpdateInventoryDto } from './dto/inventory.dto';
 import { CreateOrderDto, UpdateOrderDto, ShipOrderDto } from './dto/order.dto';
@@ -16,13 +16,21 @@ const generateOrderNo = () => `ORD-${nanoid()}`;
 const STATS_CACHE_TTL = 30000; // 30 秒
 
 @Injectable()
-export class DistributionService {
+export class DistributionService implements OnModuleInit {
+  private readonly logger = new Logger(DistributionService.name);
   private statsCache: { data: any; timestamp: number } | null = null;
 
   constructor(
     private prisma: PrismaService,
     private qwenAI: QwenAIService,
   ) {}
+
+  /** 启动后初始化定时清理 */
+  onModuleInit() {
+    this.cleanupOldHistory();
+    // 每24小时清理一次
+    setInterval(() => this.cleanupOldHistory(), 24 * 60 * 60 * 1000);
+  }
 
   /** 主动清除统计缓存 */
   private invalidateStatsCache() {
@@ -845,11 +853,16 @@ export class DistributionService {
 
     const where: Prisma.AiRecognitionHistoryWhereInput = {};
     if (params.status) where.status = params.status;
+
+    // 默认只显示7天内的记录
     if (params.timeRange === 'today') {
       const start = new Date(); start.setHours(0, 0, 0, 0);
       where.createdAt = { gte: start } as any;
-    } else if (params.timeRange === 'week') {
-      const start = new Date(); start.setDate(start.getDate() - start.getDay()); start.setHours(0, 0, 0, 0);
+    } else if (params.timeRange === 'all') {
+      // 不限时间
+    } else {
+      // 默认：最近7天
+      const start = new Date(); start.setDate(start.getDate() - 7); start.setHours(0, 0, 0, 0);
       where.createdAt = { gte: start } as any;
     }
 
@@ -867,12 +880,55 @@ export class DistributionService {
   }
 
   async deleteRecognitionHistory(id: number) {
+    const record = await this.prisma.aiRecognitionHistory.findUnique({ where: { id } });
+    if (record?.imageUrl) {
+      const filePath = require('path').join(process.cwd(), record.imageUrl);
+      try { fs.promises.unlink(filePath); } catch { /* 文件不存在则忽略 */ }
+    }
     return this.prisma.aiRecognitionHistory.delete({ where: { id } });
   }
 
   async batchDeleteRecognitionHistory(ids: number[]) {
-    return this.prisma.aiRecognitionHistory.deleteMany({
-      where: { id: { in: ids } },
-    });
+    // 删除关联的图片文件
+    const records = await this.prisma.aiRecognitionHistory.findMany({ where: { id: { in: ids } } });
+    const path = require('path');
+    for (const r of records) {
+      if (r.imageUrl) {
+        const fp = path.join(process.cwd(), r.imageUrl);
+        try { fs.promises.unlink(fp); } catch { /* skip */ }
+      }
+    }
+    return this.prisma.aiRecognitionHistory.deleteMany({ where: { id: { in: ids } } });
+  }
+
+  /** 清理7天前的识别历史（定时任务） */
+  async cleanupOldHistory() {
+    try {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 7);
+
+      const oldRecords = await this.prisma.aiRecognitionHistory.findMany({
+        where: { createdAt: { lt: cutoff } },
+        select: { id: true, imageUrl: true },
+      });
+
+      if (oldRecords.length === 0) return;
+
+      const path = require('path');
+      for (const r of oldRecords) {
+        if (r.imageUrl) {
+          const fp = path.join(process.cwd(), r.imageUrl);
+          try { fs.promises.unlink(fp); } catch { /* skip */ }
+        }
+      }
+
+      await this.prisma.aiRecognitionHistory.deleteMany({
+        where: { id: { in: oldRecords.map(r => r.id) } },
+      });
+
+      this.logger.log(`清理了 ${oldRecords.length} 条7天前的识别历史`);
+    } catch (error) {
+      this.logger.error('定时清理识别历史失败:', error);
+    }
   }
 }
