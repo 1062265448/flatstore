@@ -9,9 +9,7 @@ import { Prisma } from '@prisma/client';
 import * as fs from 'fs';
 import { customAlphabet } from 'nanoid';
 
-// 生成不重复订单号
-const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 10);
-const generateOrderNo = () => `ORD-${nanoid()}`;
+/** 生成配货单号：PMK + 日期 + 当日序号 */
 
 const STATS_CACHE_TTL = 30000; // 30 秒
 
@@ -495,8 +493,28 @@ export class DistributionService implements OnModuleInit {
     return order;
   }
 
+  /** 生成配货单号：PMK + 日期(YYYYMMDD) + 01 + 当日序号(2位) */
+  private async generateOrderNo(): Promise<string> {
+    const now = new Date();
+    const dateStr = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('');
+
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayEnd = new Date(dayStart.getTime() + 86400000);
+
+    const count = await this.prisma.distributionOrder.count({
+      where: { createdAt: { gte: dayStart, lt: dayEnd } },
+    });
+
+    const seq = String(count + 1).padStart(2, '0');
+    return `PMK${dateStr}01${seq}`;
+  }
+
   async createOrder(dto: CreateOrderDto) {
-    const orderNo = generateOrderNo();
+    const orderNo = await this.generateOrderNo();
 
     const totalWeight = dto.items.reduce((sum, item) => sum + item.weight, 0);
     const totalPieces = dto.items.reduce((sum, item) => sum + item.pieceCount, 0);

@@ -13,17 +13,17 @@ import { CustomThrottlerGuard } from './common/guards/throttler.guard';
       {
         name: 'default',
         ttl: 60000,
-        limit: 300,
+        limit: 3000,
       },
       {
         name: 'login',
         ttl: 60000,
-        limit: 10,
+        limit: 100,
       },
       {
         name: 'upload',
         ttl: 60000,
-        limit: 20,
+        limit: 200,
       },
     ]),
     PrismaModule,

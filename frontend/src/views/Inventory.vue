@@ -64,7 +64,7 @@
           </div>
         </div>
 
-        <select v-model="queryForm.grade" class="filter-select">
+        <select v-model="queryForm.grade" class="filter-select" @change="handleFilterChange">
           <option value="">全部品级</option>
           <option value="9997">Ni9997</option>
           <option value="9996">Ni9996</option>
@@ -72,7 +72,7 @@
           <option value="9920">Ni9920</option>
         </select>
 
-        <select v-model="queryForm.productType" class="filter-select">
+        <select v-model="queryForm.productType" class="filter-select" @change="handleFilterChange">
           <option value="">全部类型</option>
           <option value="电解镍">电解镍</option>
           <option value="电积镍">电积镍</option>
@@ -80,7 +80,7 @@
           <option value="电镀专用镍">电镀专用镍</option>
         </select>
 
-        <select v-model="queryForm.specification" class="filter-select">
+        <select v-model="queryForm.specification" class="filter-select" @change="handleFilterChange">
           <option value="">全部规格</option>
           <option value="整板">整板</option>
           <option value="镍条">镍条</option>
@@ -97,10 +97,11 @@
             type="date"
             class="filter-input filter-date date-input-native"
             title="创建日期"
+            @change="handleFilterChange"
           />
         </div>
 
-        <select v-model="queryForm.status" class="filter-select">
+        <select v-model="queryForm.status" class="filter-select" @change="handleFilterChange">
           <option value="">全部状态</option>
           <option value="available">可用</option>
           <option value="reserved">已预留</option>
@@ -439,7 +440,7 @@ const queryForm = reactive({
   grade: '',
   productType: '',
   specification: '',
-  status: '',
+  status: 'available',
   dateFrom: '',
 })
 
@@ -449,11 +450,13 @@ const detailStock = ref<InventoryStock | null>(null)
 // 订单状态映射
 const orderStatusTagClass: Record<string, string> = {
   draft: 'tag-default',
+  shipping: 'tag-info',
   shipped: 'tag-success',
   cancelled: 'tag-danger',
 }
 const orderStatusLabel: Record<string, string> = {
   draft: '草稿',
+  shipping: '发货中',
   shipped: '已发货',
   cancelled: '已取消',
 }
@@ -540,8 +543,15 @@ const handleReset = () => {
   queryForm.grade = ''
   queryForm.productType = ''
   queryForm.specification = ''
-  queryForm.status = ''
+  queryForm.status = 'available'
   queryForm.dateFrom = ''
+  queryForm.page = 1
+  searchInput.value = ''
+  handleSearch()
+}
+
+// 筛选项热更新：切换后自动搜索
+const handleFilterChange = () => {
   queryForm.page = 1
   handleSearch()
 }
@@ -557,18 +567,16 @@ const onSearchInput = () => {
   showSuggestions.value = true
   if (suggestionTimer) clearTimeout(suggestionTimer)
   suggestionTimer = setTimeout(async () => {
-    // 主列表搜索（300ms debounce 后触发）
     queryForm.keyword = searchInput.value
-    queryForm.page = 1
-    handleSearch()
+    doSearch()
     if (searchInput.value.trim()) {
-      addSearch(searchInput.value.trim())
-    }
-    // 搜索建议（与主列表共享同一个 keyword，不单独触发列表刷新）
-    try {
-      const results = await searchInventory(searchInput.value, 8) as InventoryStock[]
-      suggestionResults.value = results
-    } catch {
+      try {
+        const results = await searchInventory(searchInput.value, 8) as InventoryStock[]
+        suggestionResults.value = results
+      } catch {
+        suggestionResults.value = []
+      }
+    } else {
       suggestionResults.value = []
     }
   }, 300)
@@ -901,6 +909,13 @@ onMounted(() => {
 }
 
 .filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
   cursor: pointer;
 }
 

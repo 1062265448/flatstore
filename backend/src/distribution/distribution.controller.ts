@@ -103,7 +103,7 @@ export class DistributionController {
   }
 
   @Post('inventory/ai-recognize')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 100, ttl: 60000 } })
   @ApiOperation({ summary: 'AI 图像识别' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({

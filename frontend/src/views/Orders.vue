@@ -128,7 +128,11 @@
                 <button class="action-btn warning" @click="handleShip(row)">发货</button>
                 <button class="action-btn danger" @click="handleCancel(row.id)">取消</button>
               </template>
-              <!-- 已发货/已取消状态 -->
+              <!-- 发货中状态 -->
+              <template v-else-if="row.status === 'shipping'">
+                <button class="action-btn success" @click="handleDeliver(row.id)">完成发运</button>
+              </template>
+              <!-- 已完成/已取消状态 -->
               <template v-else>
                 <button class="action-btn" @click="handleView(row)">查看</button>
               </template>
@@ -528,17 +532,30 @@ const specificationOptions = [
   '镍包',
 ]
 
-// 计算属性：过滤库存（远程搜索 + 本地回退）
+// 计算属性：过滤库存（类型+规格筛选 + 关键词搜索）
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 const filteredStocks = computed(() => {
-  if (!stockKeyword.value) return availableStocks.value
-  const kw = stockKeyword.value.toLowerCase()
-  return availableStocks.value.filter(s =>
-    s.batchNo?.toLowerCase().includes(kw) ||
-    s.grade?.toLowerCase().includes(kw) ||
-    s.specification?.toLowerCase().includes(kw) ||
-    s.location?.toLowerCase().includes(kw)
-  )
+  let list = availableStocks.value
+
+  // 按产品类型筛选
+  if (form.productType) {
+    list = list.filter(s => s.productType === form.productType)
+  }
+  // 按规格筛选
+  if (form.specification) {
+    list = list.filter(s => s.specification === form.specification)
+  }
+  // 关键词搜索
+  if (stockKeyword.value) {
+    const kw = stockKeyword.value.toLowerCase()
+    list = list.filter(s =>
+      s.batchNo?.toLowerCase().includes(kw) ||
+      s.grade?.toLowerCase().includes(kw) ||
+      s.specification?.toLowerCase().includes(kw) ||
+      s.location?.toLowerCase().includes(kw)
+    )
+  }
+  return list
 })
 
 // 远程搜索库存
@@ -587,10 +604,11 @@ const getStockGrade = (stockId: number) => {
   return stock?.grade || '-'
 }
 
-// 获取库存产品类型
+// 获取库存产品类型（统一名称）
 const getStockProductType = (stockId: number) => {
   const stock = availableStocks.value.find(s => s.id === stockId)
-  return stock?.productType || '-'
+  const pt = stock?.productType || '-'
+  return pt === '电积镍板' ? '电积镍' : pt
 }
 
 // 获取库存规格
@@ -624,18 +642,21 @@ const shipOrderId = ref<number>()
 const statusOptions = [
   { value: '', label: '全部' },
   { value: 'draft', label: '草稿' },
+  { value: 'shipping', label: '发货中' },
   { value: 'shipped', label: '已发货' },
   { value: 'cancelled', label: '已取消' },
 ]
 
 const statusTagClass: Record<string, string> = {
   draft: 'tag-default',
+  shipping: 'tag-info',
   shipped: 'tag-success',
   cancelled: 'tag-danger',
 }
 
 const statusLabel: Record<string, string> = {
   draft: '草稿',
+  shipping: '发货中',
   shipped: '已发货',
   cancelled: '已取消',
 }
@@ -853,6 +874,17 @@ const handleShipSubmit = async () => {
   handleSearch()
 }
 
+const handleDeliver = async (id: number) => {
+  try {
+    await ElMessageBox.confirm('确认完成发运?', '提示', { type: 'info' })
+    await orderStore.deliverOrder(id)
+    showToast?.('完成发运', 'success')
+    handleSearch()
+  } catch {
+    // 用户取消
+  }
+}
+
 const handleCancel = async (id: number) => {
   try {
     await ElMessageBox.confirm(
@@ -903,6 +935,9 @@ onMounted(() => {
 
 // ==================== 工具栏 ====================
 .toolbar {
+  position: sticky;
+  top: 60px;
+  z-index: var(--z-sticky, 50);
   padding: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
   display: flex;
@@ -910,6 +945,9 @@ onMounted(() => {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .search-section {
@@ -988,11 +1026,17 @@ onMounted(() => {
 }
 
 .filter-select {
-  padding: 10px 14px;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 10px 32px 10px 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-base);
   background: var(--color-bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
   color: var(--color-text-primary);
   cursor: pointer;
 
@@ -1208,10 +1252,11 @@ onMounted(() => {
 }
 
 .modal-content {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
-  overflow-y: auto;
 
   &.modal-lg {
     max-width: 800px;
@@ -1223,6 +1268,7 @@ onMounted(() => {
 }
 
 .modal-header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1254,10 +1300,14 @@ onMounted(() => {
 }
 
 .modal-body {
+  flex: 1;
+  overflow-y: auto;
   padding: var(--spacing-lg);
 }
 
+// ==================== 弹窗底部 ====================
 .modal-footer {
+  flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
   gap: var(--spacing-sm);

@@ -449,9 +449,14 @@ const currentHistory = ref<AiRecognitionHistory | null>(null)
 const parsedResults = computed(() => {
   if (!currentHistory.value?.result) return []
   try {
-    return typeof currentHistory.value.result === 'string'
+    const raw = typeof currentHistory.value.result === 'string'
       ? JSON.parse(currentHistory.value.result)
       : currentHistory.value.result
+    // 统一产品类型名称
+    return (Array.isArray(raw) ? raw : []).map((item: any) => ({
+      ...item,
+      productType: item.productType === '电积镍板' ? '电积镍' : (item.productType || ''),
+    }))
   } catch {
     return []
   }
@@ -927,11 +932,17 @@ onMounted(() => {
 
 .filter-select {
   flex: 1;
-  padding: 8px 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 8px 32px 8px 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-sm);
   background: var(--color-bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
   color: var(--color-text-primary);
   cursor: pointer;
 
