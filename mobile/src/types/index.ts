@@ -105,7 +105,7 @@ export interface DistributionOrder {
   targetGrade?: string
   totalWeight?: string | number
   totalPieces?: number
-  status: 'draft' | 'shipped' | 'cancelled'
+  status: 'draft' | 'shipping' | 'shipped' | 'cancelled'
   shippedAt?: string
   driverName?: string
   vehicleNo?: string
@@ -165,6 +165,7 @@ export interface OrderQuery {
   limit?: number
   status?: string
   customerId?: number
+  keyword?: string
 }
 
 // AI 识别
