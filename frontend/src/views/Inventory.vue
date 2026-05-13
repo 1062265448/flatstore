@@ -409,7 +409,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, inject, onMounted } from 'vue'
+import { ref, reactive, computed, inject, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useInventoryStore } from '@/stores/inventory'
 import { getInventoryById, searchInventory } from '@/api/distribution'
@@ -719,6 +719,18 @@ const handleBatchDelete = async () => {
 
 onMounted(() => {
   handleSearch()
+
+  // 键盘快捷键: / 聚焦搜索, ESC 关闭建议
+  const handleGlobalKeydown = (e: KeyboardEvent) => {
+    const tag = (e.target as HTMLElement)?.tagName
+    // 不在输入框中才触发
+    if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA' && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      searchWrapRef.value?.querySelector('input')?.focus()
+    }
+  }
+  document.addEventListener('keydown', handleGlobalKeydown)
+  onUnmounted(() => document.removeEventListener('keydown', handleGlobalKeydown))
 })
 </script>
 

@@ -770,22 +770,40 @@ export class DistributionService {
   async deleteOrder(id: number) {
     const order = await this.prisma.distributionOrder.findUnique({
       where: { id },
+      include: { items: { select: { stockId: true } } },
     });
     if (!order) throw new NotFoundException('订单不存在');
     if (order.status !== 'shipped' && order.status !== 'cancelled') {
       throw new BadRequestException('只能删除已发货或已取消的订单');
     }
 
-    this.invalidateStatsCache();
-    return this.prisma.distributionOrder.update({
-      where: { id },
-      data: { deletedAt: new Date() },
+    const stockIds = order.items.map((i) => i.stockId);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.distributionOrder.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+
+      // 释放库存：已取消的订单释放回可用，已发货的也释放（用于数据修正场景）
+      if (stockIds.length > 0) {
+        await tx.inventoryStock.updateMany({
+          where: { id: { in: stockIds }, status: { in: ['reserved', 'shipped'] } },
+          data: { status: 'available' },
+        });
+      }
+
+      return tx.distributionOrder.findUnique({ where: { id } });
     });
+
+    this.invalidateStatsCache();
+    return result;
   }
 
   async batchDeleteOrders(ids: number[]) {
     const orders = await this.prisma.distributionOrder.findMany({
       where: { id: { in: ids } },
+      include: { items: { select: { stockId: true } } },
     });
 
     const deletableOrders = orders.filter(
@@ -803,11 +821,30 @@ export class DistributionService {
 
     const deletableIds = deletableOrders.map((o) => o.id);
 
-    this.invalidateStatsCache();
-    return this.prisma.distributionOrder.updateMany({
-      where: { id: { in: deletableIds } },
-      data: { deletedAt: new Date() },
+    // 收集所有需释放的 stockId
+    const allStockIds = deletableOrders.flatMap((o) =>
+      o.items.map((i) => i.stockId),
+    );
+    const uniqueStockIds = [...new Set(allStockIds)];
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.distributionOrder.updateMany({
+        where: { id: { in: deletableIds } },
+        data: { deletedAt: new Date() },
+      });
+
+      if (uniqueStockIds.length > 0) {
+        await tx.inventoryStock.updateMany({
+          where: { id: { in: uniqueStockIds }, status: { in: ['reserved', 'shipped'] } },
+          data: { status: 'available' },
+        });
+      }
+
+      return { deletedCount: deletableIds.length, releasedStockCount: uniqueStockIds.length };
     });
+
+    this.invalidateStatsCache();
+    return result;
   }
 
   // ==================== AI 识别历史 ====================

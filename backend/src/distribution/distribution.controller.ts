@@ -21,7 +21,7 @@ import { CreateInventoryDto, UpdateInventoryDto, BatchCreateInventoryDto } from 
 import { CreateOrderDto, UpdateOrderDto, ShipOrderDto } from './dto/order.dto';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
-import { existsSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
@@ -120,10 +120,9 @@ export class DistributionController {
         destination: (_req, _file, cb) => {
           const uploadDir = join(process.cwd(), 'uploads/inventory');
           if (!existsSync(uploadDir)) {
-            cb(null, uploadDir);
-          } else {
-            cb(null, uploadDir);
+            mkdirSync(uploadDir, { recursive: true });
           }
+          cb(null, uploadDir);
         },
         filename: (_req, file, cb) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);

@@ -351,7 +351,14 @@
               <div class="detail-grid">
                 <div class="detail-item">
                   <span class="detail-label">单号</span>
-                  <span class="detail-value">{{ currentOrder.orderNo || `#${currentOrder.id}` }}</span>
+                  <span class="detail-value">
+                    {{ currentOrder.orderNo || `#${currentOrder.id}` }}
+                    <button
+                      class="copy-btn"
+                      title="复制单号"
+                      @click="copyOrderNo(currentOrder.orderNo)"
+                    >📋</button>
+                  </span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">状态</span>
@@ -457,7 +464,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, inject, onMounted } from 'vue'
+import { ref, reactive, computed, inject, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOrderStore } from '@/stores/order'
 import { useCustomerStore } from '@/stores/customer'
@@ -879,9 +886,30 @@ const handleCancel = async (id: number) => {
   }
 }
 
+// 复制单号到剪贴板
+const copyOrderNo = async (orderNo: string) => {
+  try {
+    await navigator.clipboard.writeText(orderNo)
+    showToast?.('已复制单号: ' + orderNo, 'success')
+  } catch {
+    showToast?.('复制失败，请手动复制', 'warning')
+  }
+}
+
 onMounted(() => {
   handleSearch()
   customerStore.fetchCustomers()
+
+  // 键盘快捷键: / 聚焦搜索
+  const handleGlobalKeydown = (e: KeyboardEvent) => {
+    const tag = (e.target as HTMLElement)?.tagName
+    if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA' && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      document.querySelector<HTMLInputElement>('.keyword-search-wrap input')?.focus()
+    }
+  }
+  document.addEventListener('keydown', handleGlobalKeydown)
+  onUnmounted(() => document.removeEventListener('keydown', handleGlobalKeydown))
 })
 </script>
 

@@ -364,7 +364,9 @@ import { ref, reactive, computed, inject, onMounted } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { aiRecognize, batchCreateInventory, getRecognitionHistory, deleteRecognitionHistory, batchDeleteRecognitionHistory } from '@/api/distribution'
 import type { AiRecognizeResult, AiRecognitionHistory, CreateInventoryDto } from '@/types'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const showToast = inject('showToast') as (message: string, type?: string) => void
 
 const uploadRef = ref<HTMLInputElement>()
@@ -498,9 +500,11 @@ const handleImportSubmit = async () => {
     }))
 
     await batchCreateInventory({ items, recognitionHistoryId: currentHistoryId.value || undefined })
-    showToast?.(`成功导入 ${items.length} 条库存记录`, 'success')
+    showToast?.(`成功导入 ${items.length} 条库存记录，即将跳转至库存页`, 'success')
     importVisible.value = false
     handleReset()
+    // 自动跳转到库存页查看结果
+    setTimeout(() => router.push('/inventory'), 1500)
   } catch {
     // 错误已在 API 层处理
   } finally {

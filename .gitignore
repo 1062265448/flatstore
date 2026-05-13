@@ -40,3 +40,4 @@ Thumbs.db
 
 # Vite deps cache
 mobile/.vite/
+flatstore/
