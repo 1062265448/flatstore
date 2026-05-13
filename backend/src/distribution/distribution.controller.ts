@@ -16,12 +16,12 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { DistributionService } from './distribution.service';
 import { CreateInventoryDto, UpdateInventoryDto, BatchCreateInventoryDto } from './dto/inventory.dto';
 import { CreateOrderDto, UpdateOrderDto, ShipOrderDto } from './dto/order.dto';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
-import { existsSync, mkdirSync } from 'fs';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
@@ -230,8 +230,10 @@ export class DistributionController {
     return this.service.batchDeleteOrders(body.ids);
   }
 
+    // 移除 confirm 接口 - 创建后直接可发货
+
   @Post('orders/:id/ship')
-  @ApiOperation({ summary: '发货（直接标记为已发货）' })
+  @ApiOperation({ summary: '发货' })
   shipOrder(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ShipOrderDto,
@@ -240,7 +242,7 @@ export class DistributionController {
   }
 
   @Post('orders/:id/deliver')
-  @ApiOperation({ summary: '完成发运（已废弃，shipOrder 已包含此步骤）', deprecated: true })
+  @ApiOperation({ summary: '完成发运' })
   deliverOrder(@Param('id', ParseIntPipe) id: number) {
     return this.service.deliverOrder(id);
   }

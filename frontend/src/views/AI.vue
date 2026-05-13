@@ -337,9 +337,34 @@
                 </div>
               </div>
 
-              <div v-if="currentHistory.result" class="result-section">
+              <div v-if="parsedResults.length" class="result-section">
                 <h4>识别结果</h4>
-                <pre class="json-preview">{{ formatJson(currentHistory.result) }}</pre>
+                <div class="results-table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>包号</th>
+                        <th>批号</th>
+                        <th>品级</th>
+                        <th>产品类型</th>
+                        <th>片数</th>
+                        <th>净重(吨)</th>
+                        <th>日期</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(item, i) in parsedResults" :key="i">
+                        <td>{{ item.packageNo || '-' }}</td>
+                        <td class="batch-no">{{ item.batchNo || '-' }}</td>
+                        <td><span class="tag tag-info">{{ item.grade || '-' }}</span></td>
+                        <td>{{ item.productType || '-' }}</td>
+                        <td>{{ item.pieceCount || '-' }}</td>
+                        <td class="weight">{{ (item.netWeight || 0).toFixed(3) }}</td>
+                        <td>{{ item.date || '-' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <div v-if="currentHistory.imageUrl" class="image-section">
@@ -420,6 +445,17 @@ const locationOptions = [
 
 const historyDetailVisible = ref(false)
 const currentHistory = ref<AiRecognitionHistory | null>(null)
+
+const parsedResults = computed(() => {
+  if (!currentHistory.value?.result) return []
+  try {
+    return typeof currentHistory.value.result === 'string'
+      ? JSON.parse(currentHistory.value.result)
+      : currentHistory.value.result
+  } catch {
+    return []
+  }
+})
 
 const imagePreviewVisible = ref(false)
 const previewImageUrl = ref('')

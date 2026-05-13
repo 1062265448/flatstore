@@ -348,11 +348,6 @@ export class DistributionService {
           errorMessage: error.message,
         },
       });
-      try {
-        await fs.promises.unlink(file.path);
-      } catch (unlinkError) {
-        console.error('[AI] 临时文件清理失败:', unlinkError);
-      }
       throw error;
     }
 
@@ -368,13 +363,7 @@ export class DistributionService {
       },
     });
 
-    // 清理临时文件
-    try {
-      await fs.promises.unlink(file.path);
-    } catch (unlinkError) {
-      console.error('[AI] 临时文件清理失败:', unlinkError);
-    }
-
+    // 文件保留在 uploads/inventory/ 供缩略图显示
     return { results: aiResults, historyId: history.id };
   }
 
@@ -672,7 +661,6 @@ export class DistributionService {
   async shipOrder(id: number, dto: ShipOrderDto) {
     const order = await this.prisma.distributionOrder.findUnique({
       where: { id },
-      include: { items: { select: { stockId: true } } },
     });
     if (!order || order.deletedAt) throw new NotFoundException('订单不存在');
     if (order.status !== 'draft') {
@@ -685,28 +673,13 @@ export class DistributionService {
       throw new BadRequestException('请填写车牌号');
     }
 
-    const stockIds = order.items.map((i) => i.stockId);
-
-    const result = await this.prisma.$transaction(async (tx) => {
-      await tx.distributionOrder.update({
-        where: { id },
-        data: {
-          status: 'shipped',
-          shippedAt: new Date(),
-          driverName: dto.driverName.trim(),
-          vehicleNo: dto.vehicleNo.trim(),
-        },
-      });
-
-      // 库存从 reserved → shipped
-      if (stockIds.length > 0) {
-        await tx.inventoryStock.updateMany({
-          where: { id: { in: stockIds }, status: 'reserved' },
-          data: { status: 'shipped' },
-        });
-      }
-
-      return tx.distributionOrder.findUnique({ where: { id } });
+    const result = await this.prisma.distributionOrder.update({
+      where: { id },
+      data: {
+        status: 'shipping',
+        driverName: dto.driverName.trim(),
+        vehicleNo: dto.vehicleNo.trim(),
+      },
     });
 
     this.invalidateStatsCache();
@@ -771,9 +744,8 @@ export class DistributionService {
         data: { status: 'cancelled' },
       });
 
-      // 释放库存：shipped 状态也需要释放（发货即 shipped）
       await tx.inventoryStock.updateMany({
-        where: { id: { in: stockIds }, status: { in: ['reserved', 'shipped'] } },
+        where: { id: { in: stockIds } },
         data: { status: 'available' },
       });
 
