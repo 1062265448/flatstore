@@ -280,7 +280,7 @@ const openImageViewer = (url: string) => {
 const resolveImageUrl = (url: string) => {
   if (!url) return ''
   if (url.startsWith('http')) return url
-  const base = Capacitor.isNativePlatform() ? 'http://localhost:3002' : ''
+  const base = Capacitor.isNativePlatform() ? 'http://62.234.92.126' : ''
   return base + url
 }
 

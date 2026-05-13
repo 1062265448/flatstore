@@ -21,10 +21,12 @@ import type { AiRecognitionHistory } from '@/types'
 defineProps<{ item: AiRecognitionHistory }>()
 defineEmits<{ click: [] }>()
 
+const PROD_BASE = 'http://62.234.92.126'
+
 const resolveImageUrl = (url: string) => {
   if (!url) return ''
   if (url.startsWith('http')) return url
-  const base = Capacitor.isNativePlatform() ? 'http://localhost:3002' : ''
+  const base = Capacitor.isNativePlatform() ? PROD_BASE : ''
   return base + url
 }
 
