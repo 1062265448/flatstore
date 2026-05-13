@@ -672,6 +672,7 @@ export class DistributionService {
   async shipOrder(id: number, dto: ShipOrderDto) {
     const order = await this.prisma.distributionOrder.findUnique({
       where: { id },
+      include: { items: { select: { stockId: true } } },
     });
     if (!order || order.deletedAt) throw new NotFoundException('订单不存在');
     if (order.status !== 'draft') {
@@ -684,13 +685,28 @@ export class DistributionService {
       throw new BadRequestException('请填写车牌号');
     }
 
-    const result = await this.prisma.distributionOrder.update({
-      where: { id },
-      data: {
-        status: 'shipping',
-        driverName: dto.driverName.trim(),
-        vehicleNo: dto.vehicleNo.trim(),
-      },
+    const stockIds = order.items.map((i) => i.stockId);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.distributionOrder.update({
+        where: { id },
+        data: {
+          status: 'shipped',
+          shippedAt: new Date(),
+          driverName: dto.driverName.trim(),
+          vehicleNo: dto.vehicleNo.trim(),
+        },
+      });
+
+      // 库存从 reserved → shipped
+      if (stockIds.length > 0) {
+        await tx.inventoryStock.updateMany({
+          where: { id: { in: stockIds }, status: 'reserved' },
+          data: { status: 'shipped' },
+        });
+      }
+
+      return tx.distributionOrder.findUnique({ where: { id } });
     });
 
     this.invalidateStatsCache();
@@ -755,8 +771,9 @@ export class DistributionService {
         data: { status: 'cancelled' },
       });
 
+      // 释放库存：shipped 状态也需要释放（发货即 shipped）
       await tx.inventoryStock.updateMany({
-        where: { id: { in: stockIds } },
+        where: { id: { in: stockIds }, status: { in: ['reserved', 'shipped'] } },
         data: { status: 'available' },
       });
 

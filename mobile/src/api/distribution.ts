@@ -37,8 +37,8 @@ export const getStatistics = () =>
   request.get<Statistics>('/distribution/statistics')
 
 // ==================== Inventory ====================
-export const getInventoryList = (params: InventoryQuery) =>
-  request.get<PaginatedResponse<InventoryStock>>('/distribution/inventory', { params })
+export const getInventoryList = (params: InventoryQuery, signal?: AbortSignal) =>
+  request.get<PaginatedResponse<InventoryStock>>('/distribution/inventory', { params, signal })
 
 export const getInventoryById = (id: number) =>
   request.get<InventoryStock>(`/distribution/inventory/${id}`)
@@ -87,8 +87,8 @@ export const deleteCustomer = (id: number) =>
   request.delete(`/distribution/customers/${id}`)
 
 // ==================== Orders ====================
-export const getOrderList = (params: OrderQuery) =>
-  request.get<PaginatedResponse<DistributionOrder>>('/distribution/orders', { params })
+export const getOrderList = (params: OrderQuery, signal?: AbortSignal) =>
+  request.get<PaginatedResponse<DistributionOrder>>('/distribution/orders', { params, signal })
 
 export const getOrderById = (id: number) =>
   request.get<DistributionOrder>(`/distribution/orders/${id}`)

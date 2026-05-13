@@ -449,13 +449,11 @@ const detailStock = ref<InventoryStock | null>(null)
 // 订单状态映射
 const orderStatusTagClass: Record<string, string> = {
   draft: 'tag-default',
-  shipping: 'tag-info',
   shipped: 'tag-success',
   cancelled: 'tag-danger',
 }
 const orderStatusLabel: Record<string, string> = {
   draft: '草稿',
-  shipping: '发货中',
   shipped: '已发货',
   cancelled: '已取消',
 }
@@ -559,16 +557,18 @@ const onSearchInput = () => {
   showSuggestions.value = true
   if (suggestionTimer) clearTimeout(suggestionTimer)
   suggestionTimer = setTimeout(async () => {
+    // 主列表搜索（300ms debounce 后触发）
     queryForm.keyword = searchInput.value
-    doSearch()
+    queryForm.page = 1
+    handleSearch()
     if (searchInput.value.trim()) {
-      try {
-        const results = await searchInventory(searchInput.value, 8) as InventoryStock[]
-        suggestionResults.value = results
-      } catch {
-        suggestionResults.value = []
-      }
-    } else {
+      addSearch(searchInput.value.trim())
+    }
+    // 搜索建议（与主列表共享同一个 keyword，不单独触发列表刷新）
+    try {
+      const results = await searchInventory(searchInput.value, 8) as InventoryStock[]
+      suggestionResults.value = results
+    } catch {
       suggestionResults.value = []
     }
   }, 300)

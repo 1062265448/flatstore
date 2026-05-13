@@ -25,12 +25,12 @@ const props = defineProps<{
 defineEmits<{ click: [] }>()
 
 const statusText = computed(() => {
-  const map: Record<string, string> = { draft: '草稿', shipping: '发货中', shipped: '已完成', cancelled: '已取消' }
+  const map: Record<string, string> = { draft: '草稿', shipped: '已发货', cancelled: '已取消' }
   return map[props.order.status] || props.order.status
 })
 
 const badgeClass = computed(() => {
-  const map: Record<string, string> = { draft: 'badge-gray', shipping: 'badge-amber', shipped: 'badge-green', cancelled: 'badge-red' }
+  const map: Record<string, string> = { draft: 'badge-gray', shipped: 'badge-green', cancelled: 'badge-red' }
   return map[props.order.status] || 'badge-gray'
 })
 </script>

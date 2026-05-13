@@ -80,10 +80,6 @@
             <span class="badge-count">{{ stats?.order.draft || 0 }}</span>
             <span class="badge-label">草稿</span>
           </div>
-          <div class="order-badge shipping">
-            <span class="badge-count">{{ stats?.order.shipping || 0 }}</span>
-            <span class="badge-label">发货中</span>
-          </div>
           <div class="order-badge shipped">
             <span class="badge-count">{{ stats?.order.shipped || 0 }}</span>
             <span class="badge-label">已发货</span>
@@ -124,7 +120,7 @@ const statCards = computed(() => [
   {
     label: '配货单',
     value: stats.value?.order.total || 0,
-    sub: `进行中 ${(stats.value?.order.draft || 0) + (stats.value?.order.shipping || 0)} 单`,
+    sub: `进行中 ${stats.value?.order.draft || 0} 单`,
     gradient: 'linear-gradient(135deg, #EC4899 0%, #F43F5E 100%)',
     route: '/orders',
   },
@@ -223,7 +219,6 @@ const initOrderChart = () => {
         type: 'bar',
         data: [
           { value: stats.value?.order.draft || 0, itemStyle: { color: '#8e8e93' } },
-          { value: stats.value?.order.shipping || 0, itemStyle: { color: '#0071e3' } },
           { value: stats.value?.order.shipped || 0, itemStyle: { color: '#ff9500' } },
           { value: stats.value?.order.cancelled || 0, itemStyle: { color: '#34c759' } },
         ],

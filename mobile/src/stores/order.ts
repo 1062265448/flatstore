@@ -10,18 +10,28 @@ export const useOrderStore = defineStore('order', () => {
   const loadingList = ref(false)
   const loadingDetail = ref(false)
 
+  let abortController: AbortController | null = null
+
   const fetchOrders = async (params: OrderQuery = {}) => {
+    abortController?.abort()
+    abortController = new AbortController()
+    const signal = abortController.signal
+
     loadingList.value = true
     try {
-      const res = await api.getOrderList(params) as { data: DistributionOrder[]; total: number }
+      const res = await api.getOrderList(params, signal) as { data: DistributionOrder[]; total: number }
+      if (signal.aborted) return
       orderList.value = res.data
       total.value = res.total
+      if (res.data.length === 0 && res.total > 0 && (params.page ?? 1) > 1) {
+        return fetchOrders({ ...params, page: 1 })
+      }
     } catch (error) {
-      // 错误已在 API 拦截器中提示
-      orderList.value = []
-      total.value = 0
+      // AbortError 表示请求被取消，静默忽略
+      if (error instanceof DOMException && error.name === 'AbortError') return
+      // 保留现有数据，不清空
     } finally {
-      loadingList.value = false
+      if (!signal.aborted) loadingList.value = false
     }
   }
 

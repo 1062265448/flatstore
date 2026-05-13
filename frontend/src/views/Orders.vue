@@ -128,11 +128,7 @@
                 <button class="action-btn warning" @click="handleShip(row)">发货</button>
                 <button class="action-btn danger" @click="handleCancel(row.id)">取消</button>
               </template>
-              <!-- 发货中状态 -->
-              <template v-else-if="row.status === 'shipping'">
-                <button class="action-btn success" @click="handleDeliver(row.id)">完成发运</button>
-              </template>
-              <!-- 已完成/已取消状态 -->
+              <!-- 已发货/已取消状态 -->
               <template v-else>
                 <button class="action-btn" @click="handleView(row)">查看</button>
               </template>
@@ -628,21 +624,18 @@ const shipOrderId = ref<number>()
 const statusOptions = [
   { value: '', label: '全部' },
   { value: 'draft', label: '草稿' },
-  { value: 'shipping', label: '发货中' },
   { value: 'shipped', label: '已发货' },
   { value: 'cancelled', label: '已取消' },
 ]
 
 const statusTagClass: Record<string, string> = {
   draft: 'tag-default',
-  shipping: 'tag-info',
   shipped: 'tag-success',
   cancelled: 'tag-danger',
 }
 
 const statusLabel: Record<string, string> = {
   draft: '草稿',
-  shipping: '发货中',
   shipped: '已发货',
   cancelled: '已取消',
 }
@@ -858,17 +851,6 @@ const handleShipSubmit = async () => {
   shipVisible.value = false
   showToast?.('发货成功', 'success')
   handleSearch()
-}
-
-const handleDeliver = async (id: number) => {
-  try {
-    await ElMessageBox.confirm('确认完成发运?', '提示', { type: 'info' })
-    await orderStore.deliverOrder(id)
-    showToast?.('完成发运', 'success')
-    handleSearch()
-  } catch {
-    // 用户取消
-  }
 }
 
 const handleCancel = async (id: number) => {

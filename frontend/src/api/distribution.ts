@@ -25,8 +25,8 @@ export const getStatistics = () => {
 }
 
 // ==================== 库存 ====================
-export const getInventoryList = (params: InventoryQuery) => {
-  return request.get<PaginatedResponse<InventoryStock>>('/distribution/inventory', { params } as any)
+export const getInventoryList = (params: InventoryQuery, signal?: AbortSignal) => {
+  return request.get<PaginatedResponse<InventoryStock>>('/distribution/inventory', { params, signal } as any)
 }
 
 export const getInventoryById = (id: number) => {
@@ -96,8 +96,8 @@ export const deleteCustomer = (id: number) => {
 }
 
 // ==================== 配货单 ====================
-export const getOrderList = (params: OrderQuery) => {
-  return request.get<PaginatedResponse<DistributionOrder>>('/distribution/orders', { params } as any)
+export const getOrderList = (params: OrderQuery, signal?: AbortSignal) => {
+  return request.get<PaginatedResponse<DistributionOrder>>('/distribution/orders', { params, signal } as any)
 }
 
 export const getOrderById = (id: number) => {

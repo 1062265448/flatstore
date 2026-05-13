@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import axios from 'axios'
 import * as api from '@/api/distribution'
 import type { DistributionOrder, CreateOrderDto, UpdateOrderDto, ShipOrderDto, OrderQuery } from '@/types'
 
@@ -9,18 +10,30 @@ export const useOrderStore = defineStore('order', () => {
   const total = ref(0)
   const loading = ref(false)
 
+  let abortController: AbortController | null = null
+
   const fetchOrders = async (params: OrderQuery = {}) => {
+    // 取消上一次未完成的请求，防止旧响应覆盖新数据
+    abortController?.abort()
+    abortController = new AbortController()
+    const signal = abortController.signal
+
     loading.value = true
     try {
-      const res = await api.getOrderList(params) as { data: DistributionOrder[]; total: number }
+      const res = await api.getOrderList(params, signal) as { data: DistributionOrder[]; total: number }
+      if (signal.aborted) return
       orderList.value = res.data
       total.value = res.total
-    } catch (error) {
-      // 错误已在 API 响应拦截器中提示，此处仅重置数据
-      orderList.value = []
-      total.value = 0
+      // 后端返回了总数但当前页无数据 → 页码超出范围，回到第 1 页
+      if (res.data.length === 0 && res.total > 0 && (params.page ?? 1) > 1) {
+        return fetchOrders({ ...params, page: 1 })
+      }
+    } catch (error: any) {
+      // CanceledError/AbortError 表示请求被取消，静默忽略
+      if (axios.isCancel?.(error) || error?.name === 'CanceledError' || error?.name === 'AbortError') return
+      // 保留现有数据，不清空（网络抖动时列表依然可见）
     } finally {
-      loading.value = false
+      if (!signal.aborted) loading.value = false
     }
   }
 
