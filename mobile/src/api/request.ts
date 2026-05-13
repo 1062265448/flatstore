@@ -2,11 +2,12 @@ import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse 
 import { Capacitor } from '@capacitor/core'
 
 // API 基础地址
-// Capacitor 原生环境：使用 ADB 反向代理（localhost:3002 → 电脑:3002）
-// 浏览器开发环境：走 Vite 代理（/ 映射到 localhost:3002）
+const PROD_API_URL = 'http://62.234.92.126/api'
+const DEV_API_URL = import.meta.env.VITE_DEV_SERVER_URL || 'http://localhost:3002'
+
 const BASE_URL = Capacitor.isNativePlatform()
-  ? 'http://localhost:3002'  // ADB reverse 代理
-  : (import.meta.env.VITE_API_BASE_URL || '/')
+  ? PROD_API_URL  // APK 直连服务器
+  : (import.meta.env.VITE_API_BASE_URL || PROD_API_URL)
 
 interface RequestInstance extends Omit<AxiosInstance, 'get' | 'post' | 'put' | 'patch' | 'delete'> {
   get<R = any>(url: string, config?: AxiosRequestConfig): Promise<R>
