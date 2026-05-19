@@ -3,6 +3,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { JwtAuthGuard } from '../../src/auth/guards/jwt-auth.guard';
 
 describe('DistributionController (e2e)', () => {
   let app: INestApplication;
@@ -11,7 +12,10 @@ describe('DistributionController (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
@@ -84,7 +88,7 @@ describe('DistributionController (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/distribution/inventory/batch')
-        .send(items)
+        .send({ items })
         .expect(201);
 
       expect(response.body.count).toBe(2);
@@ -263,13 +267,17 @@ describe('DistributionController (e2e)', () => {
     });
 
     it('POST /distribution/orders/:id/ship - 应发货', async () => {
+      // 创建订单时库存需为 reserved（与 createOrder 行为一致）
+      const reservedStock = await prisma.inventoryStock.create({
+        data: { batchNo: 'BATCH-SHIP', grade: 'A', weight: 100, pieceCount: 10, status: 'reserved' },
+      });
       const order = await prisma.distributionOrder.create({
         data: {
-          orderNo: 'ORD-001',
+          orderNo: 'ORD-SHIP',
           customerId: testCustomer.id,
           status: 'draft',
           items: {
-            create: { stockId: testStock.id, weight: 100, pieceCount: 10 },
+            create: { stockId: reservedStock.id, weight: 100, pieceCount: 10 },
           },
         },
       });
@@ -281,7 +289,7 @@ describe('DistributionController (e2e)', () => {
       expect(response.body.status).toBe('shipped');
 
       // 验证库存已发货
-      const stock = await prisma.inventoryStock.findUnique({ where: { id: testStock.id } });
+      const stock = await prisma.inventoryStock.findUnique({ where: { id: reservedStock.id } });
       expect(stock.status).toBe('shipped');
     });
 

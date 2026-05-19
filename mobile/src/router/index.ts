@@ -40,7 +40,7 @@ const routes = [
   {
     path: '/ai',
     name: 'Ai',
-    component: () => import('@/views/AiView.vue'),
+    component: () => import('@/views/AIView.vue'),
     meta: { title: 'AI识别', requiresAuth: true },
   },
   {
