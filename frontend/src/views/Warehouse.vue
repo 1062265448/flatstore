@@ -132,7 +132,7 @@
               </div>
               <div class="stat-content">
                 <div class="stat-value">{{ stats.totalWeight }}</div>
-                <div class="stat-label">总重量（吨）</div>
+                <div class="stat-label">总重量（kg）</div>
               </div>
             </div>
 
@@ -192,7 +192,7 @@
                 </div>
                 <div class="zone-stat">
                   <span class="zone-stat-value">{{ area.weight }}</span>
-                  <span class="zone-stat-label">吨</span>
+                  <span class="zone-stat-label">kg</span>
                 </div>
               </div>
               <div class="zone-progress">

@@ -1,4 +1,5 @@
 import request from './request'
+import type { AxiosRequestConfig } from 'axios'
 import type {
   InventoryStock,
   CreateInventoryDto,
@@ -26,7 +27,7 @@ export const getStatistics = () => {
 
 // ==================== 库存 ====================
 export const getInventoryList = (params: InventoryQuery, signal?: AbortSignal) => {
-  return request.get<PaginatedResponse<InventoryStock>>('/distribution/inventory', { params, signal } as any)
+  return request.get<PaginatedResponse<InventoryStock>>('/distribution/inventory', { params, signal } as AxiosRequestConfig)
 }
 
 export const getInventoryById = (id: number) => {
@@ -62,7 +63,7 @@ export const batchDeleteInventory = (ids: number[]) => {
 export const searchInventory = (keyword: string, limit?: number) => {
   return request.get<InventoryStock[]>('/distribution/inventory/search', {
     params: { keyword, limit },
-  } as any)
+  } as AxiosRequestConfig)
 }
 
 // AI 识别
@@ -70,8 +71,9 @@ export const aiRecognize = (file: File) => {
   const formData = new FormData()
   formData.append('file', file)
   return request.post<{ results: AiRecognizeResult[]; historyId: number }>('/distribution/inventory/ai-recognize', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 120000,
-  } as any)
+  } as AxiosRequestConfig)
 }
 
 // ==================== 客户 ====================
@@ -97,7 +99,7 @@ export const deleteCustomer = (id: number) => {
 
 // ==================== 配货单 ====================
 export const getOrderList = (params: OrderQuery, signal?: AbortSignal) => {
-  return request.get<PaginatedResponse<DistributionOrder>>('/distribution/orders', { params, signal } as any)
+  return request.get<PaginatedResponse<DistributionOrder>>('/distribution/orders', { params, signal } as AxiosRequestConfig)
 }
 
 export const getOrderById = (id: number) => {
@@ -134,7 +136,7 @@ export const cancelOrder = (id: number) => {
 
 // ==================== AI 识别历史 ====================
 export const getRecognitionHistory = (params: RecognitionHistoryQuery) => {
-  return request.get<PaginatedResponse<AiRecognitionHistory>>('/distribution/recognition-history', { params } as any)
+  return request.get<PaginatedResponse<AiRecognitionHistory>>('/distribution/recognition-history', { params } as AxiosRequestConfig)
 }
 
 export const deleteRecognitionHistory = (id: number) => {

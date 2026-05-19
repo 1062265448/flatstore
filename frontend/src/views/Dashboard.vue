@@ -51,7 +51,7 @@
           <div class="weight-item">
             <div class="weight-info">
               <div class="weight-value">{{ Number(stats?.inventory.totalWeight || 0).toFixed(2) }}</div>
-              <div class="weight-label">总重量（吨）</div>
+              <div class="weight-label">总重量（kg）</div>
             </div>
           </div>
           <div class="weight-divider"></div>

@@ -260,7 +260,7 @@
                       </span>
                     </div>
                     <div class="stock-meta">
-                      <span class="stock-weight">{{ Number(stock.weight).toFixed(3) }}吨</span>
+                      <span class="stock-weight">{{ Number(stock.weight).toFixed(3) }}kg</span>
                       <span class="stock-pieces">{{ stock.pieceCount }}片</span>
                       <span class="stock-location">{{ stock.location || '-' }}</span>
                       <span v-if="stock.nickelContent" class="stock-nickel">Ni {{ Number(stock.nickelContent).toFixed(2) }}%</span>
@@ -306,7 +306,7 @@
                         <span class="tag tag-nickel">Ni {{ getStockNickel(item.stockId) }}%</span>
                       </span>
                     </div>
-                    <input v-model.number="item.weight" type="number" step="0.001" min="0" placeholder="重量(吨)" class="item-input" />
+                    <input v-model.number="item.weight" type="number" step="0.001" min="0" placeholder="重量(kg)" class="item-input" />
                     <input v-model.number="item.pieceCount" type="number" min="0" placeholder="片数" class="item-input" />
                     <button v-if="!isEdit" class="item-remove" @click="handleRemoveItem(index)">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -325,7 +325,7 @@
             <div class="modal-footer">
               <div class="footer-info">
                 <span class="total-label">总计</span>
-                <span class="total-weight">{{ totalWeight }}吨</span>
+                <span class="total-weight">{{ totalWeight }}kg</span>
                 <span class="total-pieces">{{ totalPieces }}片</span>
               </div>
               <div class="footer-actions">
@@ -377,7 +377,7 @@
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">总重量</span>
-                  <span class="detail-value">{{ currentOrder.totalWeight ? Number(currentOrder.totalWeight).toFixed(3) + '吨' : '-' }}</span>
+                  <span class="detail-value">{{ currentOrder.totalWeight ? Number(currentOrder.totalWeight).toFixed(3) + 'kg' : '-' }}</span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">总片数</span>
@@ -405,7 +405,7 @@
                       <th>批号</th>
                       <th>品级</th>
                       <th>规格</th>
-                      <th>重量(吨)</th>
+                      <th>重量(kg)</th>
                       <th>片数</th>
                     </tr>
                   </thead>
@@ -763,8 +763,8 @@ const handleEdit = async (row: DistributionOrder) => {
     customerId: row.customerId,
     customerName: row.customerName,
     targetGrade: row.targetGrade,
-    productType: (row as any).productType || '',
-    specification: (row as any).specification || '',
+    productType: row.productType || '',
+    specification: row.specification || '',
     remark: row.remark,
     items: row.items?.map((i) => ({
       stockId: i.stockId,

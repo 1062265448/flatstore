@@ -98,7 +98,7 @@
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="重量(吨)" required>
+            <el-form-item label="重量(kg)" required>
               <el-input-number v-model="createInventoryForm.weight" :min="0" :precision="3" />
             </el-form-item>
           </el-col>

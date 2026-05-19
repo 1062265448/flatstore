@@ -115,7 +115,7 @@
                 <tfoot v-if="recognizeResults.length">
                   <tr class="summary-row">
                     <td colspan="5" class="summary-label">合计</td>
-                    <td class="weight">{{ recognizeTotalWeight }}</td>
+                    <td class="weight">{{ recognizeTotalWeight }} kg</td>
                     <td>{{ recognizeTotalPieces }}块</td>
                   </tr>
                 </tfoot>
@@ -377,7 +377,7 @@
                     <tfoot v-if="parsedResults.length">
                       <tr class="summary-row">
                         <td colspan="5" class="summary-label">合计</td>
-                        <td class="weight">{{ parsedTotalWeight }}</td>
+                        <td class="weight">{{ parsedTotalWeight }} kg</td>
                         <td>{{ parsedTotalPieces }}块</td>
                       </tr>
                     </tfoot>

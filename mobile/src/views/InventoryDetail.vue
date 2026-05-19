@@ -23,7 +23,7 @@
           </div>
           <div class="detail-field">
             <span class="field-lbl">重量</span>
-            <span class="field-val">{{ Number(item.weight).toFixed(3) }} 吨</span>
+            <span class="field-val">{{ Number(item.weight).toFixed(3) }} kg</span>
           </div>
           <div class="detail-field">
             <span class="field-lbl">块数</span>
@@ -115,7 +115,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label>重量(吨)</label>
+          <label>重量(kg)</label>
           <input v-model.number="editForm.weight" type="number" step="0.001" class="form-input" />
         </div>
         <div class="form-group">

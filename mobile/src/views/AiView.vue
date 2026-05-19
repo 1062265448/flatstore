@@ -78,7 +78,7 @@
       <div v-if="recognizeResults.length" class="results-list">
         <div class="result-header">
           <span class="result-count">识别到 {{ recognizeResults.length }} 条</span>
-          <span class="result-summary">合计 {{ resultTotalWeight }}kg / {{ resultTotalPieces }}块</span>
+          <span class="result-summary">合计 {{ resultTotalWeight }} kg / {{ resultTotalPieces }}块</span>
         </div>
         <div class="result-list-box">
           <div

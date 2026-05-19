@@ -164,11 +164,9 @@ export class QwenAIService {
       const r = { ...item };
       const label = `第${i + 1}行（包号${r.packageNo || '-'}）`;
 
-      // 1. 重量范围校验：单包通常 500~5000 kg (即 0.5~5 吨)
-      if (r.netWeight > 10) {
-        // 超过 10 吨，极可能是千克被误读为吨
-        warnings.push(`${label} 净重 ${r.netWeight}t 超出合理范围，已自动纠正为 ${(r.netWeight / 1000).toFixed(3)}t`);
-        r.netWeight = r.netWeight / 1000;
+      // 1. 重量范围校验：单包镍板重量范围 500~5000 kg
+      if (r.netWeight > 10000) {
+        warnings.push(`${label} 净重 ${r.netWeight}kg 超过 10 吨（10000kg），请人工确认`);
       } else if (r.netWeight <= 0) {
         warnings.push(`${label} 净重为 0 或负值，请人工确认`);
       }

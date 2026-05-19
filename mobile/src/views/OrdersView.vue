@@ -90,7 +90,7 @@
           </div>
           <div class="summary-row">
             <span class="summary-label">总重量</span>
-            <span class="summary-value summary-highlight">{{ pickedTotalWeight }} 吨</span>
+            <span class="summary-value summary-highlight">{{ pickedTotalWeight }} kg</span>
           </div>
           <div class="summary-row">
             <span class="summary-label">总片数</span>

@@ -102,6 +102,8 @@ export interface DistributionOrder {
   customerId: number
   customerName?: string
   productSpec?: string
+  productType?: string
+  specification?: string
   targetGrade?: string
   totalWeight?: string | number
   totalPieces?: number

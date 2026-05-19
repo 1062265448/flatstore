@@ -42,4 +42,5 @@ export const PrismaServiceMock = {
 
 export const QwenAIServiceMock = {
   recognizeImage: jest.fn(),
+  crossValidate: jest.fn((items) => ({ results: items, warnings: [] })),
 };

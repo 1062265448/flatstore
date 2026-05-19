@@ -262,7 +262,8 @@ const handleLogin = async () => {
     await formRef.value?.validate()
     await authStore.login(form)
     ElMessage.success('登录成功')
-    router.push('/')
+    const redirect = route.query.redirect as string | undefined
+    router.push(redirect || '/')
   } catch (error: any) {
     if (error?.response?.status === 401) {
       ElMessage.error('用户名或密码错误')

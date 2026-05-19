@@ -152,7 +152,7 @@
             <th>包号</th>
             <th>品级</th>
             <th>规格</th>
-            <th>重量(吨)</th>
+            <th>重量(kg)</th>
             <th>片数</th>
             <th>位置</th>
             <th>状态</th>
@@ -214,7 +214,7 @@
         <tfoot v-if="inventoryStore.inventoryList.length">
           <tr class="summary-row">
             <td colspan="4" class="summary-label">合计</td>
-            <td class="weight">{{ totalWeight }}</td>
+            <td class="weight">{{ totalWeight }} kg</td>
             <td>{{ totalPieces }}</td>
             <td colspan="4"></td>
           </tr>
@@ -283,7 +283,7 @@
                   <span class="detail-value">{{ detailStock.specification || '-' }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">重量(吨)</span>
+                  <span class="detail-label">重量(kg)</span>
                   <span class="detail-value weight">{{ Number(detailStock.weight).toFixed(3) }}</span>
                 </div>
                 <div class="detail-item">
@@ -315,7 +315,7 @@
                     </div>
                     <div class="linked-meta">
                       <span v-if="order.customerName">{{ order.customerName }}</span>
-                      <span v-if="order.totalWeight">{{ Number(order.totalWeight).toFixed(3) }}吨</span>
+                      <span v-if="order.totalWeight">{{ Number(order.totalWeight).toFixed(3) }}kg</span>
                     </div>
                   </div>
                 </div>
@@ -378,7 +378,7 @@
                   </select>
                 </div>
                 <div class="form-item">
-                  <label>重量(吨) *</label>
+                  <label>重量(kg) *</label>
                   <input v-model.number="form.weight" type="number" step="0.001" min="0" placeholder="0.000" />
                 </div>
                 <div class="form-item">
