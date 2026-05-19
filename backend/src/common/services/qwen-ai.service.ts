@@ -26,7 +26,7 @@ export class QwenAIService {
 3. **产品类型（productType）**：识别图片左上角"品名"右侧的文字，通常为"镍板"或"电积镍"等。
 4. **包号（packageNo）**：表格中的序号/包号列，通常为数字。
 5. **片数（pieceCount）**：每包对应的片数。
-6. **净重（netWeight）**：每包的净重量，单位为吨。
+6. **净重（netWeight）**：每包的净重量，单位为**千克（kg）**。
 7. **检验员（inspector）**：识别检验人员姓名，如无则设为 null。
 8. **日期（date）**：识别票据上的日期，格式统一为 YYYY-MM-DD。
 
@@ -36,13 +36,14 @@ export class QwenAIService {
 - 所有行的 productType 应为同一个值（同一张票据的产品类型一致）
 - 牌号和批号是关键字段，请仔细核对，确保准确
 - 如果某个字段无法识别或模糊不清，设为 null，不要猜测
-- 净重可能是小数，请保留原始精度
+- 净重可能是小数，请保留原始精度，单位统一使用**千克**
+- 单包镍板重量通常在 500~5000 kg 范围，如果识别到的数值超过 10000 kg，请仔细核验是否多读了小数点
 - 置信度要求：只返回你有把握识别的行，如果某行数据模糊无法确认，请跳过该行
 
 请返回一个 JSON 数组，每个对象包含以下字段：
 - packageNo: 包号（数字，无法识别则为 0）
 - pieceCount: 片数（数字，无法识别则为 0）
-- netWeight: 净重（数字，单位：吨，无法识别则为 0）
+- netWeight: 净重（数字，单位：千克，无法识别则为 0）
 - grade: 牌号（字符串，如"9996"、"9950"，无法识别则为 ""）
 - productType: 产品类型（字符串，如"镍板"，无法识别则为 ""）
 - batchNo: 批号（字符串，格式如"26-7-090"，无法识别则为 ""）
@@ -153,6 +154,56 @@ export class QwenAIService {
     return valid.length > 0 ? valid : items;
   }
 
+  /**
+   * 交叉校验：对 AI 结果进行统计合理性检查
+   * 返回经过纠错的结果和警告信息列表
+   */
+  crossValidate(items: AiRecognizeResult[]): { results: AiRecognizeResult[]; warnings: string[] } {
+    const warnings: string[] = [];
+    const results = items.map((item, i) => {
+      const r = { ...item };
+      const label = `第${i + 1}行（包号${r.packageNo || '-'}）`;
+
+      // 1. 重量范围校验：单包通常 500~5000 kg (即 0.5~5 吨)
+      if (r.netWeight > 10) {
+        // 超过 10 吨，极可能是千克被误读为吨
+        warnings.push(`${label} 净重 ${r.netWeight}t 超出合理范围，已自动纠正为 ${(r.netWeight / 1000).toFixed(3)}t`);
+        r.netWeight = r.netWeight / 1000;
+      } else if (r.netWeight <= 0) {
+        warnings.push(`${label} 净重为 0 或负值，请人工确认`);
+      }
+
+      // 2. 片数合理性
+      if (r.pieceCount < 0) {
+        warnings.push(`${label} 片数为负值，已纠正为 0`);
+        r.pieceCount = 0;
+      }
+
+      // 3. 品级格式校验
+      const gradeMatch = r.grade && /^(9999|9997|9996|9950|9920|99)$/.test(r.grade);
+      if (r.grade && !gradeMatch) {
+        warnings.push(`${label} 品级 "${r.grade}" 不在常见品级列表中，请人工确认`);
+      }
+
+      // 4. 批号格式校验
+      if (r.batchNo && !/^\d{2}-\d{1,2}-\d{3}$/.test(r.batchNo)) {
+        warnings.push(`${label} 批号 "${r.batchNo}" 格式异常（预期 XX-X-XXX）`);
+      }
+
+      return r;
+    });
+
+    // 5. 同批次品级一致性检查
+    if (results.length > 1) {
+      const grades = [...new Set(results.map(r => r.grade).filter(Boolean))];
+      if (grades.length > 1) {
+        warnings.push(`同一票据出现多个品级 [${grades.join(', ')}]，请确认是否为混批`);
+      }
+    }
+
+    return { results, warnings };
+  }
+
   private enhanceError(err: Error): Error {
     const status = (err as any).status || (err as any).statusCode;
     if (status === 429) {
@@ -192,10 +243,18 @@ export class QwenAIService {
       }
     }
 
+    let netWeight = Number(item.netWeight) || 0;
+
+    // 单位纠正：票据实际以千克为单位，AI 可能误读为吨
+    // 单包镍板重量通常 500~5000 kg，超过 10000 kg 视为误将千克读成吨
+    if (netWeight > 10) {
+      netWeight = netWeight / 1000;
+    }
+
     return {
       packageNo: Number(item.packageNo) || 0,
       pieceCount: Number(item.pieceCount) || 0,
-      netWeight: Number(item.netWeight) || 0,
+      netWeight,
       grade,
       productType: String(item.productType || '').trim() || null as any,
       batchNo,

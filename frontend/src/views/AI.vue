@@ -81,7 +81,11 @@
                 <span class="result-icon">✓</span>
                 识别结果
               </h4>
-              <span class="results-count">{{ recognizeResults.length }} 条记录</span>
+              <span class="results-count">{{ recognizeResults.length }} 条记录 · {{ recognizeTotalWeight }} kg / {{ recognizeTotalPieces }} 块</span>
+            </div>
+
+            <div v-if="recognizeWarnings.length" class="validation-warnings">
+              <div v-for="(w, i) in recognizeWarnings" :key="i" class="warning-item">{{ w }}</div>
             </div>
 
             <div class="results-table-wrap">
@@ -93,7 +97,7 @@
                     <th>品级</th>
                     <th>产品类型</th>
                     <th>片数</th>
-                    <th>净重(吨)</th>
+                    <th>净重(kg)</th>
                     <th>日期</th>
                   </tr>
                 </thead>
@@ -104,10 +108,17 @@
                     <td><span class="tag tag-info">{{ item.grade || '-' }}</span></td>
                     <td>{{ item.productType || '-' }}</td>
                     <td>{{ item.pieceCount || '-' }}</td>
-                    <td class="weight">{{ (item.netWeight || 0).toFixed(3) }}</td>
+                    <td class="weight">{{ (item.netWeight || 0).toFixed(1) }}</td>
                     <td>{{ item.date || '-' }}</td>
                   </tr>
                 </tbody>
+                <tfoot v-if="recognizeResults.length">
+                  <tr class="summary-row">
+                    <td colspan="5" class="summary-label">合计</td>
+                    <td class="weight">{{ recognizeTotalWeight }}</td>
+                    <td>{{ recognizeTotalPieces }}块</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
 
@@ -263,7 +274,7 @@
                       <th>规格</th>
                       <th>产品类型</th>
                       <th>片数</th>
-                      <th>净重(吨)</th>
+                      <th>净重(kg)</th>
                       <th>存放位置</th>
                     </tr>
                   </thead>
@@ -274,7 +285,7 @@
                       <td>{{ importForm.specification || '-' }}</td>
                       <td>{{ item.productType || '-' }}</td>
                       <td>{{ item.pieceCount || '-' }}</td>
-                      <td>{{ (item.netWeight || 0).toFixed(3) }}</td>
+                      <td>{{ (item.netWeight || 0).toFixed(1) }}</td>
                       <td>{{ importForm.location || '-' }}</td>
                     </tr>
                   </tbody>
@@ -348,7 +359,7 @@
                         <th>品级</th>
                         <th>产品类型</th>
                         <th>片数</th>
-                        <th>净重(吨)</th>
+                        <th>净重(kg)</th>
                         <th>日期</th>
                       </tr>
                     </thead>
@@ -359,10 +370,17 @@
                         <td><span class="tag tag-info">{{ item.grade || '-' }}</span></td>
                         <td>{{ item.productType || '-' }}</td>
                         <td>{{ item.pieceCount || '-' }}</td>
-                        <td class="weight">{{ (item.netWeight || 0).toFixed(3) }}</td>
+                        <td class="weight">{{ (item.netWeight || 0).toFixed(1) }}</td>
                         <td>{{ item.date || '-' }}</td>
                       </tr>
                     </tbody>
+                    <tfoot v-if="parsedResults.length">
+                      <tr class="summary-row">
+                        <td colspan="5" class="summary-label">合计</td>
+                        <td class="weight">{{ parsedTotalWeight }}</td>
+                        <td>{{ parsedTotalPieces }}块</td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               </div>
@@ -398,9 +416,7 @@ import { ref, reactive, computed, inject, onMounted } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { aiRecognize, batchCreateInventory, getRecognitionHistory, deleteRecognitionHistory, batchDeleteRecognitionHistory } from '@/api/distribution'
 import type { AiRecognizeResult, AiRecognitionHistory, CreateInventoryDto } from '@/types'
-import { useRouter } from 'vue-router'
 
-const router = useRouter()
 const showToast = inject('showToast') as (message: string, type?: string) => void
 
 const uploadRef = ref<HTMLInputElement>()
@@ -462,6 +478,19 @@ const parsedResults = computed(() => {
   }
 })
 
+const recognizeTotalWeight = computed(() =>
+  recognizeResults.value.reduce((sum, r) => sum + (r.netWeight || 0), 0).toFixed(1)
+)
+const recognizeTotalPieces = computed(() =>
+  recognizeResults.value.reduce((sum, r) => sum + (r.pieceCount || 0), 0)
+)
+const parsedTotalWeight = computed(() =>
+  parsedResults.value.reduce((sum, r: any) => sum + (r.netWeight || 0), 0).toFixed(1)
+)
+const parsedTotalPieces = computed(() =>
+  parsedResults.value.reduce((sum, r: any) => sum + (r.pieceCount || 0), 0)
+)
+
 const imagePreviewVisible = ref(false)
 const previewImageUrl = ref('')
 
@@ -514,6 +543,8 @@ const handleReset = () => {
   recognizeResults.value = []
 }
 
+const recognizeWarnings = ref<string[]>([])
+
 const handleRecognize = async () => {
   if (!selectedFile.value) {
     showToast?.('请先上传图片', 'warning')
@@ -525,10 +556,14 @@ const handleRecognize = async () => {
     const res = await aiRecognize(selectedFile.value)
     recognizeResults.value = (res as any).results || res as any
     currentHistoryId.value = (res as any).historyId || null
+    recognizeWarnings.value = (res as any).warnings || []
     if (!recognizeResults.value.length) {
       showToast?.('未识别到任何数据', 'warning')
     } else {
       showToast?.(`成功识别 ${recognizeResults.value.length} 条记录`, 'success')
+    }
+    if (recognizeWarnings.value.length) {
+      showToast?.(`数据校验：${recognizeWarnings.value.join('；')}`, 'warning')
     }
     fetchHistory()
   } catch {
@@ -556,7 +591,7 @@ const handleImportSubmit = async () => {
       grade: importForm.grade || r.grade || '',
       specification: importForm.specification || '',
       productType: r.productType || '',
-      weight: ((r.netWeight || 0) as number) * 1000,
+      weight: (r.netWeight || 0) as number,
       pieceCount: r.pieceCount || 0,
       location: importForm.location,
       sourceType: 'ai_recognize',
@@ -572,8 +607,6 @@ const handleImportSubmit = async () => {
     importing.value = false
   }
 }
-
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002'
 
 const fetchHistory = async () => {
   historyLoading.value = true
@@ -639,14 +672,6 @@ const previewImage = (url: string) => {
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleString('zh-CN')
-}
-
-const formatJson = (json: string) => {
-  try {
-    return JSON.stringify(JSON.parse(json), null, 2)
-  } catch {
-    return json
-  }
 }
 
 onMounted(() => {
@@ -885,6 +910,36 @@ onMounted(() => {
   overflow-y: auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-divider);
+
+  .summary-row {
+    background: var(--color-bg-tertiary);
+    font-weight: 600;
+
+    .summary-label {
+      text-align: right;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+
+    .weight {
+      font-family: var(--font-mono);
+      color: var(--color-primary);
+    }
+  }
+}
+
+.validation-warnings {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(255, 149, 0, 0.08);
+  border: 1px solid rgba(255, 149, 0, 0.2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: #c77c00;
+
+  .warning-item::before {
+    content: '⚠ ';
+  }
 }
 
 .result-actions {

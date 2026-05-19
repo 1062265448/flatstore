@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber, Min, MinLength, IsArray, ValidateNested } from 'class-validator';
+import { IsOptional, IsString, IsNumber, Min, Max, MinLength, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -31,11 +31,13 @@ export class CreateInventoryDto {
   @ApiProperty()
   @IsNumber()
   @Min(0)
+  @Max(10000)
   weight: number;
 
   @ApiProperty()
   @IsNumber()
   @Min(0)
+  @Max(1000)
   pieceCount: number;
 
   @ApiPropertyOptional()

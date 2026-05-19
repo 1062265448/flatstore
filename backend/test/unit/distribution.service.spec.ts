@@ -277,6 +277,14 @@ describe('DistributionService', () => {
     describe('shipOrder（draft → shipping）', () => {
       it('草稿状态订单可以发货', async () => {
         PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue({ id: 1, status: 'draft' });
+        PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
+          const tx = {
+            distributionOrder: {
+              update: PrismaServiceMock.distributionOrder.update,
+            },
+          };
+          return fn(tx);
+        });
         PrismaServiceMock.distributionOrder.update.mockResolvedValue({ id: 1, status: 'shipping' });
 
         const result = await service.shipOrder(1, { driverName: '张三', vehicleNo: '京A12345' });

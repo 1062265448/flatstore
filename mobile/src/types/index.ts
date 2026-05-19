@@ -156,8 +156,8 @@ export interface UpdateOrderDto {
 }
 
 export interface ShipOrderDto {
-  driverName?: string
-  vehicleNo?: string
+  driverName: string
+  vehicleNo: string
 }
 
 export interface OrderQuery {

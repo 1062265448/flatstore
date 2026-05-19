@@ -262,31 +262,12 @@ describe('DistributionController (e2e)', () => {
       expect(stock.status).toBe('reserved');
     });
 
-    it('POST /distribution/orders/:id/confirm - 应确认订单', async () => {
-      const order = await prisma.distributionOrder.create({
-        data: {
-          orderNo: 'ORD-001',
-          customerId: testCustomer.id,
-          status: 'draft',
-          items: {
-            create: { stockId: testStock.id, weight: 100, pieceCount: 10 },
-          },
-        },
-      });
-
-      const response = await request(app.getHttpServer())
-        .post(`/distribution/orders/${order.id}/confirm`)
-        .expect(201);
-
-      expect(response.body.status).toBe('confirmed');
-    });
-
     it('POST /distribution/orders/:id/ship - 应发货', async () => {
       const order = await prisma.distributionOrder.create({
         data: {
           orderNo: 'ORD-001',
           customerId: testCustomer.id,
-          status: 'confirmed',
+          status: 'draft',
         },
       });
 
@@ -327,7 +308,7 @@ describe('DistributionController (e2e)', () => {
         data: {
           orderNo: 'ORD-001',
           customerId: testCustomer.id,
-          status: 'confirmed',
+          status: 'draft',
           items: {
             create: { stockId: testStock.id, weight: 100, pieceCount: 10 },
           },

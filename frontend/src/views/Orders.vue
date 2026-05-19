@@ -131,12 +131,13 @@
               <!-- 发货中状态 -->
               <template v-else-if="row.status === 'shipping'">
                 <button class="action-btn success" @click="handleDeliver(row.id)">完成发运</button>
+                <button class="action-btn danger" @click="handleCancel(row.id)">取消</button>
               </template>
               <!-- 已完成/已取消状态 -->
               <template v-else>
                 <button class="action-btn" @click="handleView(row)">查看</button>
               </template>
-              <button class="action-btn danger" @click="handleDelete(row.id)">删除</button>
+              <button v-if="row.status === 'shipped' || row.status === 'cancelled'" class="action-btn danger" @click="handleDelete(row.id)">删除</button>
             </td>
           </tr>
           <tr v-if="!orderStore.orderList.length">

@@ -342,8 +342,13 @@ export class DistributionService implements OnModuleInit {
     const base64 = buffer.toString('base64');
 
     let aiResults: any[];
+    let warnings: string[] = [];
     try {
       aiResults = await this.qwenAI.recognizeImage(base64);
+      // 交叉校验 + 纠错
+      const validated = this.qwenAI.crossValidate(aiResults);
+      aiResults = validated.results;
+      warnings = validated.warnings;
     } catch (error: any) {
       await this.prisma.aiRecognitionHistory.create({
         data: {
@@ -370,7 +375,7 @@ export class DistributionService implements OnModuleInit {
     });
 
     // 文件保留在 uploads/inventory/ 供缩略图显示
-    return { results: aiResults, historyId: history.id };
+    return { results: aiResults, historyId: history.id, warnings };
   }
 
   // ==================== 客户管理 ====================
@@ -699,13 +704,15 @@ export class DistributionService implements OnModuleInit {
       throw new BadRequestException('请填写车牌号');
     }
 
-    const result = await this.prisma.distributionOrder.update({
-      where: { id },
-      data: {
-        status: 'shipping',
-        driverName: dto.driverName.trim(),
-        vehicleNo: dto.vehicleNo.trim(),
-      },
+    const result = await this.prisma.$transaction(async (tx) => {
+      return tx.distributionOrder.update({
+        where: { id },
+        data: {
+          status: 'shipping',
+          driverName: dto.driverName.trim(),
+          vehicleNo: dto.vehicleNo.trim(),
+        },
+      });
     });
 
     this.invalidateStatsCache();

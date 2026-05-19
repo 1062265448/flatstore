@@ -58,7 +58,11 @@
           </div>
           <div class="tl" :class="{ done: stepDone(1), pending: !stepDone(1) }">
             <div class="tl-dot">2</div>
-            <div><div class="tl-title">确认发货</div><div class="tl-time">{{ order.shippedAt ? formatDate(order.shippedAt) : '等待发货' }}</div></div>
+            <div><div class="tl-title">确认发货</div><div class="tl-time">{{ order.shippedAt ? formatDate(order.shippedAt) : (order.status === 'shipping' ? formatDate(order.updatedAt) : '等待发货') }}</div></div>
+          </div>
+          <div class="tl" :class="{ done: stepDone(2), pending: !stepDone(2) }">
+            <div class="tl-dot">3</div>
+            <div><div class="tl-title">完成发运</div><div class="tl-time">{{ stepDone(2) ? formatDate(order.shippedAt || order.updatedAt) : '等待发运' }}</div></div>
           </div>
         </div>
       </div>
@@ -80,6 +84,13 @@
         <template v-if="order.status === 'draft'">
           <button class="action-btn cancel" @click="handleCancel">取消订单</button>
           <button class="action-btn confirm" @click="showShipSheet = true">发货</button>
+        </template>
+        <template v-else-if="order.status === 'shipping'">
+          <button class="action-btn cancel" @click="handleCancel">取消订单</button>
+          <button class="action-btn confirm" @click="handleDeliver">完成发运</button>
+        </template>
+        <template v-else-if="order.status === 'shipped' || order.status === 'cancelled'">
+          <button class="action-btn cancel" @click="handleDelete">删除订单</button>
         </template>
       </div>
     </div>
@@ -124,21 +135,22 @@ const shipping = ref(false)
 const shipForm = reactive({ driverName: '', vehicleNo: '' })
 
 const statusText = computed(() => {
-  const map: Record<string, string> = { draft: '草稿', shipped: '已发货', cancelled: '已取消' }
+  const map: Record<string, string> = { draft: '草稿', shipping: '发货中', shipped: '已发货', cancelled: '已取消' }
   return map[order.value?.status || ''] || ''
 })
 
 const badgeClass = computed(() => {
-  const map: Record<string, string> = { draft: 'badge-gray', shipped: 'badge-green', cancelled: 'badge-red' }
+  const map: Record<string, string> = { draft: 'badge-gray', shipping: 'badge-amber', shipped: 'badge-green', cancelled: 'badge-red' }
   return map[order.value?.status || ''] || 'badge-gray'
 })
 
-// 时间线步骤: 0=创建 1=发货
+// 时间线步骤: 0=创建 1=发货 2=完成
 const stepDone = (step: number) => {
   const s = order.value?.status
   if (!s) return false
   if (step === 0) return true // 已创建
-  if (step === 1) return s === 'shipped'
+  if (step === 1) return s === 'shipping' || s === 'shipped'
+  if (step === 2) return s === 'shipped'
   return false
 }
 
@@ -184,6 +196,30 @@ const handleCancel = async () => {
     refresh()
   } catch {
     danger('取消失败')
+  }
+}
+
+const handleDeliver = async () => {
+  if (!order.value) return
+  if (!confirm('确认完成发运？库存将标记为已出库。')) return
+  try {
+    await orderStore.deliverOrder(order.value.id)
+    success('发运完成')
+    refresh()
+  } catch {
+    danger('操作失败')
+  }
+}
+
+const handleDelete = async () => {
+  if (!order.value) return
+  if (!confirm('确认删除该配货单？此操作不可撤销。')) return
+  try {
+    await orderStore.deleteOrder(order.value.id)
+    success('订单已删除')
+    router.back()
+  } catch {
+    danger('删除失败')
   }
 }
 

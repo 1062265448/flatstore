@@ -132,8 +132,9 @@ const submitting = ref(false)
 
 const statusFilters = [
   { label: '全部', value: '' },
-  { label: '已发货', value: 'shipped' },
   { label: '草稿', value: 'draft' },
+  { label: '发货中', value: 'shipping' },
+  { label: '已发货', value: 'shipped' },
   { label: '已取消', value: 'cancelled' },
 ]
 

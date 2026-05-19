@@ -80,7 +80,7 @@ describe('useInventoryStore', () => {
       expect(api.getInventoryList).toHaveBeenCalledWith({
         grade: 'A',
         status: 'available',
-      })
+      }, expect.any(AbortSignal))
     })
   })
 

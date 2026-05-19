@@ -78,7 +78,7 @@
       <div v-if="recognizeResults.length" class="results-list">
         <div class="result-header">
           <span class="result-count">识别到 {{ recognizeResults.length }} 条</span>
-          <span class="result-summary">合计 {{ resultTotalWeight }}t / {{ resultTotalPieces }}块</span>
+          <span class="result-summary">合计 {{ resultTotalWeight }}kg / {{ resultTotalPieces }}块</span>
         </div>
         <div class="result-list-box">
           <div
@@ -91,7 +91,7 @@
               <span class="rl-batch">{{ item.batchNo || '-' }}</span>
               <span class="rl-pkg">包号{{ item.packageNo || '-' }}</span>
               <span class="rl-grade" :class="gradeClass(item.grade)">{{ item.grade }}</span>
-              <span class="rl-weight">{{ item.netWeight ? item.netWeight.toFixed(3) : '-' }}t</span>
+              <span class="rl-weight">{{ item.netWeight ? item.netWeight.toFixed(1) : '-' }}kg</span>
               <span class="rl-pieces">{{ item.pieceCount || '-' }}块</span>
             </div>
             <div class="rl-secondary">
@@ -212,7 +212,7 @@
                 <span class="rl-batch">{{ item.batchNo || '-' }}</span>
                 <span class="rl-pkg">包号{{ item.packageNo || '-' }}</span>
                 <span class="rl-grade" :class="gradeClass(item.grade)">{{ item.grade }}</span>
-                <span class="rl-weight">{{ item.netWeight ? Number(item.netWeight).toFixed(3) : '-' }}t</span>
+                <span class="rl-weight">{{ item.netWeight ? Number(item.netWeight).toFixed(1) : '-' }}kg</span>
                 <span class="rl-pieces">{{ item.pieceCount || '-' }}块</span>
               </div>
               <div class="rl-secondary">
@@ -359,7 +359,7 @@ const detailFirstResult = computed(() => {
 })
 
 const resultTotalWeight = computed(() =>
-  recognizeResults.value.reduce((s, r) => s + (r.netWeight || 0), 0).toFixed(3)
+  recognizeResults.value.reduce((s, r) => s + (r.netWeight || 0), 0).toFixed(1)
 )
 const resultTotalPieces = computed(() =>
   recognizeResults.value.reduce((s, r) => s + (r.pieceCount || 0), 0)
@@ -484,6 +484,11 @@ const handleRecognize = async () => {
     const aiResults = (res as any)?.results || []
     recognizeResults.value = Array.isArray(aiResults) ? aiResults : []
 
+    const warnings = (res as any)?.warnings || []
+    if (warnings.length) {
+      danger(`数据校验：${warnings.join('；')}`)
+    }
+
     if (!recognizeResults.value.length) {
       errorMessage.value = '未识别到结果，请重试'
     }
@@ -505,7 +510,7 @@ const handleImport = async () => {
       grade: r.grade || '',
       specification: importForm.specification || '',
       productType: r.productType || '',
-      weight: (r.netWeight || 0) * 1000,
+      weight: (r.netWeight || 0),
       pieceCount: r.pieceCount || 0,
       packageNo: String(r.packageNo || ''),
       location: importForm.location || '',

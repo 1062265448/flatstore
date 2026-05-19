@@ -67,7 +67,7 @@ describe('useOrderStore', () => {
       const store = useOrderStore()
       await store.fetchOrders({ status: 'draft' })
 
-      expect(api.getOrderList).toHaveBeenCalledWith({ status: 'draft' })
+      expect(api.getOrderList).toHaveBeenCalledWith({ status: 'draft' }, expect.any(AbortSignal))
     })
   })
 

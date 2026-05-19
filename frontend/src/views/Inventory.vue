@@ -149,6 +149,7 @@
               />
             </th>
             <th>批号</th>
+            <th>包号</th>
             <th>品级</th>
             <th>规格</th>
             <th>重量(吨)</th>
@@ -174,6 +175,7 @@
               />
             </td>
             <td class="batch-no">{{ row.batchNo }}</td>
+            <td>{{ row.packageNo || '-' }}</td>
             <td><span class="tag tag-info">{{ row.grade }}</span></td>
             <td>{{ row.specification || '-' }}</td>
             <td class="weight">{{ Number(row.weight).toFixed(3) }}</td>
@@ -209,6 +211,14 @@
             </td>
           </tr>
         </tbody>
+        <tfoot v-if="inventoryStore.inventoryList.length">
+          <tr class="summary-row">
+            <td colspan="4" class="summary-label">合计</td>
+            <td class="weight">{{ totalWeight }}</td>
+            <td>{{ totalPieces }}</td>
+            <td colspan="4"></td>
+          </tr>
+        </tfoot>
       </table>
 
       <!-- 分页 -->
@@ -416,7 +426,7 @@ import { useInventoryStore } from '@/stores/inventory'
 import { getInventoryById, searchInventory } from '@/api/distribution'
 import { ElMessageBox } from 'element-plus'
 import { getRecentSearches, addSearch, clearSearches } from '@/utils/searchHistory'
-import type { InventoryStock, CreateInventoryDto, LinkedOrder } from '@/types'
+import type { InventoryStock, CreateInventoryDto } from '@/types'
 
 const router = useRouter()
 const inventoryStore = useInventoryStore()
@@ -514,6 +524,13 @@ const statusLabel: Record<string, string> = {
 
 const totalPages = computed(() => Math.ceil(inventoryStore.total / queryForm.limit))
 
+const totalWeight = computed(() =>
+  inventoryStore.inventoryList.reduce((sum, r) => sum + Number(r.weight), 0).toFixed(3)
+)
+const totalPieces = computed(() =>
+  inventoryStore.inventoryList.reduce((sum, r) => sum + (r.pieceCount || 0), 0)
+)
+
 const isSelected = (id: number) => selectedRows.value.some(r => r.id === id)
 const isAllSelected = computed(() =>
   inventoryStore.inventoryList.length > 0 &&
@@ -605,6 +622,7 @@ const onSearchBlur = () => {
 }
 
 const selectSuggestion = (value: string) => {
+  if (blurTimer) clearTimeout(blurTimer)
   searchInput.value = value
   queryForm.keyword = value
   addSearch(value)
@@ -1051,6 +1069,22 @@ onMounted(() => {
 
   .action-col {
     width: 180px;
+  }
+
+  .summary-row {
+    background: var(--color-bg-tertiary);
+    font-weight: 600;
+
+    .summary-label {
+      text-align: right;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+
+    .weight {
+      font-family: var(--font-mono);
+      color: var(--color-primary);
+    }
   }
 }
 
