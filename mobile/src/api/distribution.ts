@@ -10,7 +10,6 @@ import type {
   DistributionOrder,
   CreateOrderDto,
   UpdateOrderDto,
-  ShipOrderDto,
   OrderQuery,
   AiRecognizeResult,
   AiRecognitionHistory,
@@ -105,11 +104,8 @@ export const deleteOrder = (id: number) =>
 export const batchDeleteOrders = (ids: number[]) =>
   request.post('/distribution/orders/batch-delete', { ids })
 
-export const shipOrder = (id: number, data: ShipOrderDto) =>
-  request.post<DistributionOrder>(`/distribution/orders/${id}/ship`, data)
-
-export const deliverOrder = (id: number) =>
-  request.post<DistributionOrder>(`/distribution/orders/${id}/deliver`)
+export const shipOrder = (id: number) =>
+  request.post<DistributionOrder>(`/distribution/orders/${id}/ship`)
 
 export const cancelOrder = (id: number) =>
   request.post<DistributionOrder>(`/distribution/orders/${id}/cancel`)

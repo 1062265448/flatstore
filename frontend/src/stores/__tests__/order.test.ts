@@ -91,22 +91,10 @@ describe('useOrderStore', () => {
       ;(api.getOrderList as any).mockResolvedValue({ data: [], total: 0 })
 
       const store = useOrderStore()
-      const dto = { driverName: '张三', vehicleNo: '京A12345' }
-      await store.shipOrder(1, dto)
+      await store.shipOrder(1)
 
-      expect(api.shipOrder).toHaveBeenCalledWith(1, dto)
+      expect(api.shipOrder).toHaveBeenCalledWith(1)
     })
-
-    it('deliverOrder 应完成发运', async () => {
-      ;(api.deliverOrder as any).mockResolvedValue(undefined)
-      ;(api.getOrderList as any).mockResolvedValue({ data: [], total: 0 })
-
-      const store = useOrderStore()
-      await store.deliverOrder(1)
-
-      expect(api.deliverOrder).toHaveBeenCalledWith(1)
-    })
-
     it('cancelOrder 应取消订单', async () => {
       ;(api.cancelOrder as any).mockResolvedValue(undefined)
       ;(api.getOrderList as any).mockResolvedValue({ data: [], total: 0 })

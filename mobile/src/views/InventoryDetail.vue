@@ -198,7 +198,7 @@ const orderStatusText = (status: string) => {
 }
 
 const statusLabel = computed(() => {
-  const map: Record<string, string> = { available: '可用', reserved: '预留', shipped: '已发货' }
+  const map: Record<string, string> = { available: '可用', reserved: '预留', shipped: '已发货', issued: '已发出' }
   return map[item.value?.status || ''] || item.value?.status || ''
 })
 

@@ -29,11 +29,18 @@
         value-color="var(--amber)"
         @click="selectStatus('reserved')"
       />
+      <StatCard
+        :value="stats?.inventory.issued || 0"
+        label="已发出"
+        :highlight="selectedStatus === 'issued'"
+        value-color="var(--blue)"
+        @click="selectStatus('issued')"
+      />
     </div>
 
     <!-- 汇总 -->
     <div class="summary-bar">
-      <span class="summary-item">重量总计 <strong>{{ pageTotalWeight }}t</strong></span>
+      <span class="summary-item">重量总计 <strong>{{ pageTotalWeight }}kg</strong></span>
       <span class="summary-item">片数总计 <strong>{{ pageTotalPieces }}块</strong></span>
     </div>
 

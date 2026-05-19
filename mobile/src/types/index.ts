@@ -11,7 +11,7 @@ export interface InventoryStock {
   location?: string
   nickelContent?: string
   impurityContent?: string
-  status: 'available' | 'reserved' | 'shipped'
+  status: 'available' | 'reserved' | 'shipped' | 'issued'
   inspectionDate?: string
   certificateNo?: string
   remark?: string
@@ -107,10 +107,8 @@ export interface DistributionOrder {
   targetGrade?: string
   totalWeight?: string | number
   totalPieces?: number
-  status: 'draft' | 'shipping' | 'shipped' | 'cancelled'
+  status: 'draft' | 'shipped' | 'cancelled'
   shippedAt?: string
-  driverName?: string
-  vehicleNo?: string
   remark?: string
   deletedAt?: string
   createdAt: string
@@ -155,11 +153,6 @@ export interface UpdateOrderDto {
   productSpec?: string
   targetGrade?: string
   remark?: string
-}
-
-export interface ShipOrderDto {
-  driverName: string
-  vehicleNo: string
 }
 
 export interface OrderQuery {
@@ -209,13 +202,13 @@ export interface Statistics {
     available: number
     reserved: number
     shipped: number
+    issued: number
     totalWeight: string
     totalPieces: number
   }
   order: {
     total: number
     draft: number
-    shipping: number
     shipped: number
     cancelled: number
   }

@@ -75,7 +75,7 @@
                 <span class="pick-batch">{{ s.batchNo }}</span>
                 <span class="pick-grade">{{ s.grade }}</span>
               </div>
-              <div class="pick-meta">{{ Number(s.weight).toFixed(2) }}t · {{ s.pieceCount }}块</div>
+              <div class="pick-meta">{{ Number(s.weight).toFixed(3) }}kg · {{ s.pieceCount }}块</div>
               <span class="pick-badge">{{ isPicked(s.id) ? '已选' : '选择' }}</span>
             </div>
             <div v-if="!availableStocks.length" class="pick-empty">暂无可用库存</div>
@@ -133,7 +133,6 @@ const submitting = ref(false)
 const statusFilters = [
   { label: '全部', value: '' },
   { label: '草稿', value: 'draft' },
-  { label: '发货中', value: 'shipping' },
   { label: '已发货', value: 'shipped' },
   { label: '已取消', value: 'cancelled' },
 ]

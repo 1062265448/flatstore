@@ -6,10 +6,8 @@
     </div>
     <div class="order-cust">{{ order.customer?.name || order.customerName || '-' }}</div>
     <div class="order-meta">
-      <span>{{ order.totalWeight ? Number(order.totalWeight).toFixed(2) + 't' : '-' }}</span>
+      <span>{{ order.totalWeight ? Number(order.totalWeight).toFixed(3) + 'kg' : '-' }}</span>
       <span>{{ order.items?.length || 0 }} 批</span>
-      <span v-if="order.driverName">{{ order.driverName }} · {{ order.vehicleNo }}</span>
-      <span v-else>待发货</span>
     </div>
   </div>
 </template>

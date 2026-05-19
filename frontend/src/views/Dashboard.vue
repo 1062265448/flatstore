@@ -184,6 +184,7 @@ const initInventoryChart = () => {
           { value: stats.value?.inventory.available || 0, name: '可用', itemStyle: { color: '#34c759' } },
           { value: stats.value?.inventory.reserved || 0, name: '已预留', itemStyle: { color: '#ff9500' } },
           { value: stats.value?.inventory.shipped || 0, name: '已发货', itemStyle: { color: '#8e8e93' } },
+          { value: stats.value?.inventory.issued || 0, name: '已发出', itemStyle: { color: '#0071e3' } },
         ],
       },
     ],
@@ -210,7 +211,7 @@ const initOrderChart = () => {
     legend: { ...theme, top: '5%' },
     xAxis: {
       type: 'category',
-      data: ['草稿', '发货中', '已发货', '已取消'],
+      data: ['草稿', '已发货', '已取消'],
       ...theme,
     },
     yAxis: { type: 'value', ...theme },
@@ -219,8 +220,8 @@ const initOrderChart = () => {
         type: 'bar',
         data: [
           { value: stats.value?.order.draft || 0, itemStyle: { color: '#8e8e93' } },
-          { value: stats.value?.order.shipped || 0, itemStyle: { color: '#ff9500' } },
-          { value: stats.value?.order.cancelled || 0, itemStyle: { color: '#34c759' } },
+          { value: stats.value?.order.shipped || 0, itemStyle: { color: '#34c759' } },
+          { value: stats.value?.order.cancelled || 0, itemStyle: { color: '#ff3b30' } },
         ],
         barWidth: '50%',
         itemStyle: { borderRadius: [8, 8, 0, 0] },

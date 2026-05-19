@@ -11,7 +11,7 @@
         <span class="inv-batch">{{ item.batchNo }}</span>
         <span class="inv-pkg">包号{{ item.packageNo || '-' }}</span>
         <span class="inv-grade" :class="gradeClass(item.grade)">{{ item.grade }}</span>
-        <span class="inv-weight">{{ formatWeight(item.weight) }}t</span>
+        <span class="inv-weight">{{ formatWeight(item.weight) }}kg</span>
         <span class="inv-pieces">{{ item.pieceCount }}块</span>
       </div>
       <div class="inv-secondary">
@@ -51,7 +51,7 @@ const gradeClass = (grade: string) => {
 }
 
 const statusText = (status: string) => {
-  const map: Record<string, string> = { available: '可用', reserved: '预留', shipped: '已发' }
+  const map: Record<string, string> = { available: '可用', reserved: '预留', shipped: '已发', issued: '已发出' }
   return map[status] || status
 }
 

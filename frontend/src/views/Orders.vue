@@ -84,7 +84,6 @@
             <th>总重量</th>
             <th>总片数</th>
             <th>状态</th>
-            <th>司机/车牌</th>
             <th>创建时间</th>
             <th class="action-col">操作</th>
           </tr>
@@ -113,24 +112,12 @@
                 {{ statusLabel[row.status] }}
               </span>
             </td>
-            <td class="driver-info">
-              <template v-if="row.driverName">
-                <span>{{ row.driverName }}</span>
-                <span class="vehicle">{{ row.vehicleNo }}</span>
-              </template>
-              <span v-else class="text-secondary">-</span>
-            </td>
             <td class="time">{{ formatDate(row.createdAt) }}</td>
             <td class="action-col">
               <!-- 草稿状态 -->
               <template v-if="row.status === 'draft'">
                 <button class="action-btn" @click="handleEdit(row)">编辑</button>
-                <button class="action-btn warning" @click="handleShip(row)">发货</button>
-                <button class="action-btn danger" @click="handleCancel(row.id)">取消</button>
-              </template>
-              <!-- 发货中状态 -->
-              <template v-else-if="row.status === 'shipping'">
-                <button class="action-btn success" @click="handleDeliver(row.id)">完成发运</button>
+                <button class="action-btn warning" @click="handleShip(row.id)">发货</button>
                 <button class="action-btn danger" @click="handleCancel(row.id)">取消</button>
               </template>
               <!-- 已完成/已取消状态 -->
@@ -141,7 +128,7 @@
             </td>
           </tr>
           <tr v-if="!orderStore.orderList.length">
-            <td colspan="10" class="empty-cell">
+            <td colspan="9" class="empty-cell">
               <div class="empty-state">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.4">
                   <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -263,7 +250,6 @@
                       <span class="stock-weight">{{ Number(stock.weight).toFixed(3) }}kg</span>
                       <span class="stock-pieces">{{ stock.pieceCount }}片</span>
                       <span class="stock-location">{{ stock.location || '-' }}</span>
-                      <span v-if="stock.nickelContent" class="stock-nickel">Ni {{ Number(stock.nickelContent).toFixed(2) }}%</span>
                     </div>
                     <div class="stock-action">
                       <span v-if="isStockSelected(stock.id)" class="selected-badge">
@@ -303,7 +289,6 @@
                         <span class="tag tag-grade">{{ getStockGrade(item.stockId) }}</span>
                         <span class="tag tag-type">{{ getStockProductType(item.stockId) }}</span>
                         <span class="tag tag-spec">{{ getStockSpec(item.stockId) }}</span>
-                        <span class="tag tag-nickel">Ni {{ getStockNickel(item.stockId) }}%</span>
                       </span>
                     </div>
                     <input v-model.number="item.weight" type="number" step="0.001" min="0" placeholder="重量(kg)" class="item-input" />
@@ -383,14 +368,6 @@
                   <span class="detail-label">总片数</span>
                   <span class="detail-value">{{ currentOrder.totalPieces || '-' }}</span>
                 </div>
-                <div class="detail-item">
-                  <span class="detail-label">司机</span>
-                  <span class="detail-value">{{ currentOrder.driverName || '-' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">车牌</span>
-                  <span class="detail-value">{{ currentOrder.vehicleNo || '-' }}</span>
-                </div>
                 <div class="detail-item full-width">
                   <span class="detail-label">备注</span>
                   <span class="detail-value">{{ currentOrder.remark || '-' }}</span>
@@ -410,14 +387,28 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="item in currentOrder.items" :key="item.id">
-                      <td>{{ item.stock?.batchNo || '-' }}</td>
-                      <td><span class="tag tag-info">{{ item.stock?.grade || '-' }}</span></td>
-                      <td>{{ item.stock?.specification || '-' }}</td>
-                      <td class="weight">{{ Number(item.weight).toFixed(3) }}</td>
-                      <td>{{ item.pieceCount }}</td>
-                    </tr>
+                    <template v-for="(group, batchNo) in orderItemGroups" :key="batchNo">
+                      <tr v-for="item in group.items" :key="item.id">
+                        <td>{{ item.stock?.batchNo || '-' }}</td>
+                        <td><span class="tag tag-info">{{ item.stock?.grade || '-' }}</span></td>
+                        <td>{{ item.stock?.specification || '-' }}</td>
+                        <td class="weight">{{ Number(item.weight).toFixed(3) }}</td>
+                        <td>{{ item.pieceCount }}</td>
+                      </tr>
+                      <tr v-if="group.items.length > 1" class="summary-row">
+                        <td colspan="3" class="summary-label">{{ batchNo }} 小计</td>
+                        <td class="weight">{{ group.totalWeight.toFixed(3) }}</td>
+                        <td>{{ group.totalPieces }}</td>
+                      </tr>
+                    </template>
                   </tbody>
+                  <tfoot v-if="currentOrder.items?.length">
+                    <tr class="summary-row">
+                      <td colspan="3" class="summary-label">合计</td>
+                      <td class="weight">{{ orderTotalWeight }}</td>
+                      <td>{{ orderTotalPieces }}</td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </div>
@@ -430,37 +421,6 @@
       </transition>
     </Teleport>
 
-    <!-- 发货弹窗 -->
-    <Teleport to="body">
-      <transition name="modal">
-        <div v-if="shipVisible" class="modal-overlay" @click.self="shipVisible = false">
-          <div class="modal-content glass-card">
-            <div class="modal-header">
-              <h3 class="modal-title">发货</h3>
-              <button class="modal-close" @click="shipVisible = false">✕</button>
-            </div>
-
-            <div class="modal-body">
-              <div class="form-grid">
-                <div class="form-item">
-                  <label>司机姓名 <span class="required">*</span></label>
-                  <input v-model="shipForm.driverName" type="text" placeholder="请输入司机姓名" />
-                </div>
-                <div class="form-item">
-                  <label>车牌号 <span class="required">*</span></label>
-                  <input v-model="shipForm.vehicleNo" type="text" placeholder="请输入车牌号" />
-                </div>
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button class="btn-pill btn-ghost" @click="shipVisible = false">取消</button>
-              <button class="btn-pill btn-primary" @click="handleShipSubmit">确定发货</button>
-            </div>
-          </div>
-        </div>
-      </transition>
-    </Teleport>
   </div>
 </template>
 
@@ -472,7 +432,7 @@ import { useCustomerStore } from '@/stores/customer'
 import { useInventoryStore } from '@/stores/inventory'
 import { searchInventory } from '@/api/distribution'
 import { ElMessageBox } from 'element-plus'
-import type { DistributionOrder, CreateOrderDto, OrderItemDto, ShipOrderDto, InventoryStock } from '@/types'
+import type { DistributionOrder, CreateOrderDto, OrderItemDto, InventoryStock } from '@/types'
 
 const orderStore = useOrderStore()
 const customerStore = useCustomerStore()
@@ -482,7 +442,7 @@ const showToast = inject('showToast') as (message: string, type?: string) => voi
 
 const queryForm = reactive({
   page: 1,
-  limit: 20,
+  limit: 24,
   status: '',
   customerId: undefined as number | undefined,
   keyword: '',
@@ -493,7 +453,6 @@ let keywordTimer: ReturnType<typeof setTimeout> | null = null
 const selectedRows = ref<DistributionOrder[]>([])
 const dialogVisible = ref(false)
 const viewVisible = ref(false)
-const shipVisible = ref(false)
 const dialogTitle = ref('新增配货单')
 const isEdit = ref(false)
 const currentId = ref<number>()
@@ -618,12 +577,6 @@ const getStockSpec = (stockId: number) => {
   return stock?.specification || '-'
 }
 
-// 获取库存镍含量
-const getStockNickel = (stockId: number) => {
-  const stock = availableStocks.value.find(s => s.id === stockId)
-  return stock?.nickelContent ? Number(stock.nickelContent).toFixed(2) : '-'
-}
-
 const form = reactive<CreateOrderDto & { items: OrderItemDto[]; productType?: string; specification?: string }>({
   customerId: 0,
   customerName: '',
@@ -634,30 +587,21 @@ const form = reactive<CreateOrderDto & { items: OrderItemDto[]; productType?: st
   items: [{ stockId: 0, weight: 0, pieceCount: 0 }],
 })
 
-const shipForm = reactive<ShipOrderDto>({
-  driverName: '',
-  vehicleNo: '',
-})
-const shipOrderId = ref<number>()
-
 const statusOptions = [
   { value: '', label: '全部' },
   { value: 'draft', label: '草稿' },
-  { value: 'shipping', label: '发货中' },
   { value: 'shipped', label: '已发货' },
   { value: 'cancelled', label: '已取消' },
 ]
 
 const statusTagClass: Record<string, string> = {
   draft: 'tag-default',
-  shipping: 'tag-info',
   shipped: 'tag-success',
   cancelled: 'tag-danger',
 }
 
 const statusLabel: Record<string, string> = {
   draft: '草稿',
-  shipping: '发货中',
   shipped: '已发货',
   cancelled: '已取消',
 }
@@ -852,34 +796,11 @@ const handleBatchDelete = async () => {
   }
 }
 
-const handleShip = (row: DistributionOrder) => {
-  shipOrderId.value = row.id
-  shipForm.driverName = ''
-  shipForm.vehicleNo = ''
-  shipVisible.value = true
-}
-
-const handleShipSubmit = async () => {
-  if (!shipOrderId.value) return
-  if (!shipForm.driverName?.trim()) {
-    showToast?.('请输入司机姓名', 'warning')
-    return
-  }
-  if (!shipForm.vehicleNo?.trim()) {
-    showToast?.('请输入车牌号', 'warning')
-    return
-  }
-  await orderStore.shipOrder(shipOrderId.value, shipForm)
-  shipVisible.value = false
-  showToast?.('发货成功', 'success')
-  handleSearch()
-}
-
-const handleDeliver = async (id: number) => {
+const handleShip = async (id: number) => {
   try {
-    await ElMessageBox.confirm('确认完成发运?', '提示', { type: 'info' })
-    await orderStore.deliverOrder(id)
-    showToast?.('完成发运', 'success')
+    await ElMessageBox.confirm('确认发货？发货后库存将标记为已发货。', '发货确认', { type: 'warning' })
+    await orderStore.shipOrder(id)
+    showToast?.('发货成功', 'success')
     handleSearch()
   } catch {
     // 用户取消
@@ -902,6 +823,27 @@ const handleCancel = async (id: number) => {
 }
 
 // 复制单号到剪贴板
+// 配货明细按批号分组
+const orderItemGroups = computed(() => {
+  if (!currentOrder.value?.items) return {}
+  const groups: Record<string, { items: any[]; totalWeight: number; totalPieces: number }> = {}
+  for (const item of currentOrder.value.items) {
+    const key = item.stock?.batchNo || '-'
+    if (!groups[key]) groups[key] = { items: [], totalWeight: 0, totalPieces: 0 }
+    groups[key].items.push(item)
+    groups[key].totalWeight += Number(item.weight) || 0
+    groups[key].totalPieces += Number(item.pieceCount) || 0
+  }
+  return groups
+})
+
+const orderTotalWeight = computed(() =>
+  currentOrder.value?.items?.reduce((sum: number, i: any) => sum + (Number(i.weight) || 0), 0).toFixed(3) || '0.000'
+)
+const orderTotalPieces = computed(() =>
+  currentOrder.value?.items?.reduce((sum: number, i: any) => sum + (Number(i.pieceCount) || 0), 0) || 0
+)
+
 const copyOrderNo = async (orderNo: string) => {
   try {
     await navigator.clipboard.writeText(orderNo)
@@ -1094,6 +1036,17 @@ onMounted(() => {
     border-bottom: 1px solid var(--color-divider);
   }
 
+  .summary-row {
+    background: var(--color-bg-tertiary);
+    font-weight: 600;
+  }
+
+  .summary-label {
+    text-align: right;
+    color: var(--color-text-secondary);
+    padding-right: var(--spacing-md);
+  }
+
   th {
     font-size: var(--font-size-xs);
     font-weight: 600;
@@ -1133,14 +1086,6 @@ onMounted(() => {
 
   .weight {
     font-family: monospace;
-  }
-
-  .driver-info {
-    .vehicle {
-      margin-left: 8px;
-      color: var(--color-text-secondary);
-      font-size: var(--font-size-sm);
-    }
   }
 
   .time {
@@ -1439,11 +1384,6 @@ onMounted(() => {
   color: #ff9500;
 }
 
-.tag-nickel {
-  background: rgba(88, 86, 214, 0.1);
-  color: #5856d6;
-}
-
 .items-empty {
   padding: var(--spacing-lg);
   text-align: center;
@@ -1639,11 +1579,6 @@ onMounted(() => {
 
 .stock-location {
   font-size: var(--font-size-xs);
-}
-
-.stock-nickel {
-  font-family: monospace;
-  color: #34c759;
 }
 
 .stock-action {

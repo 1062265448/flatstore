@@ -66,6 +66,7 @@ export class DistributionService implements OnModuleInit {
       available: 0,
       reserved: 0,
       shipped: 0,
+      issued: 0,
       totalWeight: '0',
       totalPieces: 0,
     };
@@ -73,7 +74,6 @@ export class DistributionService implements OnModuleInit {
     const order = {
       total: 0,
       draft: 0,
-      shipping: 0,
       shipped: 0,
       cancelled: 0,
     };
@@ -87,12 +87,12 @@ export class DistributionService implements OnModuleInit {
       if (stat.status === 'available') inventory.available = stat._count.id;
       if (stat.status === 'reserved') inventory.reserved = stat._count.id;
       if (stat.status === 'shipped') inventory.shipped = stat._count.id;
+      if (stat.status === 'issued') inventory.issued = stat._count.id;
     }
 
     for (const stat of orderStats) {
       order.total += stat._count.id;
       if (stat.status === 'draft') order.draft = stat._count.id;
-      if (stat.status === 'shipping') order.shipping = stat._count.id;
       if (stat.status === 'shipped') order.shipped = stat._count.id;
       if (stat.status === 'cancelled') order.cancelled = stat._count.id;
     }
@@ -423,7 +423,7 @@ export class DistributionService implements OnModuleInit {
       where: { id },
       include: {
         orders: {
-          where: { deletedAt: null, status: { in: ['draft', 'shipping'] } },
+          where: { deletedAt: null, status: { in: ['draft'] } },
           take: 1,
         },
       },
@@ -689,50 +689,20 @@ export class DistributionService implements OnModuleInit {
     });
   }
 
-  async shipOrder(id: number, dto: ShipOrderDto) {
-    const order = await this.prisma.distributionOrder.findUnique({
-      where: { id },
-    });
-    if (!order || order.deletedAt) throw new NotFoundException('订单不存在');
-    if (order.status !== 'draft') {
-      throw new BadRequestException('只有草稿状态的订单可以发货');
-    }
-    if (!dto.driverName?.trim()) {
-      throw new BadRequestException('请填写司机姓名');
-    }
-    if (!dto.vehicleNo?.trim()) {
-      throw new BadRequestException('请填写车牌号');
-    }
-
-    const result = await this.prisma.$transaction(async (tx) => {
-      return tx.distributionOrder.update({
-        where: { id },
-        data: {
-          status: 'shipping',
-          driverName: dto.driverName.trim(),
-          vehicleNo: dto.vehicleNo.trim(),
-        },
-      });
-    });
-
-    this.invalidateStatsCache();
-    return result;
-  }
-
-  async deliverOrder(id: number) {
+  async shipOrder(id: number) {
     const order = await this.prisma.distributionOrder.findUnique({
       where: { id },
       include: { items: true },
     });
     if (!order || order.deletedAt) throw new NotFoundException('订单不存在');
-    if (order.status !== 'shipping') {
-      throw new BadRequestException('只有发货中的订单可以完成发运');
+    if (order.status !== 'draft') {
+      throw new BadRequestException('只有草稿状态的订单可以发货');
     }
 
     const stockIds = order.items.map((i) => i.stockId);
 
     const result = await this.prisma.$transaction(async (tx) => {
-      // 前置校验：所有库存必须是 reserved 状态
+      // 校验库存状态
       const stocks = await tx.inventoryStock.findMany({
         where: { id: { in: stockIds } },
         select: { id: true, status: true },

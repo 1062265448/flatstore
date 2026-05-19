@@ -268,24 +268,6 @@ describe('DistributionController (e2e)', () => {
           orderNo: 'ORD-001',
           customerId: testCustomer.id,
           status: 'draft',
-        },
-      });
-
-      const response = await request(app.getHttpServer())
-        .post(`/distribution/orders/${order.id}/ship`)
-        .send({ driverName: '张三', vehicleNo: '京A12345' })
-        .expect(201);
-
-      expect(response.body.status).toBe('shipping');
-      expect(response.body.driverName).toBe('张三');
-    });
-
-    it('POST /distribution/orders/:id/deliver - 应完成发运', async () => {
-      const order = await prisma.distributionOrder.create({
-        data: {
-          orderNo: 'ORD-001',
-          customerId: testCustomer.id,
-          status: 'shipping',
           items: {
             create: { stockId: testStock.id, weight: 100, pieceCount: 10 },
           },
@@ -293,7 +275,7 @@ describe('DistributionController (e2e)', () => {
       });
 
       const response = await request(app.getHttpServer())
-        .post(`/distribution/orders/${order.id}/deliver`)
+        .post(`/distribution/orders/${order.id}/ship`)
         .expect(201);
 
       expect(response.body.status).toBe('shipped');
@@ -390,14 +372,14 @@ describe('DistributionController (e2e)', () => {
         .expect(400);
     });
 
-    it('非草稿订单不能确认', async () => {
+    it('非草稿订单不能发货', async () => {
       const customer = await prisma.customer.create({ data: { name: '客户' } });
       const order = await prisma.distributionOrder.create({
         data: { orderNo: 'ORD-001', customerId: customer.id, status: 'shipped' },
       });
 
       await request(app.getHttpServer())
-        .post(`/distribution/orders/${order.id}/confirm`)
+        .post(`/distribution/orders/${order.id}/ship`)
         .expect(400);
     });
   });

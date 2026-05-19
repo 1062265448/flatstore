@@ -124,11 +124,4 @@ export class UpdateOrderDto {
 }
 
 export class ShipOrderDto {
-  @ApiProperty()
-  @IsString()
-  driverName: string;
-
-  @ApiProperty()
-  @IsString()
-  vehicleNo: string;
 }

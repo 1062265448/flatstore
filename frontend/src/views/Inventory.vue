@@ -106,6 +106,7 @@
           <option value="available">可用</option>
           <option value="reserved">已预留</option>
           <option value="shipped">已发货</option>
+          <option value="issued">已发出</option>
         </select>
 
         <button class="btn-pill btn-primary" @click="handleSearch">
@@ -514,12 +515,14 @@ const statusTagClass: Record<string, string> = {
   available: 'tag-success',
   reserved: 'tag-warning',
   shipped: 'tag-default',
+  issued: 'tag-info',
 }
 
 const statusLabel: Record<string, string> = {
   available: '可用',
   reserved: '已预留',
   shipped: '已发货',
+  issued: '已发出',
 }
 
 const totalPages = computed(() => Math.ceil(inventoryStore.total / queryForm.limit))

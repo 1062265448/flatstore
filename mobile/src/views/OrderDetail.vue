@@ -27,19 +27,11 @@
           </div>
           <div class="info-item">
             <span class="info-lbl">总重量</span>
-            <span class="info-val">{{ order.totalWeight ? Number(order.totalWeight).toFixed(3) + 't' : '-' }}</span>
+            <span class="info-val">{{ order.totalWeight ? Number(order.totalWeight).toFixed(3) + 'kg' : '-' }}</span>
           </div>
           <div class="info-item">
             <span class="info-lbl">总片数</span>
             <span class="info-val">{{ order.totalPieces || '-' }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-lbl">司机</span>
-            <span class="info-val">{{ order.driverName || '-' }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-lbl">车牌</span>
-            <span class="info-val">{{ order.vehicleNo || '-' }}</span>
           </div>
           <div class="info-item full">
             <span class="info-lbl">备注</span>
@@ -58,11 +50,7 @@
           </div>
           <div class="tl" :class="{ done: stepDone(1), pending: !stepDone(1) }">
             <div class="tl-dot">2</div>
-            <div><div class="tl-title">确认发货</div><div class="tl-time">{{ order.shippedAt ? formatDate(order.shippedAt) : (order.status === 'shipping' ? formatDate(order.updatedAt) : '等待发货') }}</div></div>
-          </div>
-          <div class="tl" :class="{ done: stepDone(2), pending: !stepDone(2) }">
-            <div class="tl-dot">3</div>
-            <div><div class="tl-title">完成发运</div><div class="tl-time">{{ stepDone(2) ? formatDate(order.shippedAt || order.updatedAt) : '等待发运' }}</div></div>
+            <div><div class="tl-title">已发货</div><div class="tl-time">{{ order.shippedAt ? formatDate(order.shippedAt) : '等待发货' }}</div></div>
           </div>
         </div>
       </div>
@@ -70,12 +58,26 @@
       <!-- 配货明细 -->
       <div v-if="order.items?.length" class="section-label" style="padding:20px 0 12px 20px">配货明细</div>
       <div class="items-card" style="margin: 0 20px;">
-        <div v-for="(item, i) in order.items" :key="i" class="item-row">
-          <div class="item-info">
-            <span class="item-batch">{{ item.stock?.batchNo || '#' + item.stockId }}</span>
-            <span class="item-grade">{{ item.stock?.grade || '-' }}</span>
+        <template v-for="(group, batchNo) in orderItemGroups" :key="batchNo">
+          <div v-for="item in group.items" :key="item.id" class="item-row">
+            <div class="item-info">
+              <span class="item-batch">{{ item.stock?.batchNo || '#' + item.stockId }}</span>
+              <span class="item-grade">{{ item.stock?.grade || '-' }}</span>
+            </div>
+            <div class="item-meta">{{ Number(item.weight).toFixed(3) }}kg · {{ item.pieceCount }}块</div>
           </div>
-          <div class="item-meta">{{ Number(item.weight).toFixed(3) }}t · {{ item.pieceCount }}块</div>
+          <div v-if="group.items.length > 1" class="item-row item-subtotal">
+            <div class="item-info">
+              <span class="item-batch">{{ batchNo }} 小计</span>
+            </div>
+            <div class="item-meta">{{ group.totalWeight.toFixed(3) }}kg · {{ group.totalPieces }}块</div>
+          </div>
+        </template>
+        <div class="item-row item-total">
+          <div class="item-info">
+            <span class="item-batch">合计</span>
+          </div>
+          <div class="item-meta">{{ orderTotalWeight }}kg · {{ orderTotalPieces }}块</div>
         </div>
       </div>
 
@@ -83,45 +85,22 @@
       <div class="action-bar">
         <template v-if="order.status === 'draft'">
           <button class="action-btn cancel" @click="handleCancel">取消订单</button>
-          <button class="action-btn confirm" @click="showShipSheet = true">发货</button>
-        </template>
-        <template v-else-if="order.status === 'shipping'">
-          <button class="action-btn cancel" @click="handleCancel">取消订单</button>
-          <button class="action-btn confirm" @click="handleDeliver">完成发运</button>
+          <button class="action-btn confirm" @click="handleShip">发货</button>
         </template>
         <template v-else-if="order.status === 'shipped' || order.status === 'cancelled'">
           <button class="action-btn cancel" @click="handleDelete">删除订单</button>
         </template>
       </div>
     </div>
-
-    <!-- 发货 Sheet -->
-    <BottomSheet :visible="showShipSheet" @close="showShipSheet = false">
-      <h2 class="sheet-title">发货信息</h2>
-      <div class="ship-form">
-        <div class="form-group">
-          <label>司机姓名 *</label>
-          <input v-model="shipForm.driverName" class="form-input" placeholder="请输入司机姓名" />
-        </div>
-        <div class="form-group">
-          <label>车牌号 *</label>
-          <input v-model="shipForm.vehicleNo" class="form-input" placeholder="请输入车牌号" />
-        </div>
-        <button class="btn-submit" :disabled="shipping" @click="handleShip">
-          {{ shipping ? '发货中...' : '确认发货' }}
-        </button>
-      </div>
-    </BottomSheet>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useOrderStore } from '@/stores/order'
 import { useToast } from '@/composables/useToast'
 import type { DistributionOrder } from '@/types'
-import BottomSheet from '@/components/BottomSheet.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -130,27 +109,23 @@ const { success, danger } = useToast()
 
 const order = ref<DistributionOrder | null>(null)
 const loading = ref(true)
-const showShipSheet = ref(false)
-const shipping = ref(false)
-const shipForm = reactive({ driverName: '', vehicleNo: '' })
 
 const statusText = computed(() => {
-  const map: Record<string, string> = { draft: '草稿', shipping: '发货中', shipped: '已发货', cancelled: '已取消' }
+  const map: Record<string, string> = { draft: '草稿', shipped: '已发货', cancelled: '已取消' }
   return map[order.value?.status || ''] || ''
 })
 
 const badgeClass = computed(() => {
-  const map: Record<string, string> = { draft: 'badge-gray', shipping: 'badge-amber', shipped: 'badge-green', cancelled: 'badge-red' }
+  const map: Record<string, string> = { draft: 'badge-gray', shipped: 'badge-green', cancelled: 'badge-red' }
   return map[order.value?.status || ''] || 'badge-gray'
 })
 
-// 时间线步骤: 0=创建 1=发货 2=完成
+// 时间线步骤: 0=创建 1=已发货
 const stepDone = (step: number) => {
   const s = order.value?.status
   if (!s) return false
   if (step === 0) return true // 已创建
-  if (step === 1) return s === 'shipping' || s === 'shipped'
-  if (step === 2) return s === 'shipped'
+  if (step === 1) return s === 'shipped'
   return false
 }
 
@@ -158,6 +133,27 @@ const formatDate = (d: string) => {
   if (!d) return '-'
   return new Date(d).toLocaleString('zh-CN')
 }
+
+// 配货明细按批号分组
+const orderItemGroups = computed(() => {
+  if (!order.value?.items) return {} as Record<string, any>
+  const groups: Record<string, { items: any[]; totalWeight: number; totalPieces: number }> = {}
+  for (const item of order.value.items) {
+    const key = item.stock?.batchNo || '-'
+    if (!groups[key]) groups[key] = { items: [], totalWeight: 0, totalPieces: 0 }
+    groups[key].items.push(item)
+    groups[key].totalWeight += Number(item.weight) || 0
+    groups[key].totalPieces += Number(item.pieceCount) || 0
+  }
+  return groups
+})
+
+const orderTotalWeight = computed(() =>
+  order.value?.items?.reduce((sum: number, i: any) => sum + (Number(i.weight) || 0), 0).toFixed(3) || '0.000'
+)
+const orderTotalPieces = computed(() =>
+  order.value?.items?.reduce((sum: number, i: any) => sum + (Number(i.pieceCount) || 0), 0) || 0
+)
 
 const refresh = async () => {
   const id = Number(route.params.id)
@@ -172,18 +168,13 @@ const refresh = async () => {
 
 const handleShip = async () => {
   if (!order.value) return
-  if (!shipForm.driverName.trim()) { danger('请填写司机姓名'); return }
-  if (!shipForm.vehicleNo.trim()) { danger('请填写车牌号'); return }
-  shipping.value = true
+  if (!confirm('确认发货？发货后库存将标记为已发货。')) return
   try {
-    await orderStore.shipOrder(order.value.id, shipForm)
+    await orderStore.shipOrder(order.value.id)
     success('发货成功')
-    showShipSheet.value = false
     refresh()
   } catch {
     danger('发货失败')
-  } finally {
-    shipping.value = false
   }
 }
 
@@ -196,18 +187,6 @@ const handleCancel = async () => {
     refresh()
   } catch {
     danger('取消失败')
-  }
-}
-
-const handleDeliver = async () => {
-  if (!order.value) return
-  if (!confirm('确认完成发运？库存将标记为已出库。')) return
-  try {
-    await orderStore.deliverOrder(order.value.id)
-    success('发运完成')
-    refresh()
-  } catch {
-    danger('操作失败')
   }
 }
 
@@ -345,6 +324,12 @@ onMounted(refresh)
 .item-batch { font-size: 14px; font-weight: 500; font-family: var(--font-mono); }
 .item-grade { font-size: 11px; font-weight: 600; background: var(--accent-soft); color: var(--accent); padding: 2px var(--space-2); border-radius: var(--radius-xs); }
 .item-meta { font-size: 12px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.item-subtotal { background: var(--surface-alt); }
+.item-subtotal .item-batch { color: var(--text-secondary); font-size: 12px; }
+.item-subtotal .item-meta { font-weight: 600; color: var(--text-secondary); }
+.item-total { background: var(--accent-soft); }
+.item-total .item-batch { font-weight: 700; }
+.item-total .item-meta { font-weight: 700; color: var(--accent); }
 
 /* Action bar */
 .action-bar {

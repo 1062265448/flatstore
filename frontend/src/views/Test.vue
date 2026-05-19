@@ -701,10 +701,7 @@ const handleShipOrder = async () => {
   loading.value = true
   const startTime = Date.now()
   try {
-    const res = await api.shipOrder(shipOrderForm.id, {
-      driverName: shipOrderForm.driverName,
-      vehicleNo: shipOrderForm.vehicleNo,
-    })
+    const res = await api.shipOrder(shipOrderForm.id)
     addLog({
       method: 'POST',
       url: `/distribution/orders/${shipOrderForm.id}/ship`,

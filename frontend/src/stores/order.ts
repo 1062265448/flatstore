@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
 import * as api from '@/api/distribution'
-import type { DistributionOrder, CreateOrderDto, UpdateOrderDto, ShipOrderDto, OrderQuery } from '@/types'
+import type { DistributionOrder, CreateOrderDto, UpdateOrderDto, OrderQuery } from '@/types'
 
 export const useOrderStore = defineStore('order', () => {
   const orderList = ref<DistributionOrder[]>([])
@@ -73,13 +73,8 @@ export const useOrderStore = defineStore('order', () => {
     await fetchOrders()
   }
 
-  const shipOrder = async (id: number, dto: ShipOrderDto) => {
-    await api.shipOrder(id, dto)
-    await fetchOrders()
-  }
-
-  const deliverOrder = async (id: number) => {
-    await api.deliverOrder(id)
+  const shipOrder = async (id: number) => {
+    await api.shipOrder(id)
     await fetchOrders()
   }
 
@@ -100,7 +95,6 @@ export const useOrderStore = defineStore('order', () => {
     deleteOrder,
     batchDelete,
     shipOrder,
-    deliverOrder,
     cancelOrder,
   }
 })

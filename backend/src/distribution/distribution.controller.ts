@@ -233,18 +233,11 @@ export class DistributionController {
     // 移除 confirm 接口 - 创建后直接可发货
 
   @Post('orders/:id/ship')
-  @ApiOperation({ summary: '发货' })
+  @ApiOperation({ summary: '发货（草稿→已发货）' })
   shipOrder(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: ShipOrderDto,
   ) {
-    return this.service.shipOrder(id, dto);
-  }
-
-  @Post('orders/:id/deliver')
-  @ApiOperation({ summary: '完成发运' })
-  deliverOrder(@Param('id', ParseIntPipe) id: number) {
-    return this.service.deliverOrder(id);
+    return this.service.shipOrder(id);
   }
 
   @Post('orders/:id/cancel')

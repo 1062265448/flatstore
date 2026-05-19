@@ -11,7 +11,7 @@
       </div>
       <div class="card-field">
         <div class="field-lbl">重量</div>
-        <div class="field-val mono">{{ formatWeight(item.weight) }}</div>
+        <div class="field-val mono">{{ formatWeight(item.weight) }}kg</div>
       </div>
       <div class="card-field">
         <div class="field-lbl">块数</div>
@@ -66,6 +66,7 @@ const statusLabel = computed(() => {
     available: '可用',
     reserved: '预留',
     shipped: '已发货',
+    issued: '已发出',
   }
   return map[props.item.status] || props.item.status
 })

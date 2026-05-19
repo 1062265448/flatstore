@@ -200,7 +200,7 @@
           <img :src="resolveImageUrl(currentHistory.imageUrl)" />
         </div>
         <div v-if="detailResults.length" class="detail-results">
-          <div class="detail-results-label">识别结果 ({{ detailResults.length }})</div>
+          <div class="detail-results-label">识别结果 ({{ detailResults.length }}) · 合计 {{ detailTotalWeight }} kg / {{ detailTotalPieces }}块</div>
           <div class="result-list-box">
             <div
               v-for="(item, index) in detailResults"
@@ -363,6 +363,13 @@ const resultTotalWeight = computed(() =>
 )
 const resultTotalPieces = computed(() =>
   recognizeResults.value.reduce((s, r) => s + (r.pieceCount || 0), 0)
+)
+
+const detailTotalWeight = computed(() =>
+  detailResults.value.reduce((s, r: any) => s + (Number(r.netWeight) || 0), 0).toFixed(1)
+)
+const detailTotalPieces = computed(() =>
+  detailResults.value.reduce((s, r: any) => s + (Number(r.pieceCount) || 0), 0)
 )
 
 const closeSheet = () => {

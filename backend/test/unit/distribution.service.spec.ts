@@ -200,7 +200,7 @@ describe('DistributionService', () => {
     });
   });
 
-  // ==================== 订单状态机（当前流程: draft → shipping → shipped） ====================
+  // ==================== 订单状态机（当前流程: draft → shipped） ====================
   describe('订单状态机', () => {
     const mockCustomer = { id: 1, name: '测试客户' };
     const mockStock = { id: 1, status: 'available', batchNo: 'BATCH001' };
@@ -274,67 +274,14 @@ describe('DistributionService', () => {
       });
     });
 
-    describe('shipOrder（draft → shipping）', () => {
+    describe('shipOrder（draft → shipped）', () => {
       it('草稿状态订单可以发货', async () => {
-        PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue({ id: 1, status: 'draft' });
+        PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue({ id: 1, status: 'draft', items: [{ stockId: 1 }] });
         PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
           const tx = {
             distributionOrder: {
-              update: PrismaServiceMock.distributionOrder.update,
-            },
-          };
-          return fn(tx);
-        });
-        PrismaServiceMock.distributionOrder.update.mockResolvedValue({ id: 1, status: 'shipping' });
-
-        const result = await service.shipOrder(1, { driverName: '张三', vehicleNo: '京A12345' });
-
-        expect(result.status).toBe('shipping');
-      });
-
-      it('非草稿状态订单不能发货', async () => {
-        PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue({ id: 1, status: 'shipped' });
-
-        await expect(
-          service.shipOrder(1, { driverName: '张三', vehicleNo: '京A12345' }),
-        ).rejects.toThrow(BadRequestException);
-      });
-
-      it('司机姓名必填', async () => {
-        PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue({ id: 1, status: 'draft' });
-
-        await expect(
-          service.shipOrder(1, { driverName: '', vehicleNo: '京A12345' }),
-        ).rejects.toThrow(BadRequestException);
-      });
-
-      it('车牌号必填', async () => {
-        PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue({ id: 1, status: 'draft' });
-
-        await expect(
-          service.shipOrder(1, { driverName: '张三', vehicleNo: '' }),
-        ).rejects.toThrow(BadRequestException);
-      });
-
-      it('不存在的订单抛出 NotFoundException', async () => {
-        PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue(null);
-
-        await expect(
-          service.shipOrder(999, { driverName: '张三', vehicleNo: '京A12345' }),
-        ).rejects.toThrow(NotFoundException);
-      });
-    });
-
-    describe('deliverOrder（shipping → shipped）', () => {
-      it('发货中订单可以完成发运', async () => {
-        const order = { id: 1, status: 'shipping', items: [{ stockId: 1 }] };
-        PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue(order);
-
-        PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
-          const tx = {
-            distributionOrder: {
-              update: jest.fn().mockResolvedValue({ ...order, status: 'shipped' }),
-              findUnique: jest.fn().mockResolvedValue({ ...order, status: 'shipped' }),
+              update: jest.fn().mockResolvedValue({ id: 1, status: 'shipped' }),
+              findUnique: jest.fn().mockResolvedValue({ id: 1, status: 'shipped' }),
             },
             inventoryStock: {
               findMany: jest.fn().mockResolvedValue([{ id: 1, status: 'reserved' }]),
@@ -344,39 +291,29 @@ describe('DistributionService', () => {
           return fn(tx);
         });
 
-        const result = await service.deliverOrder(1);
+        const result = await service.shipOrder(1);
 
         expect(result.status).toBe('shipped');
-        // 验证库存从reserved更新为shipped
-        expect(PrismaServiceMock.$transaction).toHaveBeenCalled();
       });
 
-      it('前置校验：库存非reserved状态时拒绝', async () => {
-        const order = { id: 1, status: 'shipping', items: [{ stockId: 1 }] };
-        PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue(order);
+      it('非草稿状态订单不能发货', async () => {
+        PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue({ id: 1, status: 'shipped' });
 
-        PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
-          const tx = {
-            distributionOrder: { update: jest.fn() },
-            inventoryStock: {
-              findMany: jest.fn().mockResolvedValue([{ id: 1, status: 'available' }]),
-              updateMany: jest.fn(),
-            },
-          };
-          return fn(tx);
-        });
-
-        await expect(service.deliverOrder(1)).rejects.toThrow(BadRequestException);
+        await expect(
+          service.shipOrder(1),
+        ).rejects.toThrow(BadRequestException);
       });
 
-      it('非发货中订单不能完成发运', async () => {
-        PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue({ id: 1, status: 'draft' });
+      it('不存在的订单抛出 NotFoundException', async () => {
+        PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue(null);
 
-        await expect(service.deliverOrder(1)).rejects.toThrow(BadRequestException);
+        await expect(
+          service.shipOrder(999),
+        ).rejects.toThrow(NotFoundException);
       });
     });
 
-    describe('cancelOrder（draft/shipping → cancelled + 释放库存）', () => {
+    describe('cancelOrder（draft → cancelled + 释放库存）', () => {
       it('草稿状态订单可以取消', async () => {
         const order = { id: 1, status: 'draft', items: [{ stockId: 1 }] };
         PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue(order);
@@ -399,28 +336,6 @@ describe('DistributionService', () => {
         expect(result.status).toBe('cancelled');
         // 验证库存释放
         expect(PrismaServiceMock.$transaction).toHaveBeenCalled();
-      });
-
-      it('发货中状态订单也可以取消', async () => {
-        const order = { id: 1, status: 'shipping', items: [{ stockId: 1 }] };
-        PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue(order);
-
-        PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
-          const tx = {
-            distributionOrder: {
-              update: jest.fn().mockResolvedValue({ ...order, status: 'cancelled' }),
-              findUnique: jest.fn().mockResolvedValue({ ...order, status: 'cancelled' }),
-            },
-            inventoryStock: {
-              updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-            },
-          };
-          return fn(tx);
-        });
-
-        const result = await service.cancelOrder(1);
-
-        expect(result.status).toBe('cancelled');
       });
 
       it('已发货订单不能取消', async () => {

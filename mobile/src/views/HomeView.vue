@@ -10,6 +10,7 @@
       <StatCard :value="stats?.inventory.total || 0" label="总批次" />
       <StatCard :value="stats?.inventory.available || 0" label="可用" value-color="var(--green)" />
       <StatCard :value="stats?.inventory.reserved || 0" label="预留" value-color="var(--amber)" />
+      <StatCard :value="stats?.inventory.issued || 0" label="已发出" value-color="var(--blue)" />
     </div>
 
     <!-- 库存状态分布条 -->
@@ -19,11 +20,13 @@
         <div class="bar-segment available" :style="{ width: availablePct + '%' }"></div>
         <div class="bar-segment reserved" :style="{ width: reservedPct + '%' }"></div>
         <div class="bar-segment shipped" :style="{ width: shippedPct + '%' }"></div>
+        <div class="bar-segment issued" :style="{ width: issuedPct + '%' }"></div>
       </div>
       <div class="status-legend">
         <div class="legend-item"><span class="legend-dot available"></span>可用 {{ stats?.inventory.available || 0 }}</div>
         <div class="legend-item"><span class="legend-dot reserved"></span>预留 {{ stats?.inventory.reserved || 0 }}</div>
         <div class="legend-item"><span class="legend-dot shipped"></span>已发货 {{ stats?.inventory.shipped || 0 }}</div>
+        <div class="legend-item"><span class="legend-dot issued"></span>已发出 {{ stats?.inventory.issued || 0 }}</div>
       </div>
     </div>
 
@@ -87,6 +90,7 @@ const total = computed(() => stats.value?.inventory.total || 0)
 const availablePct = computed(() => total.value ? ((stats.value?.inventory.available || 0) / total.value * 100) : 0)
 const reservedPct = computed(() => total.value ? ((stats.value?.inventory.reserved || 0) / total.value * 100) : 0)
 const shippedPct = computed(() => total.value ? ((stats.value?.inventory.shipped || 0) / total.value * 100) : 0)
+const issuedPct = computed(() => total.value ? ((stats.value?.inventory.issued || 0) / total.value * 100) : 0)
 
 onMounted(async () => {
   await Promise.all([
@@ -151,6 +155,7 @@ onMounted(async () => {
 .bar-segment.available { background: var(--green); }
 .bar-segment.reserved { background: var(--amber); }
 .bar-segment.shipped { background: var(--text-tertiary); }
+.bar-segment.issued { background: var(--blue); }
 
 .status-legend {
   display: flex;
@@ -173,6 +178,7 @@ onMounted(async () => {
 .legend-dot.available { background: var(--green); }
 .legend-dot.reserved { background: var(--amber); }
 .legend-dot.shipped { background: var(--text-tertiary); }
+.legend-dot.issued { background: var(--blue); }
 
 .recent-orders {
   margin-bottom: var(--space-5);
