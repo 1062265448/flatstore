@@ -243,10 +243,10 @@ export class QwenAIService {
 
     let netWeight = Number(item.netWeight) || 0;
 
-    // 单位纠正：票据实际以千克为单位，AI 可能误读为吨
-    // 单包镍板重量通常 500~5000 kg，超过 10000 kg 视为误将千克读成吨
-    if (netWeight > 10) {
-      netWeight = netWeight / 1000;
+    // 单位纠正：AI 现在返回 kg，正常单包 500~5000 kg
+    // < 10 kg 说明 AI 可能误将千克输出为吨（如 2→2000kg）
+    if (netWeight > 0 && netWeight < 10) {
+      netWeight = netWeight * 1000;
     }
 
     return {
