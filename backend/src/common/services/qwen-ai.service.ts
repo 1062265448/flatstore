@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 export interface AiRecognizeResult {
   packageNo: number;
@@ -13,6 +13,7 @@ export interface AiRecognizeResult {
 
 @Injectable()
 export class QwenAIService {
+  private readonly logger = new Logger(QwenAIService.name);
   private readonly MAX_RETRIES = 2;
   private readonly TIMEOUT_MS = 120000;
 
@@ -246,6 +247,7 @@ export class QwenAIService {
     // 单位纠正：AI 现在返回 kg，正常单包 500~5000 kg
     // < 10 kg 说明 AI 可能误将千克输出为吨（如 2→2000kg）
     if (netWeight > 0 && netWeight < 10) {
+      this.logger.warn(`normalizeResult: netWeight=${netWeight} < 10kg, assuming AI output in tons, ×1000 → ${netWeight * 1000}`);
       netWeight = netWeight * 1000;
     }
 
