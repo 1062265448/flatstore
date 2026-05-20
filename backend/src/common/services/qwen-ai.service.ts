@@ -23,7 +23,7 @@ export class QwenAIService {
 ## 识别要求
 
 1. **牌号（grade）**：即图片中的"品级"字段，通常为 4 位数字，如 9996、9950、9999 等。请准确识别数字，不要遗漏或篡改。
-2. **批号（batchNo）**：格式固定为"XX-X-XXX"模式，例如 26-7-090、26-12-005 等。请保持原始格式，不要转换。
+2. **批号（batchNo）**：格式为"XX-X-XXX"或"XX-X-XXX字母"，例如 26-7-090、26-12-005、26-1-109J、26-3-045t 等。末尾字母可选，仅限 J、s、t。请保持原始格式，不要转换。
 3. **产品类型（productType）**：识别图片左上角"品名"右侧的文字，通常为"镍板"或"电积镍"等。
 4. **包号（packageNo）**：表格中的序号/包号列，通常为数字。
 5. **片数（pieceCount）**：每包对应的片数。
@@ -47,7 +47,7 @@ export class QwenAIService {
 - netWeight: 净重（数字，单位：千克，无法识别则为 0）
 - grade: 牌号（字符串，如"9996"、"9950"，无法识别则为 ""）
 - productType: 产品类型（字符串，如"镍板"，无法识别则为 ""）
-- batchNo: 批号（字符串，格式如"26-7-090"，无法识别则为 ""）
+- batchNo: 批号（字符串，格式如"26-7-090"或"26-1-109J"，末尾字母仅限 J/s/t，无法识别则为 ""）
 - inspector: 检验员（字符串或 null）
 - date: 日期（字符串，格式 YYYY-MM-DD，无法识别则为 ""）
 
@@ -185,8 +185,8 @@ export class QwenAIService {
       }
 
       // 4. 批号格式校验
-      if (r.batchNo && !/^\d{2}-\d{1,2}-\d{3}$/.test(r.batchNo)) {
-        warnings.push(`${label} 批号 "${r.batchNo}" 格式异常（预期 XX-X-XXX）`);
+      if (r.batchNo && !/^\d{2}-\d{1,2}-\d{3}[Jst]?$/.test(r.batchNo)) {
+        warnings.push(`${label} 批号 "${r.batchNo}" 格式异常（预期 XX-X-XXX 或 XX-X-XXX字母[J/s/t]）`);
       }
 
       return r;
