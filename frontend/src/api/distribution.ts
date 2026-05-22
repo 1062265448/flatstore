@@ -66,12 +66,14 @@ export const searchInventory = (keyword: string, limit?: number) => {
 }
 
 // AI 识别
-export const aiRecognize = (file: File) => {
+export const aiRecognize = (file: File, model: string = 'zhipu', signal?: AbortSignal) => {
   const formData = new FormData()
   formData.append('file', file)
   return request.post<{ results: AiRecognizeResult[]; historyId: number }>('/distribution/inventory/ai-recognize', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    params: { model },
     timeout: 120000,
+    signal,
   } as AxiosRequestConfig)
 }
 

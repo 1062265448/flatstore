@@ -84,9 +84,9 @@
           <option value="">全部规格</option>
           <option value="整板">整板</option>
           <option value="镍条">镍条</option>
-          <option value="100*100">100*100</option>
-          <option value="50*50">50*50</option>
-          <option value="25*25">25*25</option>
+          <option value="100×100">100×100</option>
+          <option value="50×50">50×50</option>
+          <option value="25×25">25×25</option>
         </select>
 
         <div class="date-picker-wrap">

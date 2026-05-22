@@ -11,6 +11,15 @@
       <div class="upload-section glass-card fade-in" :style="{ animationDelay: '0.1s' }">
         <div class="section-header">
           <h3>图像识别</h3>
+          <div class="model-selector">
+            <div class="model-slider" :class="selectedModel"></div>
+            <button
+              v-for="m in modelOptions"
+              :key="m.value"
+              :class="['model-btn', { active: selectedModel === m.value }]"
+              @click="selectedModel = m.value"
+            >{{ m.label }}</button>
+          </div>
         </div>
 
         <div
@@ -62,13 +71,20 @@
 
         <div class="action-buttons">
           <button
+            v-if="!uploading"
             class="btn-pill btn-primary"
-            :class="{ loading: uploading }"
-            :disabled="!selectedFile || uploading"
+            :disabled="!selectedFile"
             @click="handleRecognize"
           >
-            <span v-if="uploading" class="btn-spinner"></span>
-            {{ uploading ? '识别中...' : '开始识别' }}
+            开始识别
+          </button>
+          <button
+            v-else
+            class="btn-pill btn-danger"
+            @click="handleCancelRecognize"
+          >
+            <span class="btn-spinner"></span>
+            取消识别
           </button>
           <button class="btn-pill btn-ghost" @click="handleReset">重置</button>
         </div>
@@ -95,6 +111,7 @@
                     <th>包号</th>
                     <th>批号</th>
                     <th>品级</th>
+                    <th>规格</th>
                     <th>产品类型</th>
                     <th>片数</th>
                     <th>净重(kg)</th>
@@ -102,10 +119,11 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, index) in recognizeResults" :key="index" :class="{ 'weight-warning': item.netWeight < 1000 || item.netWeight > 2500 }">
+                  <tr v-for="(item, index) in recognizeResults" :key="index" :class="{ 'weight-warning': isWeightAbnormal(item) }">
                     <td>{{ item.packageNo || '-' }}</td>
                     <td class="batch-no">{{ item.batchNo || '-' }}</td>
                     <td><span class="tag tag-info">{{ item.grade || '-' }}</span></td>
+                    <td>{{ item.specification || '-' }}</td>
                     <td>{{ item.productType || '-' }}</td>
                     <td>{{ item.pieceCount || '-' }}</td>
                     <td class="weight">{{ (item.netWeight || 0).toFixed(1) }}</td>
@@ -114,7 +132,7 @@
                 </tbody>
                 <tfoot v-if="recognizeResults.length">
                   <tr class="summary-row">
-                    <td colspan="5" class="summary-label">合计</td>
+                    <td colspan="6" class="summary-label">合计</td>
                     <td class="weight">{{ recognizeTotalWeight }} kg</td>
                     <td>{{ recognizeTotalPieces }}块</td>
                   </tr>
@@ -189,7 +207,6 @@
           </div>
 
           <div v-if="!historyList.length" class="empty-state">
-            <span class="empty-icon">📋</span>
             <span class="empty-text">暂无识别历史</span>
           </div>
         </div>
@@ -360,6 +377,7 @@
                         <th>包号</th>
                         <th>批号</th>
                         <th>品级</th>
+                        <th>规格</th>
                         <th>产品类型</th>
                         <th>片数</th>
                         <th>净重(kg)</th>
@@ -371,6 +389,7 @@
                         <td>{{ item.packageNo || '-' }}</td>
                         <td class="batch-no">{{ item.batchNo || '-' }}</td>
                         <td><span class="tag tag-info">{{ item.grade || '-' }}</span></td>
+                        <td>{{ item.specification || '-' }}</td>
                         <td>{{ item.productType || '-' }}</td>
                         <td>{{ item.pieceCount || '-' }}</td>
                         <td class="weight">{{ (item.netWeight || 0).toFixed(1) }}</td>
@@ -379,7 +398,7 @@
                     </tbody>
                     <tfoot v-if="parsedResults.length">
                       <tr class="summary-row">
-                        <td colspan="5" class="summary-label">合计</td>
+                        <td colspan="6" class="summary-label">合计</td>
                         <td class="weight">{{ parsedTotalWeight }} kg</td>
                         <td>{{ parsedTotalPieces }}块</td>
                       </tr>
@@ -431,6 +450,7 @@ const uploadRef = ref<HTMLInputElement>()
 const selectedFile = ref<File | null>(null)
 const previewUrl = ref<string>('')
 const uploading = ref(false)
+const abortController = ref<AbortController | null>(null)
 const isDragOver = ref(false)
 const recognizeResults = ref<AiRecognizeResult[]>([])
 const currentHistoryId = ref<number | null>(null)
@@ -548,12 +568,29 @@ const handleRemove = () => {
   }
 }
 
+const handleCancelRecognize = () => {
+  abortController.value?.abort()
+}
+
 const handleReset = () => {
   handleRemove()
   recognizeResults.value = []
 }
 
 const recognizeWarnings = ref<string[]>([])
+
+const selectedModel = ref<'zhipu' | 'doubao'>('zhipu')
+const modelOptions = [
+  { value: 'zhipu' as const, label: '智谱' },
+  { value: 'doubao' as const, label: '豆包' },
+]
+
+const isWeightAbnormal = (item: AiRecognizeResult): boolean => {
+  const w = item.netWeight || 0
+  const isRange = typeof item.packageNo === 'string' && /^\d+\s*[-–—]\s*\d+$/.test(item.packageNo)
+  if (isRange) return w <= 0 || w > 5000
+  return w < 1000 || w > 2500
+}
 
 const handleRecognize = async () => {
   if (!selectedFile.value) {
@@ -562,8 +599,10 @@ const handleRecognize = async () => {
   }
 
   uploading.value = true
+  const ctrl = new AbortController()
+  abortController.value = ctrl
   try {
-    const res = await aiRecognize(selectedFile.value)
+    const res = await aiRecognize(selectedFile.value, selectedModel.value, ctrl.signal)
     recognizeResults.value = (res as any).results || res as any
     currentHistoryId.value = (res as any).historyId || null
     recognizeWarnings.value = (res as any).warnings || []
@@ -576,18 +615,23 @@ const handleRecognize = async () => {
       showToast?.(`数据校验：${recognizeWarnings.value.join('；')}`, 'warning')
     }
     fetchHistory()
-  } catch {
-    // 错误已在 API 层处理
+  } catch (err: any) {
+    if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {
+      showToast?.('识别已取消', 'warning')
+    }
   } finally {
     uploading.value = false
+    abortController.value = null
   }
 }
 
 const handleBatchCreate = () => {
   importForm.batchNo = ''
   importForm.grade = ''
-  importForm.specification = ''
   importForm.location = ''
+  // Auto-fill specification from AI results
+  const specs = [...new Set(recognizeResults.value.map(r => r.specification).filter(Boolean))]
+  importForm.specification = specs.length === 1 ? specs[0]! : ''
   importVisible.value = true
 }
 
@@ -600,13 +644,13 @@ const handleImportSubmit = async () => {
       packageNo: String(r.packageNo || ''),
       batchNo: importForm.batchNo || String(r.batchNo || ''),
       grade: importForm.grade || r.grade || '',
-      specification: importForm.specification || '',
+      specification: importForm.specification || r.specification || '',
       productType: r.productType || '',
       weight: (r.netWeight || 0) as number,
       pieceCount: r.pieceCount || 0,
       location: importForm.location,
       sourceType: 'ai_recognize',
-      sourceImage: currentHistory.value?.imageUrl || '',
+      sourceImage: currentHistory.value?.imageUrl || historyList.value.find(h => h.id === currentHistoryId.value)?.imageUrl || '',
     }))
 
     await batchCreateInventory({ items, recognitionHistoryId: currentHistoryId.value || undefined })
@@ -719,6 +763,56 @@ onMounted(() => {
 .upload-section,
 .history-section {
   padding: var(--spacing-lg);
+}
+
+.model-selector {
+  display: flex;
+  position: relative;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-pill);
+  padding: 2px;
+  height: 28px;
+}
+
+.model-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  height: calc(100% - 4px);
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 1px 4px rgba(0, 113, 227, 0.25);
+  transition: left var(--transition-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+
+  &.doubao {
+    left: calc(50%);
+  }
+}
+
+.model-btn {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  padding: 5px 14px;
+  border: none;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
+  white-space: nowrap;
+
+  &.active {
+    color: white;
+  }
+
+  &:hover:not(.active) {
+    color: var(--color-text-primary);
+  }
 }
 
 .section-header {

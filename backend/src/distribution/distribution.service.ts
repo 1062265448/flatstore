@@ -4,7 +4,7 @@ import { CreateInventoryDto, UpdateInventoryDto } from './dto/inventory.dto';
 import { CreateOrderDto, UpdateOrderDto, ShipOrderDto } from './dto/order.dto';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
 import { StockStatus, OrderStatus } from '@prisma/client';
-import { QwenAIService } from '../common/services/qwen-ai.service';
+import { QwenAIService, AiModelType } from '../common/services/qwen-ai.service';
 import { Prisma } from '@prisma/client';
 import * as fs from 'fs';
 import { customAlphabet } from 'nanoid';
@@ -333,7 +333,7 @@ export class DistributionService implements OnModuleInit {
     });
   }
 
-  async aiRecognize(file: Express.Multer.File) {
+  async aiRecognize(file: Express.Multer.File, modelType: AiModelType = 'zhipu') {
     if (!file) {
       throw new Error('请上传图片文件');
     }
@@ -344,7 +344,7 @@ export class DistributionService implements OnModuleInit {
     let aiResults: any[];
     let warnings: string[] = [];
     try {
-      aiResults = await this.qwenAI.recognizeImage(base64);
+      aiResults = await this.qwenAI.recognizeImage(base64, modelType);
       // 交叉校验 + 纠错
       const validated = this.qwenAI.crossValidate(aiResults);
       aiResults = validated.results;

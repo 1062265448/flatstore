@@ -223,7 +223,7 @@
               <div v-if="!isEdit" class="stock-section">
                 <div class="stock-header">
                   <h4>
-                    <span class="stock-icon">📦</span>
+                    
                     选择库存
                   </h4>
                   <div class="stock-search">
@@ -275,7 +275,7 @@
               <div class="items-section">
                 <div class="items-header">
                   <h4>
-                    <span class="items-icon">{{ isEdit ? '📋' : '📦' }}</span>
+                    <span class="items-icon"></span>
                     {{ isEdit ? '配货明细（仅可编辑重量和片数）' : '配货明细' }}
                   </h4>
                   <span class="items-count">{{ form.items.length }} 项</span>
@@ -354,7 +354,7 @@
                       class="copy-btn"
                       title="复制单号"
                       @click="copyOrderNo(currentOrder.orderNo)"
-                    >📋</button>
+                    >复制</button>
                   </span>
                 </div>
                 <div class="detail-item">
@@ -496,10 +496,10 @@ const productTypeOptions = [
 const specificationOptions = [
   '整板',
   '镍条',
-  '100*100',
-  '50*50',
-  '25*25',
-  '20*20',
+  '100×100',
+  '50×50',
+  '25×25',
+  '20×20',
   '镍包',
 ]
 
@@ -534,7 +534,7 @@ const handleStockSearch = (keyword: string) => {
   if (searchTimer) clearTimeout(searchTimer)
   if (!keyword.trim()) {
     // 清空搜索时重新加载初始数据
-    inventoryStore.fetchInventory({ page: 1, limit: 50, status: 'available' }).then(() => {
+    inventoryStore.fetchInventory({ page: 1, limit: 200, status: 'available' }).then(() => {
       availableStocks.value = inventoryStore.inventoryList
     })
     return
@@ -721,7 +721,7 @@ const handleCreate = async () => {
     items: [],
   })
   // 搜索加载可用库存（初始加载前50条）
-  await inventoryStore.fetchInventory({ page: 1, limit: 50, status: 'available' })
+  await inventoryStore.fetchInventory({ page: 1, limit: 200, status: 'available' })
   availableStocks.value = inventoryStore.inventoryList
   dialogVisible.value = true
 }

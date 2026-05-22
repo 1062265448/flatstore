@@ -136,8 +136,12 @@ export class DistributionController {
       },
     }),
   )
-  aiRecognize(@UploadedFile() file: Express.Multer.File) {
-    return this.service.aiRecognize(file);
+  aiRecognize(
+    @UploadedFile() file: Express.Multer.File,
+    @Query('model') model?: string,
+  ) {
+    const modelType = model === 'doubao' ? 'doubao' : 'zhipu';
+    return this.service.aiRecognize(file, modelType);
   }
 
   // ==================== 客户管理 ====================

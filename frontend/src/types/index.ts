@@ -182,8 +182,8 @@ export interface AiRecognizeResult {
   grade: string
   productType: string
   batchNo: string
-  inspector?: string
   date?: string
+  specification?: string
 }
 
 export interface AiRecognitionHistory {

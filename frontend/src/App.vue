@@ -16,7 +16,6 @@
             :to="item.path"
             class="nav-link"
             :class="{ active: isActive(item.path) }"
-            :style="{ animationDelay: `${index * 0.05}s` }"
           >
             <span class="nav-link-text">{{ item.name }}</span>
             <span class="nav-link-indicator"></span>
@@ -278,8 +277,7 @@ onUnmounted(() => {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   text-decoration: none;
-  transition: all var(--transition-normal);
-  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  transition: background var(--transition-normal), color var(--transition-normal);
 
   &:hover {
     background: var(--color-bg-hover);
