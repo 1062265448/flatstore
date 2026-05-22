@@ -116,7 +116,7 @@
 
 <script setup lang="ts">
 import { computed, ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
@@ -237,6 +237,7 @@ onMounted(() => {
 })
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const formRef = ref<FormInstance>()
@@ -561,12 +562,10 @@ const handleLogin = async () => {
       border: none !important;
       background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
       box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35) !important;
-      transition: all 0.3s ease !important;
+      transition: background 0.3s ease, box-shadow 0.3s ease !important;
       &:hover {
         box-shadow: 0 6px 30px rgba(99, 102, 241, 0.5) !important;
-        transform: translateY(-1px) !important;
       }
-      &:active { transform: translateY(0) !important; }
       :deep(.el-button__text) {
         color: white !important;
         letter-spacing: 4px;

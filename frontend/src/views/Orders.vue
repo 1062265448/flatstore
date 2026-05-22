@@ -309,9 +309,20 @@
 
             <div class="modal-footer">
               <div class="footer-info">
-                <span class="total-label">总计</span>
-                <span class="total-weight">{{ totalWeight }}kg</span>
-                <span class="total-pieces">{{ totalPieces }}片</span>
+                <div v-if="categorySummary.length" class="category-breakdown">
+                  <div v-for="cat in categorySummary" :key="cat.productType + cat.grade + cat.specification" class="category-row">
+                    <span class="cat-type">{{ cat.productType }}</span>
+                    <span class="cat-grade">{{ cat.grade }}</span>
+                    <span class="cat-spec">{{ cat.specification }}</span>
+                    <span class="cat-weight">{{ cat.weight.toFixed(3) }}kg</span>
+                    <span class="cat-pieces">{{ cat.pieces }}片</span>
+                  </div>
+                </div>
+                <div class="category-total">
+                  <span class="total-label">合计</span>
+                  <span class="total-weight">{{ totalWeight }}kg</span>
+                  <span class="total-pieces">{{ totalPieces }}片</span>
+                </div>
               </div>
               <div class="footer-actions">
                 <button class="btn-pill btn-ghost" @click="dialogVisible = false">取消</button>
@@ -545,6 +556,23 @@ const totalWeight = computed(() => {
 
 const totalPieces = computed(() => {
   return form.items.reduce((sum, item) => sum + (Number(item.pieceCount) || 0), 0)
+})
+
+// 按产品类型+品级+规格分类汇总
+const categorySummary = computed(() => {
+  const map = new Map<string, { productType: string; grade: string; specification: string; weight: number; pieces: number }>()
+  for (const item of form.items) {
+    const stock = availableStocks.value.find(s => s.id === item.stockId)
+    const pt = stock?.productType ? (stock.productType === '电积镍板' ? '电积镍' : stock.productType) : '-'
+    const grade = stock?.grade || '-'
+    const spec = stock?.specification || '-'
+    const key = `${pt}|${grade}|${spec}`
+    if (!map.has(key)) map.set(key, { productType: pt, grade, specification: spec, weight: 0, pieces: 0 })
+    const entry = map.get(key)!
+    entry.weight += Number(item.weight) || 0
+    entry.pieces += Number(item.pieceCount) || 0
+  }
+  return [...map.values()]
 })
 
 // 检查库存是否已选
@@ -1526,12 +1554,11 @@ onMounted(() => {
   background: var(--color-bg);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-normal);
+  transition: background var(--transition-normal), border-color var(--transition-normal);
   border: 2px solid transparent;
 
   &:hover {
     background: var(--color-bg-hover);
-    transform: translateX(4px);
   }
 
   &.selected {
@@ -1633,8 +1660,46 @@ onMounted(() => {
 
 .footer-info {
   display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.category-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--font-size-xs);
+}
+
+.category-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary);
+
+  .cat-type, .cat-grade, .cat-spec {
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--color-bg-tertiary);
+  }
+
+  .cat-weight {
+    font-family: monospace;
+    font-weight: 500;
+    color: var(--color-primary);
+  }
+
+  .cat-pieces {
+    color: var(--color-text-tertiary);
+  }
+}
+
+.category-total {
+  display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  padding-top: 4px;
+  border-top: 1px solid var(--color-border);
 }
 
 .total-label {

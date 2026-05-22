@@ -214,10 +214,10 @@
         </tbody>
         <tfoot v-if="inventoryStore.inventoryList.length">
           <tr class="summary-row">
-            <td colspan="4" class="summary-label">合计</td>
+            <td colspan="5" class="summary-label">合计</td>
             <td class="weight">{{ totalWeight }} kg</td>
             <td>{{ totalPieces }}</td>
-            <td colspan="4"></td>
+            <td colspan="5"></td>
           </tr>
         </tfoot>
       </table>
@@ -1360,11 +1360,10 @@ onMounted(() => {
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 
   &:hover {
     background: var(--color-bg-hover);
-    transform: translateX(4px);
   }
 }
 

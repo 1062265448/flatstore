@@ -102,7 +102,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, index) in recognizeResults" :key="index">
+                  <tr v-for="(item, index) in recognizeResults" :key="index" :class="{ 'weight-warning': item.netWeight < 1000 || item.netWeight > 2500 }">
                     <td>{{ item.packageNo || '-' }}</td>
                     <td class="batch-no">{{ item.batchNo || '-' }}</td>
                     <td><span class="tag tag-info">{{ item.grade || '-' }}</span></td>
@@ -232,7 +232,10 @@
                 </div>
                 <div class="form-item">
                   <label>统一品级</label>
-                  <input v-model="importForm.grade" type="text" placeholder="为空则使用识别结果中的品级" />
+                  <select v-model="importForm.grade" class="grade-select">
+                    <option value="">使用识别结果中的品级</option>
+                    <option v-for="g in gradeOptions" :key="g" :value="g">{{ g }}</option>
+                  </select>
                 </div>
                 <div class="form-item">
                   <label>规格</label>
@@ -393,6 +396,11 @@
 
             <div class="modal-footer">
               <button class="btn-pill btn-ghost" @click="historyDetailVisible = false">关闭</button>
+              <button
+                v-if="parsedResults.length"
+                class="btn-pill btn-primary"
+                @click="handleImportFromHistory"
+              >导入库存</button>
             </div>
           </div>
         </div>
@@ -458,6 +466,8 @@ const locationOptions = [
   { value: '二厂区', label: '二厂区', color: '#3b82f6' },
   { value: '三厂区', label: '三厂区', color: '#10b981' },
 ]
+
+const gradeOptions = ['9997', '9996', '9950', '9920']
 
 const historyDetailVisible = ref(false)
 const currentHistory = ref<AiRecognitionHistory | null>(null)
@@ -587,6 +597,7 @@ const handleImportSubmit = async () => {
   importing.value = true
   try {
     const items: CreateInventoryDto[] = recognizeResults.value.map((r) => ({
+      packageNo: String(r.packageNo || ''),
       batchNo: importForm.batchNo || String(r.batchNo || ''),
       grade: importForm.grade || r.grade || '',
       specification: importForm.specification || '',
@@ -595,6 +606,7 @@ const handleImportSubmit = async () => {
       pieceCount: r.pieceCount || 0,
       location: importForm.location,
       sourceType: 'ai_recognize',
+      sourceImage: currentHistory.value?.imageUrl || '',
     }))
 
     await batchCreateInventory({ items, recognitionHistoryId: currentHistoryId.value || undefined })
@@ -638,6 +650,17 @@ const goToHistoryPage = (page: number) => {
 const handleViewHistory = (row: AiRecognitionHistory) => {
   currentHistory.value = row
   historyDetailVisible.value = true
+}
+
+const handleImportFromHistory = () => {
+  if (!parsedResults.value.length) {
+    showToast?.('该记录无可导入的识别结果', 'warning')
+    return
+  }
+  recognizeResults.value = [...parsedResults.value]
+  currentHistoryId.value = currentHistory.value!.id
+  historyDetailVisible.value = false
+  handleBatchCreate()
 }
 
 const handleDeleteHistory = async (id: number) => {
@@ -723,7 +746,7 @@ onMounted(() => {
   padding: 48px 24px;
   text-align: center;
   cursor: pointer;
-  transition: all var(--transition-normal);
+  transition: background var(--transition-normal), border-color var(--transition-normal);
   background: var(--color-bg-tertiary);
   min-height: 220px;
   display: flex;
@@ -765,7 +788,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   margin-bottom: var(--spacing-md);
-  transition: all var(--transition-normal);
+  transition: background var(--transition-normal), border-color var(--transition-normal);
   box-shadow: var(--glass-shadow);
 
   .upload-area:hover & {
@@ -829,11 +852,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
   box-shadow: var(--glass-shadow);
 
   &:hover {
-    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     background: var(--color-bg-hover);
   }
 
@@ -942,6 +965,12 @@ onMounted(() => {
   }
 }
 
+tr.weight-warning td {
+  background: rgba(255, 149, 0, 0.1);
+  color: #c77c00;
+  font-weight: 600;
+}
+
 .result-actions {
   margin-top: var(--spacing-lg);
   text-align: center;
@@ -957,25 +986,13 @@ onMounted(() => {
 }
 
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideDown {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 // ==================== 历史区 ====================
@@ -1020,13 +1037,12 @@ onMounted(() => {
   padding: var(--spacing-md);
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-md);
-  transition: all var(--transition-normal);
+  transition: background var(--transition-normal), border-color var(--transition-normal);
   animation: fadeIn 0.4s ease forwards;
   opacity: 0;
 
   &:hover {
     background: var(--color-bg-hover);
-    transform: translateX(4px);
   }
 }
 
@@ -1317,7 +1333,7 @@ onMounted(() => {
     margin-bottom: var(--spacing-xs);
   }
 
-  input {
+  input, select {
     width: 100%;
     padding: 10px 14px;
     border: 1px solid var(--color-border);
@@ -1532,14 +1548,8 @@ onMounted(() => {
 
 // fadeIn 动画
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 // ==================== 响应式 ====================

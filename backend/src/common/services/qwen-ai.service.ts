@@ -18,40 +18,22 @@ export class QwenAIService {
   private readonly TIMEOUT_MS = 120000;
 
   async recognizeImage(base64: string): Promise<AiRecognizeResult[]> {
-    const prompt = `你是一个票据识别专家，专门识别镍板产品票据。请仔细分析这张图片中的表格数据。
+    const prompt = `识别镍板票据表格，提取每包数据行(排除合计/小计行)。注意：区分"净重"和"净重小计"列，只取单包净重。
 
-## 识别要求
+返回JSON数组，每个对象：
+{"packageNo":0,"pieceCount":0,"netWeight":0,"grade":"","productType":"","batchNo":"","inspector":null,"date":""}
 
-1. **牌号（grade）**：即图片中的"品级"字段，通常为 4 位数字，如 9996、9950、9999 等。请准确识别数字，不要遗漏或篡改。
-2. **批号（batchNo）**：格式为"XX-X-XXX"或"XX-X-XXX字母"，例如 26-7-090、26-12-005、26-1-109J、26-3-045t 等。末尾字母可选，仅限 J、s、t。请保持原始格式，不要转换。
-3. **产品类型（productType）**：识别图片左上角"品名"右侧的文字，通常为"镍板"或"电积镍"等。
-4. **包号（packageNo）**：表格中的序号/包号列，通常为数字。
-5. **片数（pieceCount）**：每包对应的片数。
-6. **净重（netWeight）**：每包的净重量，单位为**千克（kg）**。
-7. **检验员（inspector）**：识别检验人员姓名，如无则设为 null。
-8. **日期（date）**：识别票据上的日期，格式统一为 YYYY-MM-DD。
+字段说明：
+- grade: 品级，4位数字如9996/9950
+- batchNo: 批号，格式XX-X-XXX，末尾字母仅J/s/t
+- productType: 品名，如"镍板""电积镍"
+- packageNo: 包号
+- pieceCount: 片数
+- netWeight: 净重(kg)，整板单包通常1000~2500kg
+- inspector: 检验员，无则null
+- date: YYYY-MM-DD
 
-## 注意事项
-
-- 提取表格中的**所有数据行**，排除合计行/汇总行/小计行
-- 所有行的 productType 应为同一个值（同一张票据的产品类型一致）
-- 牌号和批号是关键字段，请仔细核对，确保准确
-- 如果某个字段无法识别或模糊不清，设为 null，不要猜测
-- 净重可能是小数，请保留原始精度，单位统一使用**千克**
-- 单包镍板重量通常在 500~5000 kg 范围，如果识别到的数值超过 10000 kg，请仔细核验是否多读了小数点
-- 置信度要求：只返回你有把握识别的行，如果某行数据模糊无法确认，请跳过该行
-
-请返回一个 JSON 数组，每个对象包含以下字段：
-- packageNo: 包号（数字，无法识别则为 0）
-- pieceCount: 片数（数字，无法识别则为 0）
-- netWeight: 净重（数字，单位：千克，无法识别则为 0）
-- grade: 牌号（字符串，如"9996"、"9950"，无法识别则为 ""）
-- productType: 产品类型（字符串，如"镍板"，无法识别则为 ""）
-- batchNo: 批号（字符串，格式如"26-7-090"或"26-1-109J"，末尾字母仅限 J/s/t，无法识别则为 ""）
-- inspector: 检验员（字符串或 null）
-- date: 日期（字符串，格式 YYYY-MM-DD，无法识别则为 ""）
-
-只返回 JSON 数组，不要其他文字说明。不要用 markdown 代码块包裹。`;
+无法识别的字段按默认值返回。只返回JSON数组，不要markdown代码块或其他文字。`;
 
     let lastError: Error | null = null;
 
@@ -81,16 +63,17 @@ export class QwenAIService {
 
   private async callAPI(prompt: string, base64: string): Promise<AiRecognizeResult[]> {
     const response = await fetch(
-      'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+      'https://open.bigmodel.cn/api/paas/v4/chat/completions',
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${process.env.QWEN_API_KEY}`,
+          Authorization: `Bearer ${process.env.ZHIPU_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'qwen-vl-plus',
+          model: 'glm-4.6v-flash',
           temperature: 0.1,
+          max_tokens: 4096,
           messages: [
             {
               role: 'user',
@@ -122,9 +105,24 @@ export class QwenAIService {
   }
 
   private parseResponse(content: string): AiRecognizeResult[] {
+    // Strip markdown code block wrappers (e.g. ```json ... ```)
+    let cleaned = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/,'').trim();
+
     // Try to extract JSON array from response
-    let jsonMatch = content.match(/\[[\s\S]*\]/);
+    let jsonMatch = cleaned.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
+      // No closing bracket — likely truncated. Try to complete the array.
+      const openIdx = cleaned.indexOf('[');
+      if (openIdx !== -1) {
+        const partial = cleaned.substring(openIdx);
+        const completed = this.tryFixTruncatedJSON(partial);
+        if (completed) {
+          try {
+            const items = JSON.parse(completed);
+            return items.map((item: any) => this.normalizeResult(item));
+          } catch { /* fall through */ }
+        }
+      }
       try {
         const parsed = JSON.parse(content);
         const items = Array.isArray(parsed) ? parsed : [parsed];
@@ -140,6 +138,33 @@ export class QwenAIService {
     } catch {
       throw new Error(`JSON 解析失败: ${jsonMatch[0].substring(0, 200)}`);
     }
+  }
+
+  private tryFixTruncatedJSON(partial: string): string | null {
+    // Count open brackets/braces to determine how many are unclosed
+    let openBrackets = 0, openBraces = 0;
+    let inString = false, escape = false;
+    for (const ch of partial) {
+      if (escape) { escape = false; continue; }
+      if (ch === '\\') { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '[') openBrackets++;
+      if (ch === ']') openBrackets--;
+      if (ch === '{') openBraces++;
+      if (ch === '}') openBraces--;
+    }
+    if (openBrackets < 0 || openBraces < 0) return null;
+    // Close the last incomplete object first, then the array
+    let fixed = partial.trimEnd();
+    // Remove trailing comma or partial key/value
+    fixed = fixed.replace(/,\s*$/, '');
+    // Remove trailing partial token (incomplete string/value after colon)
+    fixed = fixed.replace(/:\s*"[^"]*$/, ': null');
+    fixed = fixed.replace(/:\s*[^,}\]]+$/, '');
+    while (openBraces > 0) { fixed += '}'; openBraces--; }
+    while (openBrackets > 0) { fixed += ']'; openBrackets--; }
+    return fixed;
   }
 
   private validateResults(items: AiRecognizeResult[]): AiRecognizeResult[] {
@@ -158,16 +183,44 @@ export class QwenAIService {
   /**
    * 交叉校验：对 AI 结果进行统计合理性检查
    * 返回经过纠错的结果和警告信息列表
+   *
+   * 整板单包重量合理范围：1000~2500 kg
+   * - 超过 2500：可能误将小计/合计识别为单包净重，尝试自动校正
+   * - 低于 1000：可能误读小数点或识别为残次品，发出警告
    */
   crossValidate(items: AiRecognizeResult[]): { results: AiRecognizeResult[]; warnings: string[] } {
     const warnings: string[] = [];
+    const SINGLE_PKG_MIN = 1000;
+    const SINGLE_PKG_MAX = 2500;
+    const totalCount = items.length;
+
     const results = items.map((item, i) => {
       const r = { ...item };
       const label = `第${i + 1}行（包号${r.packageNo || '-'}）`;
 
-      // 1. 重量范围校验：单包镍板重量范围 500~5000 kg
-      if (r.netWeight > 10000) {
-        warnings.push(`${label} 净重 ${r.netWeight}kg 超过 10 吨（10000kg），请人工确认`);
+      // 1. 整板单包重量校验：1000~2500 kg
+      if (r.netWeight > SINGLE_PKG_MAX) {
+        // 疑似小计/合计混入：如果总重量能被包数整除（误差 <5%），自动校正
+        if (totalCount > 1) {
+          const avgWeight = r.netWeight / totalCount;
+          if (avgWeight >= SINGLE_PKG_MIN && avgWeight <= SINGLE_PKG_MAX) {
+            warnings.push(`${label} 净重 ${r.netWeight}kg 超出单包上限 ${SINGLE_PKG_MAX}kg，疑似将小计识别为单包净重，已自动校正为 ${avgWeight.toFixed(1)}kg`);
+            r.netWeight = parseFloat(avgWeight.toFixed(1));
+          } else {
+            warnings.push(`${label} 净重 ${r.netWeight}kg 超出单包上限 ${SINGLE_PKG_MAX}kg，无法自动校正，请人工复核`);
+          }
+        } else {
+          warnings.push(`${label} 净重 ${r.netWeight}kg 超出单包上限 ${SINGLE_PKG_MAX}kg，请人工复核`);
+        }
+      } else if (r.netWeight > 0 && r.netWeight < SINGLE_PKG_MIN) {
+        // 低于 1000kg：可能是残次品/半包，也可能是误读小数点
+        // 如果 < 10kg，可能是 AI 误将吨输出为千克（已在 normalizeResult 处理），或小数点误读
+        if (r.netWeight < 10) {
+          // 已在 normalizeResult 做过 ×1000 纠正，如果仍 <10 则说明确实是极小值
+          warnings.push(`${label} 净重 ${r.netWeight}kg 远低于单包下限 ${SINGLE_PKG_MIN}kg，可能存在单位错误，请人工复核`);
+        } else {
+          warnings.push(`${label} 净重 ${r.netWeight}kg 低于单包下限 ${SINGLE_PKG_MIN}kg，请确认是否为残次品或半包`);
+        }
       } else if (r.netWeight <= 0) {
         warnings.push(`${label} 净重为 0 或负值，请人工确认`);
       }
@@ -179,7 +232,7 @@ export class QwenAIService {
       }
 
       // 3. 品级格式校验
-      const gradeMatch = r.grade && /^(9999|9997|9996|9950|9920|99)$/.test(r.grade);
+      const gradeMatch = r.grade && /^(9997|9996|9950|9920)$/.test(r.grade);
       if (r.grade && !gradeMatch) {
         warnings.push(`${label} 品级 "${r.grade}" 不在常见品级列表中，请人工确认`);
       }
@@ -197,6 +250,18 @@ export class QwenAIService {
       const grades = [...new Set(results.map(r => r.grade).filter(Boolean))];
       if (grades.length > 1) {
         warnings.push(`同一票据出现多个品级 [${grades.join(', ')}]，请确认是否为混批`);
+      }
+    }
+
+    // 6. 全局小计/合计行检测：如果所有包净重之和等于某个单包净重，说明该行是合计行
+    if (results.length > 1) {
+      const sumWeight = results.reduce((s, r) => s + r.netWeight, 0);
+      const avgWeight = sumWeight / results.length;
+      // 如果某包的净重 ≈ 所有包净重之和（误差 <2%），说明这是合计行误入
+      for (const r of results) {
+        if (r.netWeight > SINGLE_PKG_MAX && Math.abs(r.netWeight - sumWeight) / sumWeight < 0.02) {
+          warnings.push(`包号${r.packageNo}的净重 ${r.netWeight}kg ≈ 全部包净重合计 ${sumWeight.toFixed(1)}kg，高度疑似合计行被误识别为数据行，建议删除该行`);
+        }
       }
     }
 
@@ -227,6 +292,8 @@ export class QwenAIService {
     let batchNo = String(item.batchNo || '').trim();
     if (batchNo) {
       batchNo = batchNo.replace(/\s+/g, '');
+      // 批号末尾字母纠正：J 保持大写，S/T 自动转小写
+      batchNo = batchNo.replace(/([0-9])([ST])$/, (_, prefix, letter) => prefix + letter.toLowerCase());
     }
 
     const grade = String(item.grade || '').trim();
@@ -244,7 +311,7 @@ export class QwenAIService {
 
     let netWeight = Number(item.netWeight) || 0;
 
-    // 单位纠正：AI 现在返回 kg，正常单包 500~5000 kg
+    // 单位纠正：AI 返回 kg，整板单包正常范围 1000~2500 kg
     // < 10 kg 说明 AI 可能误将千克输出为吨（如 2→2000kg）
     if (netWeight > 0 && netWeight < 10) {
       this.logger.warn(`normalizeResult: netWeight=${netWeight} < 10kg, assuming AI output in tons, ×1000 → ${netWeight * 1000}`);

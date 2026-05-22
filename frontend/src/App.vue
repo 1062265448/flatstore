@@ -310,11 +310,9 @@ onUnmounted(() => {
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -335,12 +333,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition-normal);
+  transition: background var(--transition-normal), color var(--transition-normal);
 
   &:hover {
     background: var(--color-bg-hover);
     color: var(--color-text-primary);
-    transform: scale(1.1);
   }
 
   .theme-icon {

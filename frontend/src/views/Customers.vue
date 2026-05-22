@@ -226,14 +226,8 @@ onMounted(() => {
 }
 
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 // ==================== 工具栏 ====================
@@ -359,7 +353,7 @@ onMounted(() => {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -370,7 +364,6 @@ onMounted(() => {
 
   &:hover {
     background: rgba(0, 113, 227, 0.1);
-    transform: translateY(-1px);
   }
 
   &.danger {

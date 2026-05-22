@@ -181,10 +181,9 @@ const initInventoryChart = () => {
           label: { show: true, fontSize: 14, fontWeight: 'bold' },
         },
         data: [
-          { value: stats.value?.inventory.available || 0, name: '可用', itemStyle: { color: '#34c759' } },
-          { value: stats.value?.inventory.reserved || 0, name: '已预留', itemStyle: { color: '#ff9500' } },
-          { value: stats.value?.inventory.shipped || 0, name: '已发货', itemStyle: { color: '#8e8e93' } },
-          { value: stats.value?.inventory.issued || 0, name: '已发出', itemStyle: { color: '#0071e3' } },
+          { value: stats.value?.inventory.available || 0, name: '可用', itemStyle: { color: '#6ee7a0' } },
+          { value: stats.value?.inventory.reserved || 0, name: '已预留', itemStyle: { color: '#fbbf5e' } },
+          { value: stats.value?.inventory.shipped || 0, name: '已发出', itemStyle: { color: '#5dacf5' } },
         ],
       },
     ],
@@ -211,7 +210,7 @@ const initOrderChart = () => {
     legend: { ...theme, top: '5%' },
     xAxis: {
       type: 'category',
-      data: ['草稿', '已发货', '已取消'],
+      data: ['草稿', '已发出', '已取消'],
       ...theme,
     },
     yAxis: { type: 'value', ...theme },
@@ -219,9 +218,9 @@ const initOrderChart = () => {
       {
         type: 'bar',
         data: [
-          { value: stats.value?.order.draft || 0, itemStyle: { color: '#8e8e93' } },
-          { value: stats.value?.order.shipped || 0, itemStyle: { color: '#34c759' } },
-          { value: stats.value?.order.cancelled || 0, itemStyle: { color: '#ff3b30' } },
+          { value: stats.value?.order.draft || 0, itemStyle: { color: '#6ee7a0' } },
+          { value: stats.value?.order.shipped || 0, itemStyle: { color: '#5dacf5' } },
+          { value: stats.value?.order.cancelled || 0, itemStyle: { color: '#fbbf5e' } },
         ],
         barWidth: '50%',
         itemStyle: { borderRadius: [8, 8, 0, 0] },
@@ -279,11 +278,9 @@ onUnmounted(() => {
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -326,7 +323,6 @@ onUnmounted(() => {
     color: var(--color-text-primary);
     line-height: 1.15;
     letter-spacing: -0.02em;
-    transition: transform 0.3s ease;
   }
 
   .stat-sub {
@@ -344,7 +340,7 @@ onUnmounted(() => {
     border-radius: 50%;
     transform: translate(-50%, -50%);
     opacity: 0;
-    transition: all 0.5s ease;
+    transition: opacity 0.5s ease, width 0.5s ease, height 0.5s ease;
     z-index: 0;
   }
 
@@ -429,11 +425,6 @@ onUnmounted(() => {
   align-items: center;
   gap: var(--spacing-md);
   text-align: center;
-  transition: transform 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-  }
 }
 
 .weight-value {
@@ -469,11 +460,10 @@ onUnmounted(() => {
   padding: var(--spacing-md);
   border-radius: var(--radius-md);
   background: var(--color-bg-tertiary);
-  transition: all 0.3s ease;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
   cursor: default;
 
   &:hover {
-    transform: translateY(-4px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
   }
 
