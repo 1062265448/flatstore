@@ -97,7 +97,7 @@
                 <span class="result-icon">✓</span>
                 识别结果
               </h4>
-              <span class="results-count">{{ recognizeResults.length }} 条记录 · {{ recognizeTotalWeight }} kg / {{ recognizeTotalPieces }} 块</span>
+              <span class="results-count">{{ recognizeResults.length }} 条记录 · {{ recognizeTotalWeight }} kg<template v-if="recognizeTotalPieces > 0"> / {{ recognizeTotalPieces }} 块</template></span>
             </div>
 
             <div v-if="recognizeWarnings.length" class="validation-warnings">
@@ -134,7 +134,8 @@
                   <tr class="summary-row">
                     <td colspan="6" class="summary-label">合计</td>
                     <td class="weight">{{ recognizeTotalWeight }} kg</td>
-                    <td>{{ recognizeTotalPieces }}块</td>
+                    <td v-if="recognizeTotalPieces > 0">{{ recognizeTotalPieces }}块</td>
+                    <td v-else>-</td>
                   </tr>
                 </tfoot>
               </table>
@@ -400,7 +401,8 @@
                       <tr class="summary-row">
                         <td colspan="6" class="summary-label">合计</td>
                         <td class="weight">{{ parsedTotalWeight }} kg</td>
-                        <td>{{ parsedTotalPieces }}块</td>
+                        <td v-if="parsedTotalPieces > 0">{{ parsedTotalPieces }}块</td>
+                        <td v-else>-</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -511,15 +513,19 @@ const parsedResults = computed(() => {
 const recognizeTotalWeight = computed(() =>
   recognizeResults.value.reduce((sum, r) => sum + (r.netWeight || 0), 0).toFixed(1)
 )
-const recognizeTotalPieces = computed(() =>
-  recognizeResults.value.reduce((sum, r) => sum + (r.pieceCount || 0), 0)
-)
+const recognizeTotalPieces = computed(() => {
+  const isSmallBlock = recognizeResults.value.some(r => typeof r.packageNo === 'string' && /^\d+\s*[-–—]\s*\d+$/.test(r.packageNo))
+  if (isSmallBlock) return 0
+  return recognizeResults.value.reduce((sum, r) => sum + (r.pieceCount || 0), 0)
+})
 const parsedTotalWeight = computed(() =>
   parsedResults.value.reduce((sum, r: any) => sum + (r.netWeight || 0), 0).toFixed(1)
 )
-const parsedTotalPieces = computed(() =>
-  parsedResults.value.reduce((sum, r: any) => sum + (r.pieceCount || 0), 0)
-)
+const parsedTotalPieces = computed(() => {
+  const isSmallBlock = parsedResults.value.some((r: any) => typeof r.packageNo === 'string' && /^\d+\s*[-–—]\s*\d+$/.test(r.packageNo))
+  if (isSmallBlock) return 0
+  return parsedResults.value.reduce((sum, r: any) => sum + (r.pieceCount || 0), 0)
+})
 
 const imagePreviewVisible = ref(false)
 const previewImageUrl = ref('')
@@ -640,6 +646,9 @@ const handleImportSubmit = async () => {
 
   importing.value = true
   try {
+    const rangePattern = /^\d+\s*[-–—]\s*\d+$/
+    const isSmallBlock = recognizeResults.value.some(r => typeof r.packageNo === 'string' && rangePattern.test(r.packageNo))
+
     const items: CreateInventoryDto[] = recognizeResults.value.map((r) => ({
       packageNo: String(r.packageNo || ''),
       batchNo: importForm.batchNo || String(r.batchNo || ''),
@@ -647,7 +656,7 @@ const handleImportSubmit = async () => {
       specification: importForm.specification || r.specification || '',
       productType: r.productType || '',
       weight: (r.netWeight || 0) as number,
-      pieceCount: r.pieceCount || 0,
+      pieceCount: isSmallBlock ? undefined : (r.pieceCount || 0),
       location: importForm.location,
       sourceType: 'ai_recognize',
       sourceImage: currentHistory.value?.imageUrl || historyList.value.find(h => h.id === currentHistoryId.value)?.imageUrl || '',

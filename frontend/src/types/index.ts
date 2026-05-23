@@ -38,7 +38,7 @@ export interface CreateInventoryDto {
   productType?: string
   specification?: string
   weight: number
-  pieceCount: number
+  pieceCount?: number
   location?: string
   nickelContent?: string
   impurityContent?: string
@@ -139,7 +139,7 @@ export interface DistributionOrderItem {
 export interface OrderItemDto {
   stockId: number
   weight: number
-  pieceCount: number
+  pieceCount?: number
 }
 
 export interface CreateOrderDto {

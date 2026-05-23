@@ -19,10 +19,11 @@ export class OrderItemDto {
   @Min(0)
   weight: number;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  pieceCount: number;
+  pieceCount?: number;
 }
 
 export class CreateOrderDto {

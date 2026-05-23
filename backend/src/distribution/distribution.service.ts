@@ -522,7 +522,7 @@ export class DistributionService implements OnModuleInit {
     const orderNo = await this.generateOrderNo();
 
     const totalWeight = dto.items.reduce((sum, item) => sum + item.weight, 0);
-    const totalPieces = dto.items.reduce((sum, item) => sum + item.pieceCount, 0);
+    const totalPieces = dto.items.reduce((sum, item) => sum + (item.pieceCount || 0), 0);
 
     // 校验客户存在性（在事务外）
     const customer = await this.prisma.customer.findUnique({
@@ -574,7 +574,7 @@ export class DistributionService implements OnModuleInit {
             create: dto.items.map((item) => ({
               stockId: item.stockId,
               weight: item.weight,
-              pieceCount: item.pieceCount,
+              pieceCount: item.pieceCount ?? null,
             })),
           },
         },
@@ -615,7 +615,7 @@ export class DistributionService implements OnModuleInit {
       }
 
       const totalWeight = dto.items.reduce((sum, item) => sum + item.weight, 0);
-      const totalPieces = dto.items.reduce((sum, item) => sum + item.pieceCount, 0);
+      const totalPieces = dto.items.reduce((sum, item) => sum + (item.pieceCount || 0), 0);
 
       const result = await this.prisma.$transaction(async (tx) => {
         // 释放旧库存
@@ -663,7 +663,7 @@ export class DistributionService implements OnModuleInit {
               create: dto.items.map((item) => ({
                 stockId: item.stockId,
                 weight: item.weight,
-                pieceCount: item.pieceCount,
+                pieceCount: item.pieceCount ?? null,
               })),
             },
           },

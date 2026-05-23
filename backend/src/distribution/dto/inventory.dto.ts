@@ -34,11 +34,12 @@ export class CreateInventoryDto {
   @Max(10000)
   weight: number;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(1000)
-  pieceCount: number;
+  pieceCount?: number;
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -46,7 +46,7 @@ export class QwenAIService {
 
 票据有两种类型：
 1. 整板票据：每行一包，包号、片数、净重逐一列出，单包净重通常1000~2500kg
-2. 小块镍计量单：箱号列可能是范围(如1-40)，保留范围值作为packageNo；净重是每行对应的净重(可能是小计)；片数通常为1
+2. 小块镍计量单：箱号列可能是范围(如1-40)，保留范围值作为packageNo；净重是每行对应的净重(可能是小计)；片数不填，设为0
 
 返回JSON数组，每个对象：
 {"packageNo":"","pieceCount":0,"netWeight":0,"grade":"","productType":"","batchNo":"","date":"","specification":""}
@@ -56,7 +56,7 @@ export class QwenAIService {
 - grade: 品级，4位数字如9997/9996/9950
 - batchNo: 批号，格式XX-X-XXX，末尾字母仅J/s/t
 - productType: 品名，如"电解镍""电积镍"
-- pieceCount: 片数
+- pieceCount: 片数，小块镍票据填0
 - netWeight: 净重(kg)
 - date: 计量时间，格式YYYY-MM-DD
 - specification: 规格，整板票据填"整板"，小块镍票据填尺寸如"100×100""50×50""25×25"，镍条填"镍条"
@@ -278,7 +278,10 @@ export class QwenAIService {
       }
 
       // 2. 片数合理性
-      if (r.pieceCount < 0) {
+      if (isSmallBlock) {
+        // 小块镍不统计片数
+        r.pieceCount = 0;
+      } else if (r.pieceCount < 0) {
         warnings.push(`${label} 片数为负值，已纠正为 0`);
         r.pieceCount = 0;
       }

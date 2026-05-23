@@ -248,7 +248,7 @@
                     </div>
                     <div class="stock-meta">
                       <span class="stock-weight">{{ Number(stock.weight).toFixed(3) }}kg</span>
-                      <span class="stock-pieces">{{ stock.pieceCount }}片</span>
+                      <span class="stock-pieces">{{ stock.pieceCount ?? '-' }}片</span>
                       <span class="stock-location">{{ stock.location || '-' }}</span>
                     </div>
                     <div class="stock-action">
@@ -404,12 +404,12 @@
                         <td><span class="tag tag-info">{{ item.stock?.grade || '-' }}</span></td>
                         <td>{{ item.stock?.specification || '-' }}</td>
                         <td class="weight">{{ Number(item.weight).toFixed(3) }}</td>
-                        <td>{{ item.pieceCount }}</td>
+                        <td>{{ item.pieceCount ?? '-' }}</td>
                       </tr>
                       <tr v-if="group.items.length > 1" class="summary-row">
                         <td colspan="3" class="summary-label">{{ batchNo }} 小计</td>
                         <td class="weight">{{ group.totalWeight.toFixed(3) }}</td>
-                        <td>{{ group.totalPieces }}</td>
+                        <td>{{ group.totalPieces || '-' }}</td>
                       </tr>
                     </template>
                   </tbody>
@@ -417,7 +417,7 @@
                     <tr class="summary-row">
                       <td colspan="3" class="summary-label">合计</td>
                       <td class="weight">{{ orderTotalWeight }}</td>
-                      <td>{{ orderTotalPieces }}</td>
+                      <td>{{ orderTotalPieces || '-' }}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -555,7 +555,12 @@ const totalWeight = computed(() => {
 })
 
 const totalPieces = computed(() => {
-  return form.items.reduce((sum, item) => sum + (Number(item.pieceCount) || 0), 0)
+  return form.items.reduce((sum, item) => {
+    const stock = availableStocks.value.find(s => s.id === item.stockId)
+    const isSmallBlock = stock?.specification && !['整板', '镍条'].includes(stock.specification)
+    if (isSmallBlock) return sum
+    return sum + (Number(item.pieceCount) || 0)
+  }, 0)
 })
 
 // 按产品类型+品级+规格分类汇总
@@ -570,7 +575,8 @@ const categorySummary = computed(() => {
     if (!map.has(key)) map.set(key, { productType: pt, grade, specification: spec, weight: 0, pieces: 0 })
     const entry = map.get(key)!
     entry.weight += Number(item.weight) || 0
-    entry.pieces += Number(item.pieceCount) || 0
+    const isSmallBlock = stock?.specification && !['整板', '镍条'].includes(stock.specification)
+    if (!isSmallBlock) entry.pieces += Number(item.pieceCount) || 0
   }
   return [...map.values()]
 })
@@ -612,7 +618,7 @@ const form = reactive<CreateOrderDto & { items: OrderItemDto[]; productType?: st
   productType: '',
   specification: '',
   remark: '',
-  items: [{ stockId: 0, weight: 0, pieceCount: 0 }],
+  items: [{ stockId: 0, weight: 0, pieceCount: undefined as number | undefined }],
 })
 
 const statusOptions = [
@@ -741,7 +747,7 @@ const handleEdit = async (row: DistributionOrder) => {
     items: row.items?.map((i) => ({
       stockId: i.stockId,
       weight: Number(i.weight),
-      pieceCount: i.pieceCount,
+      pieceCount: i.pieceCount || undefined,
     })) || [],
   })
   // 编辑时使用订单已有的库存信息，无需重新加载
@@ -766,7 +772,7 @@ const handleAddFromStock = (stock: any) => {
   form.items.push({
     stockId: stock.id,
     weight: Number(stock.weight),
-    pieceCount: stock.pieceCount,
+    pieceCount: stock.pieceCount ?? undefined,
   })
 }
 
@@ -860,7 +866,8 @@ const orderItemGroups = computed(() => {
     if (!groups[key]) groups[key] = { items: [], totalWeight: 0, totalPieces: 0 }
     groups[key].items.push(item)
     groups[key].totalWeight += Number(item.weight) || 0
-    groups[key].totalPieces += Number(item.pieceCount) || 0
+    const isSmallBlock = item.stock?.specification && !['整板', '镍条'].includes(item.stock.specification)
+    if (!isSmallBlock) groups[key].totalPieces += Number(item.pieceCount) || 0
   }
   return groups
 })
@@ -869,7 +876,11 @@ const orderTotalWeight = computed(() =>
   currentOrder.value?.items?.reduce((sum: number, i: any) => sum + (Number(i.weight) || 0), 0).toFixed(3) || '0.000'
 )
 const orderTotalPieces = computed(() =>
-  currentOrder.value?.items?.reduce((sum: number, i: any) => sum + (Number(i.pieceCount) || 0), 0) || 0
+  currentOrder.value?.items?.reduce((sum: number, i: any) => {
+    const isSmallBlock = i.stock?.specification && !['整板', '镍条'].includes(i.stock.specification)
+    if (isSmallBlock) return sum
+    return sum + (Number(i.pieceCount) || 0)
+  }, 0) || 0
 )
 
 const copyOrderNo = async (orderNo: string) => {

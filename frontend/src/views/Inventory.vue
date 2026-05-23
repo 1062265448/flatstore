@@ -180,7 +180,7 @@
             <td><span class="tag tag-info">{{ row.grade }}</span></td>
             <td>{{ row.specification || '-' }}</td>
             <td class="weight">{{ Number(row.weight).toFixed(3) }}</td>
-            <td>{{ row.pieceCount }}</td>
+            <td>{{ row.pieceCount ?? '-' }}</td>
             <td>{{ row.location || '-' }}</td>
             <td>
               <span :class="['tag', statusTagClass[row.status]]">
@@ -216,7 +216,7 @@
           <tr class="summary-row">
             <td colspan="5" class="summary-label">合计</td>
             <td class="weight">{{ totalWeight }} kg</td>
-            <td>{{ totalPieces }}</td>
+            <td>{{ totalPieces || '-' }}</td>
             <td colspan="5"></td>
           </tr>
         </tfoot>
@@ -289,7 +289,7 @@
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">片数</span>
-                  <span class="detail-value">{{ detailStock.pieceCount }}</span>
+                  <span class="detail-value">{{ detailStock.pieceCount ?? '-' }}</span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">存放位置</span>
@@ -383,8 +383,8 @@
                   <input v-model.number="form.weight" type="number" step="0.001" min="0" placeholder="0.000" />
                 </div>
                 <div class="form-item">
-                  <label>片数 *</label>
-                  <input v-model.number="form.pieceCount" type="number" min="0" placeholder="0" />
+                  <label>片数</label>
+                  <input v-model.number="form.pieceCount" type="number" min="0" placeholder="留空表示不适用" />
                 </div>
                 <div class="form-item full-width">
                   <label>存放位置</label>
@@ -499,7 +499,7 @@ const form = reactive<CreateInventoryDto>({
   specification: '',
   productType: '',
   weight: 0,
-  pieceCount: 0,
+  pieceCount: undefined as number | undefined,
   location: '',
   remark: '',
 })
@@ -531,7 +531,10 @@ const totalWeight = computed(() =>
   inventoryStore.inventoryList.reduce((sum, r) => sum + Number(r.weight), 0).toFixed(3)
 )
 const totalPieces = computed(() =>
-  inventoryStore.inventoryList.reduce((sum, r) => sum + (r.pieceCount || 0), 0)
+  inventoryStore.inventoryList.reduce((sum, r) => {
+    if (r.specification && !['整板', '镍条'].includes(r.specification)) return sum
+    return sum + (r.pieceCount || 0)
+  }, 0)
 )
 
 const isSelected = (id: number) => selectedRows.value.some(r => r.id === id)
@@ -673,7 +676,7 @@ const handleCreate = () => {
     specification: '',
     productType: '',
     weight: 0,
-    pieceCount: 0,
+    pieceCount: undefined as number | undefined,
     location: '',
     nickelContent: '',
     remark: '',
@@ -692,7 +695,7 @@ const handleEdit = (row: InventoryStock) => {
     specification: row.specification || '',
     productType: row.productType || '',
     weight: Number(row.weight) || 0,
-    pieceCount: row.pieceCount || 0,
+    pieceCount: row.pieceCount || undefined,
     location: row.location || '',
     remark: row.remark || '',
   })
@@ -701,7 +704,7 @@ const handleEdit = (row: InventoryStock) => {
 }
 
 const handleSubmit = async () => {
-  if (!form.batchNo || !form.grade || !form.weight || !form.pieceCount) {
+  if (!form.batchNo || !form.grade || !form.weight) {
     showToast?.('请填写必填项', 'warning')
     return
   }
