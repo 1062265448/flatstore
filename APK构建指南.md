@@ -1,82 +1,52 @@
-# APK 构建指南（Windows 办公电脑）
+# APK 构建指南
 
-> 在自己的 Windows 电脑上构建 Android APK，用于车间真机安装使用。
-
----
-
-## 前提
-
-- Windows 10/11
-- 磁盘空闲 ≥ 5GB
-- 已安装 Node.js ≥ 18
+> 使用 Capacitor 将前端打包为 Android APK
 
 ---
 
-## 1. 安装 Android Studio
+## 1. 环境要求
 
-1. 下载：https://developer.android.com/studio
-2. 安装时勾选 **Android SDK** 和 **Android Virtual Device**（默认已勾）
-3. 安装完成后打开 Android Studio
-4. 首次启动 → 选择 "Standard" 安装类型
-5. 等待 SDK 下载完成（可能需要5-15分钟）
-
----
-
-## 2. 配置 SDK
-
-打开 Android Studio → 右上角 SDK Manager（或 File → Settings → Appearance → System Settings → Android SDK）
-
-确认安装以下组件：
-
-| 组件 | 说明 |
-|------|------|
-| Android SDK Platform 34 | API 34 平台 |
-| Android SDK Build-Tools | 最新版 |
-| Android SDK Command-line Tools | 命令行工具 |
+| 工具 | 版本要求 |
+|------|----------|
+| Node.js | >= 18 |
+| Android Studio | Hedgehog (2023.1.1) 或更新 |
+| JDK | 17+（Android Studio 自带） |
+| Gradle | 8.x（Android Studio 自动管理） |
 
 ---
 
-## 3. 修改 API 地址
-
-编辑 `mobile/src/api/request.ts`：
-
-```typescript
-const PROD_API_URL = 'http://62.234.92.126/api'
-
-const BASE_URL = Capacitor.isNativePlatform()
-  ? PROD_API_URL        // APK 直连服务器
-  : PROD_API_URL         // 浏览器调试也用服务器
-```
-
-> ⚠️ 如果服务器 IP 变了，只改 `PROD_API_URL` 即可。
-
----
-
-## 4. 构建 APK
-
-打开终端（PowerShell 或 CMD），进入项目目录：
+## 2. 初始化（首次）
 
 ```bash
+# 1. 安装 Capacitor CLI
+npm install -g @capacitor/cli
+
+# 2. 进入 mobile 目录
 cd D:\Flatstore\mobile
 
-# 安装依赖（首次）
+# 3. 安装依赖
 npm install
 
-# 构建前端
+# 4. 构建前端
 npm run build
 
-# 同步到 Android 项目
-npx cap sync android
+# 5. 初始化 Android 项目
+npx cap add android
 
-# 用 Android Studio 打开
-npx cap open android
+# 6. 安装 Capacitor 插件（如果缺失）
+npm install @capacitor/camera
+npm install @capacitor/splash-screen
+npm install @capacitor/status-bar
+
+# 7. 同步
+npx cap sync android
 ```
 
 ---
 
-## 5. 生成 APK 文件
+## 3. 构建 APK
 
-Android Studio 打开项目后：
+用 Android Studio 打开项目后：
 
 1. 等待右下角 Gradle sync 完成（首次可能需要5-10分钟下载依赖）
 2. 菜单栏：**Build** → **Build Bundle(s) / APK(s)** → **Build APK(s)**
@@ -86,7 +56,7 @@ Android Studio 打开项目后：
 
 ---
 
-## 6. 安装到手机
+## 4. 安装到手机
 
 **方式一：USB 传文件**
 1. 用数据线连接手机和电脑
@@ -100,7 +70,7 @@ Android Studio 打开项目后：
 
 ---
 
-## 7. 签名发布版（可选）
+## 5. 签名发布版（可选）
 
 Debug 版可以直接安装。如果要发布到应用商店或分发给更多人：
 
