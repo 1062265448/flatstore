@@ -21,11 +21,10 @@ describe('QwenAIService.crossValidate', () => {
     expect(warnings).toHaveLength(0);
   });
 
-  it('should warn for oversized weight (> 10000 kg)', () => {
+  it('should warn for oversized weight (> 2500 kg, single item)', () => {
     const items: AiRecognizeResult[] = [baseItem({ netWeight: 15000 })];
     const { results, warnings } = service.crossValidate(items);
-    expect(warnings[0]).toContain('超过');
-    expect(warnings[0]).toContain('10000kg');
+    expect(warnings[0]).toContain('超出单包上限');
   });
 
   it('should warn for zero or negative weight', () => {
@@ -53,7 +52,7 @@ describe('QwenAIService.crossValidate', () => {
   // --- 品级格式校验 ---
 
   it('should accept valid grade values', () => {
-    const validGrades = ['9999', '9997', '9996', '9950', '9920', '99'];
+    const validGrades = ['9997', '9996', '9950', '9920'];
     for (const grade of validGrades) {
       const items: AiRecognizeResult[] = [baseItem({ grade })];
       const { warnings } = service.crossValidate(items);

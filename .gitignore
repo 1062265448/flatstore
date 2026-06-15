@@ -41,3 +41,11 @@ Thumbs.db
 # Vite deps cache
 mobile/.vite/
 flatstore/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Inventory photos (large binary files)
+库存照片/

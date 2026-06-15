@@ -137,7 +137,7 @@ export class QwenAIService {
     return this.validateResults(items);
   }
 
-  private parseResponse(content: string): AiRecognizeResult[] {
+  parseResponse(content: string): AiRecognizeResult[] {
     // Strip markdown code block wrappers (e.g. ```json ... ```)
     let cleaned = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/,'').trim();
 
@@ -200,7 +200,7 @@ export class QwenAIService {
     return fixed;
   }
 
-  private validateResults(items: AiRecognizeResult[]): AiRecognizeResult[] {
+  validateResults(items: AiRecognizeResult[]): AiRecognizeResult[] {
     // Filter out items missing critical fields
     const valid = items.filter(
       (item) => item.batchNo && item.grade && item.batchNo.trim() !== '' && item.grade.trim() !== '',
@@ -323,7 +323,7 @@ export class QwenAIService {
     return { results, warnings };
   }
 
-  private enhanceError(err: Error): Error {
+  enhanceError(err: Error): Error {
     const status = (err as any).status || (err as any).statusCode;
     if (status === 429) {
       return new Error('AI 服务请求过于频繁，请稍后再试');
@@ -343,7 +343,7 @@ export class QwenAIService {
    * - 牌号保留原始字符串
    * - 日期统一为 YYYY-MM-DD
    */
-  private normalizeResult(item: any): AiRecognizeResult {
+  normalizeResult(item: any): AiRecognizeResult {
     let batchNo = String(item.batchNo || '').trim();
     if (batchNo) {
       batchNo = batchNo.replace(/\s+/g, '');

@@ -12,13 +12,14 @@
         <div class="section-header">
           <h3>图像识别</h3>
           <div class="model-selector">
-            <div class="model-slider" :class="selectedModel"></div>
-            <button
-              v-for="m in modelOptions"
-              :key="m.value"
-              :class="['model-btn', { active: selectedModel === m.value }]"
-              @click="selectedModel = m.value"
-            >{{ m.label }}</button>
+            <span class="ocr-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M9 3H5A2 2 0 003 5V19A2 2 0 005 21H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M15 3H19A2 2 0 0121 5V19A2 2 0 0119 21H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M9 12H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              OCR 本地识别
+            </span>
           </div>
         </div>
 
@@ -585,12 +586,6 @@ const handleReset = () => {
 
 const recognizeWarnings = ref<string[]>([])
 
-const selectedModel = ref<'zhipu' | 'doubao'>('zhipu')
-const modelOptions = [
-  { value: 'zhipu' as const, label: '智谱' },
-  { value: 'doubao' as const, label: '豆包' },
-]
-
 const isWeightAbnormal = (item: AiRecognizeResult): boolean => {
   const w = item.netWeight || 0
   const isRange = typeof item.packageNo === 'string' && /^\d+\s*[-–—]\s*\d+$/.test(item.packageNo)
@@ -608,7 +603,7 @@ const handleRecognize = async () => {
   const ctrl = new AbortController()
   abortController.value = ctrl
   try {
-    const res = await aiRecognize(selectedFile.value, selectedModel.value, ctrl.signal)
+    const res = await aiRecognize(selectedFile.value, 'ocr', ctrl.signal)
     recognizeResults.value = (res as any).results || res as any
     currentHistoryId.value = (res as any).historyId || null
     recognizeWarnings.value = (res as any).warnings || []
@@ -776,52 +771,20 @@ onMounted(() => {
 
 .model-selector {
   display: flex;
-  position: relative;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-pill);
-  padding: 2px;
-  height: 28px;
+  align-items: center;
 }
 
-.model-slider {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: calc(50% - 2px);
-  height: calc(100% - 4px);
-  background: var(--color-primary);
-  border-radius: var(--radius-pill);
-  box-shadow: 0 1px 4px rgba(0, 113, 227, 0.25);
-  transition: left var(--transition-normal) cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 0;
-
-  &.doubao {
-    left: calc(50%);
-  }
-}
-
-.model-btn {
-  position: relative;
-  z-index: 1;
-  flex: 1;
+.ocr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 5px 14px;
-  border: none;
   border-radius: var(--radius-pill);
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
   font-size: var(--font-size-xs);
-  font-weight: 500;
-  cursor: pointer;
-  background: transparent;
-  color: var(--color-text-secondary);
-  transition: color var(--transition-fast);
-  white-space: nowrap;
-
-  &.active {
-    color: white;
-  }
-
-  &:hover:not(.active) {
-    color: var(--color-text-primary);
-  }
+  font-weight: 600;
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 .section-header {

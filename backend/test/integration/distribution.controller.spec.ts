@@ -5,7 +5,17 @@ import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { JwtAuthGuard } from '../../src/auth/guards/jwt-auth.guard';
 
-describe('DistributionController (e2e)', () => {
+const DB_AVAILABLE = process.env.DATABASE_URL && !process.env.CI_SKIP_DB;
+
+function describeIfDb(name: string, fn: () => void) {
+  if (DB_AVAILABLE) {
+    describe(name, fn);
+  } else {
+    describe.skip(name, fn);
+  }
+}
+
+describeIfDb('DistributionController (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
 

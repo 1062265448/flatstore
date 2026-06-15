@@ -5,6 +5,7 @@ import { CreateOrderDto, UpdateOrderDto, ShipOrderDto } from './dto/order.dto';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
 import { StockStatus, OrderStatus } from '@prisma/client';
 import { QwenAIService, AiModelType } from '../common/services/qwen-ai.service';
+import { OcrService, OcrRecognizeResult } from '../common/services/ocr.service';
 import { Prisma } from '@prisma/client';
 import * as fs from 'fs';
 import { customAlphabet } from 'nanoid';
@@ -21,6 +22,7 @@ export class DistributionService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private qwenAI: QwenAIService,
+    private ocrService: OcrService,
   ) {}
 
   /** 启动后初始化定时清理 */
@@ -341,14 +343,18 @@ export class DistributionService implements OnModuleInit {
     const buffer = await fs.promises.readFile(file.path);
     const base64 = buffer.toString('base64');
 
-    let aiResults: any[];
+    let results: any[];
     let warnings: string[] = [];
+    let source: 'ocr' | 'ai' = 'ai';
+    let confidence: number | undefined;
+
     try {
-      aiResults = await this.qwenAI.recognizeImage(base64, modelType);
-      // 交叉校验 + 纠错
-      const validated = this.qwenAI.crossValidate(aiResults);
-      aiResults = validated.results;
-      warnings = validated.warnings;
+      // 优先走 OCR，失败自动降级到 AI Vision
+      const ocrResult: OcrRecognizeResult = await this.ocrService.recognizeImage(base64, modelType);
+      results = ocrResult.results;
+      warnings = ocrResult.warnings;
+      source = ocrResult.source;
+      confidence = ocrResult.confidence;
     } catch (error: any) {
       await this.prisma.aiRecognitionHistory.create({
         data: {
@@ -365,17 +371,17 @@ export class DistributionService implements OnModuleInit {
     const history = await this.prisma.aiRecognitionHistory.create({
       data: {
         imageUrl: `/uploads/inventory/${file.filename}`,
-        result: JSON.stringify(aiResults),
-        itemCount: aiResults.length,
+        result: JSON.stringify(results),
+        itemCount: results.length,
         status: 'success',
-        batchNo: aiResults[0]?.batchNo,
-        grade: aiResults[0]?.grade,
-        date: aiResults[0]?.date ? new Date(aiResults[0].date) : null,
+        batchNo: results[0]?.batchNo,
+        grade: results[0]?.grade,
+        date: results[0]?.date ? new Date(results[0].date) : null,
       },
     });
 
     // 文件保留在 uploads/inventory/ 供缩略图显示
-    return { results: aiResults, historyId: history.id, warnings };
+    return { results, historyId: history.id, warnings, source };
   }
 
   // ==================== 客户管理 ====================

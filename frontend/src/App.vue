@@ -11,7 +11,7 @@
       <div class="nav-center">
         <div class="nav-links">
           <router-link
-            v-for="(item, index) in navItems"
+            v-for="item in navItems"
             :key="item.path"
             :to="item.path"
             class="nav-link"
