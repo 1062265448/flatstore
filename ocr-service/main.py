@@ -1,5 +1,6 @@
 """
-PaddleOCR 票据识别微服务 — FastAPI
+OCR 票据识别微服务 — FastAPI
+引擎: RapidOCR (ONNX Runtime, CPU)
 端口: 8765
 
 Endpoints:
@@ -8,6 +9,7 @@ Endpoints:
 """
 
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 
@@ -17,6 +19,9 @@ from typing import List, Optional
 
 from ocr_engine import OCREngine
 from ticket_parser import parse_ticket
+
+# 置信度阈值：平均置信度低于此值视为识别失败
+CONFIDENCE_THRESHOLD = float(os.environ.get("OCR_CONFIDENCE_THRESHOLD", "0.5"))
 
 # 日志配置
 logging.basicConfig(
@@ -30,11 +35,13 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 启动时预加载模型
-    logger.info("启动 PaddleOCR 票据识别服务...")
+    logger.info("启动 RapidOCR 票据识别服务...")
+    t0 = __import__("time").time()
     engine = OCREngine()
     try:
         engine._init_model()
-        logger.info("模型预加载完成")
+        elapsed = __import__("time").time() - t0
+        logger.info(f"模型预加载完成 ({elapsed:.1f}s, engine={engine._engine})")
     except Exception as e:
         logger.warning(f"模型预加载失败（将在首次请求时重试）: {e}")
     yield
@@ -42,7 +49,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Flatstore OCR Service",
-    description="PaddleOCR 票据识别微服务",
+    description="RapidOCR 票据识别微服务",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -78,6 +85,7 @@ class RecognizeResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str = "ok"
     model_loaded: bool = False
+    engine: str = ""
     service: str = "flatstore-ocr-service"
 
 
@@ -89,6 +97,7 @@ async def health_check():
     return HealthResponse(
         status="ok",
         model_loaded=model_loaded,
+        engine=getattr(engine, '_engine', ''),
     )
 
 
@@ -117,6 +126,14 @@ async def recognize(req: RecognizeRequest):
 
         # 计算平均置信度
         avg_conf = sum(r['confidence'] for r in ocr_results) / len(ocr_results)
+
+        # 置信度门槛检查
+        if avg_conf < CONFIDENCE_THRESHOLD:
+            return RecognizeResponse(
+                success=False,
+                error=f'OCR 平均置信度过低 ({avg_conf:.2f} < {CONFIDENCE_THRESHOLD:.2f})',
+                confidence=avg_conf,
+            )
 
         # 步骤 2: 票据解析
         results, warnings = parse_ticket(ocr_results)

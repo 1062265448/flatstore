@@ -39,59 +39,43 @@ export class OcrService {
   constructor(private qwenAI: QwenAIService) {}
 
   /**
-   * 识别票据图片。
-   * 优先走本地 OCR，失败自动 fallback 到 AI Vision。
+   * 识别票据图片 — 仅使用 OCR，不使用 AI 降级策略。
    */
   async recognizeImage(
-    base64: string,
-    modelType: AiModelType = 'zhipu',
+    _base64: string,
+    _modelType?: AiModelType,
   ): Promise<OcrRecognizeResult> {
-    // ── 尝试本地 OCR ──
-    try {
-      this.logger.log('调用本地 PaddleOCR 服务识别...');
-      const ocrResult = await this.callOcrService(base64);
-
-      if (ocrResult.success && ocrResult.results.length > 0) {
-        // 复用 qwenAI 的 validate + crossValidate 逻辑
-        const normalized = this.normalizeOcrResults(ocrResult.results);
-        const validated = this.qwenAI.validateResults(normalized);
-        const crossValidated = this.qwenAI.crossValidate(validated);
-
-        this.logger.log(
-          `PaddleOCR 识别成功: ${crossValidated.results.length} 行, 置信度 ${ocrResult.confidence?.toFixed(2)}`,
-        );
-
-        return {
-          results: crossValidated.results,
-          warnings: [...crossValidated.warnings, ...(ocrResult.warnings || [])],
-          source: 'ocr',
-          confidence: ocrResult.confidence,
-        };
-      }
-
-      // OCR 返回了 success=false（低置信度、解析失败等）
-      this.logger.warn(
-        `PaddleOCR 识别未成功: ${ocrResult.error || '未知原因'}，降级到 AI Vision`,
-      );
-    } catch (err: any) {
-      this.logger.warn(`PaddleOCR 调用失败 (${err?.message})，降级到 AI Vision`);
+    // 前置检查：OCR 服务是否存活
+    const available = await this.isAvailable();
+    if (!available) {
+      this.logger.error('OCR 服务不可用，请检查 ocr-service 是否运行');
+      throw new Error('OCR 服务不可用，请联系管理员');
     }
 
-    // ── Fallback 到 AI Vision ──
-    this.logger.log('降级到 AI Vision 识别...');
-    try {
-      const aiResults = await this.qwenAI.recognizeImage(base64, modelType);
-      const validated = this.qwenAI.crossValidate(aiResults);
+    this.logger.log('调用本地 OCR 服务识别...');
 
-      return {
-        results: validated.results,
-        warnings: [...validated.warnings, 'OCR 识别失败，已使用 AI Vision 兜底'],
-        source: 'ai',
-      };
-    } catch (aiErr: any) {
-      // AI 也失败了，抛出增强后的错误
-      throw this.qwenAI.enhanceError(aiErr);
+    const ocrResult = await this.callOcrService(_base64);
+
+    if (!ocrResult.success || ocrResult.results.length === 0) {
+      const reason = ocrResult.error || 'OCR 返回空结果';
+      this.logger.error(`OCR 识别失败: ${reason}`);
+      throw new Error(`OCR 识别失败: ${reason}`);
     }
+
+    const normalized = this.normalizeOcrResults(ocrResult.results);
+    const validated = this.qwenAI.validateResults(normalized);
+    const crossValidated = this.qwenAI.crossValidate(validated);
+
+    this.logger.log(
+      `OCR 识别成功: ${crossValidated.results.length} 行, 置信度 ${ocrResult.confidence?.toFixed(2)}`,
+    );
+
+    return {
+      results: crossValidated.results,
+      warnings: [...crossValidated.warnings, ...(ocrResult.warnings || [])],
+      source: 'ocr',
+      confidence: ocrResult.confidence,
+    };
   }
 
   /**
@@ -176,15 +160,16 @@ export class OcrService {
   }
 
   /**
-   * 单独检查 OCR 服务是否可用
+   * 单独检查 OCR 服务是否可用（快速探活，5s 超时）
    */
   async isAvailable(): Promise<boolean> {
     try {
       const response = await fetch(`${this.OCR_URL}/health`, {
         signal: AbortSignal.timeout(5000),
       });
+      if (!response.ok) return false;
       const data = await response.json();
-      return data.status === 'ok';
+      return data.status === 'ok' && data.model_loaded === true;
     } catch {
       return false;
     }

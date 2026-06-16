@@ -91,8 +91,22 @@ class OCREngine:
 
         for line in results:
             box = line[0]  # [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]
-            text = line[1][0]
-            confidence = float(line[1][1])
+            # RapidOCR: [box, text_str, confidence_str] (3 items)
+            # PaddleOCR: [box, (text_str, confidence_float)] (2 items)
+            if len(line) >= 3:
+                # RapidOCR format
+                text = str(line[1])
+                try:
+                    confidence = float(line[2])
+                except (ValueError, TypeError):
+                    confidence = 0.0
+            else:
+                # PaddleOCR format
+                text = str(line[1][0])
+                try:
+                    confidence = float(line[1][1])
+                except (ValueError, TypeError):
+                    confidence = 0.0
 
             parsed.append({
                 'text': text.strip(),
@@ -120,7 +134,12 @@ class OCREngine:
             # RapidOCR 返回: (results, elapse)
             results, elapse = self._rapidocr(img_array)
             parsed = self._parse_results(results)
-            logger.info(f"[RapidOCR] 识别到 {len(parsed)} 个文本块, 耗时 {elapse:.2f}s")
+            # elapse is a list of times for detection, classification, recognition
+            if isinstance(elapse, list):
+                total_time = sum(elapse)
+            else:
+                total_time = elapse
+            logger.info(f"[RapidOCR] 识别到 {len(parsed)} 个文本块, 耗时 {total_time:.2f}s")
         else:
             # PaddleOCR 返回: [[box, (text, confidence)], ...]
             results = self._paddleocr.ocr(img_array, cls=True)
@@ -140,7 +159,12 @@ class OCREngine:
         if self._engine == "rapidocr":
             results, elapse = self._rapidocr(img_array)
             parsed = self._parse_results(results)
-            logger.info(f"[RapidOCR] 识别到 {len(parsed)} 个文本块, 耗时 {elapse:.2f}s")
+            # elapse is a list of times for detection, classification, recognition
+            if isinstance(elapse, list):
+                total_time = sum(elapse)
+            else:
+                total_time = elapse
+            logger.info(f"[RapidOCR] 识别到 {len(parsed)} 个文本块, 耗时 {total_time:.2f}s")
         else:
             results = self._paddleocr.ocr(img_array, cls=True)
             if results and results[0]:
