@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -10,9 +11,10 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const configService = app.get(ConfigService);
 
   // CORS 配置 - 支持多来源（Web 前端 + Mobile App）
-  const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5174')
+  const allowedOrigins = (configService.get<string>('FRONTEND_URL') || 'http://localhost:5174')
     .split(',')
     .map(s => s.trim())
     .filter(Boolean);
@@ -24,7 +26,6 @@ async function bootstrap() {
   ];
   app.enableCors({
     origin: (origin, callback) => {
-      // 允许无 origin 的请求（如 Postman、curl）
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
       if (capacitorOrigins.includes(origin)) return callback(null, true);
@@ -58,16 +59,16 @@ async function bootstrap() {
   }
 
   // Swagger API 文档
-  const config = new DocumentBuilder()
+  const swaggerConfig = new DocumentBuilder()
     .setTitle('平面库配货模块 API')
     .setDescription('平面库配货模块的 RESTful API 文档')
     .setVersion('1.0')
     .addTag('配货模块')
     .build();
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api', app, document);
 
-  const port = process.env.PORT || 3002;
+  const port = configService.get<number>('PORT') || 3002;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
   console.log(`Swagger API docs: http://localhost:${port}/api`);

@@ -12,6 +12,7 @@ import {
   UploadedFile,
   ParseIntPipe,
   UseGuards,
+  HttpCode,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -19,11 +20,13 @@ import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { DistributionService } from './distribution.service';
 import { CreateInventoryDto, UpdateInventoryDto, BatchCreateInventoryDto } from './dto/inventory.dto';
-import { CreateOrderDto, UpdateOrderDto, ShipOrderDto } from './dto/order.dto';
+import { CreateOrderDto, UpdateOrderDto } from './dto/order.dto';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
+import { BatchDeleteDto } from './dto/batch-delete.dto';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('配货模块')
 @ApiBearerAuth()
@@ -98,13 +101,14 @@ export class DistributionController {
 
   @Post('inventory/batch-delete')
   @ApiOperation({ summary: '批量删除库存' })
-  batchDeleteInventory(@Body() body: { ids: number[] }) {
+  @Roles('admin')
+  batchDeleteInventory(@Body() body: BatchDeleteDto) {
     return this.service.batchDeleteInventory(body.ids);
   }
 
   @Post('inventory/ai-recognize')
   @Throttle({ default: { limit: 100, ttl: 60000 } })
-  @ApiOperation({ summary: 'AI 图像识别' })
+  @ApiOperation({ summary: 'OCR 票据识别' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -138,18 +142,19 @@ export class DistributionController {
   )
   aiRecognize(
     @UploadedFile() file: Express.Multer.File,
-    @Query('model') model?: string,
   ) {
-    const modelType = model === 'doubao' ? 'doubao' : 'zhipu';
-    return this.service.aiRecognize(file, modelType);
+    return this.service.aiRecognize(file);
   }
 
   // ==================== 客户管理 ====================
 
   @Get('customers')
-  @ApiOperation({ summary: '获取所有客户' })
-  getCustomers() {
-    return this.service.getCustomers();
+  @ApiOperation({ summary: '分页查询客户' })
+  getCustomers(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.service.getCustomers(page, limit);
   }
 
   @Get('customers/:id')
@@ -164,7 +169,7 @@ export class DistributionController {
     return this.service.createCustomer(dto);
   }
 
-  @Put('customers/:id')
+  @Patch('customers/:id')
   @ApiOperation({ summary: '更新客户' })
   updateCustomer(
     @Param('id', ParseIntPipe) id: number,
@@ -213,7 +218,7 @@ export class DistributionController {
     return this.service.createOrder(dto);
   }
 
-  @Put('orders/:id')
+  @Patch('orders/:id')
   @ApiOperation({ summary: '更新订单' })
   updateOrder(
     @Param('id', ParseIntPipe) id: number,
@@ -230,13 +235,15 @@ export class DistributionController {
 
   @Post('orders/batch-delete')
   @ApiOperation({ summary: '批量删除订单' })
-  batchDeleteOrders(@Body() body: { ids: number[] }) {
+  @Roles('admin')
+  batchDeleteOrders(@Body() body: BatchDeleteDto) {
     return this.service.batchDeleteOrders(body.ids);
   }
 
     // 移除 confirm 接口 - 创建后直接可发货
 
   @Post('orders/:id/ship')
+  @HttpCode(200)
   @ApiOperation({ summary: '发货（草稿→已发货）' })
   shipOrder(
     @Param('id', ParseIntPipe) id: number,
@@ -245,6 +252,7 @@ export class DistributionController {
   }
 
   @Post('orders/:id/cancel')
+  @HttpCode(200)
   @ApiOperation({ summary: '取消订单' })
   cancelOrder(@Param('id', ParseIntPipe) id: number) {
     return this.service.cancelOrder(id);
@@ -271,7 +279,8 @@ export class DistributionController {
 
   @Post('recognition-history/batch-delete')
   @ApiOperation({ summary: '批量删除识别历史' })
-  batchDeleteRecognitionHistory(@Body() body: { ids: number[] }) {
+  @Roles('admin')
+  batchDeleteRecognitionHistory(@Body() body: BatchDeleteDto) {
     return this.service.batchDeleteRecognitionHistory(body.ids);
   }
 }

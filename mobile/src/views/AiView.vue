@@ -2,7 +2,7 @@
   <div class="ai-view">
     <div class="page-header">
       <div class="header-label">平面库配货</div>
-      <h1 class="header-title">AI 识别</h1>
+      <h1 class="header-title">票据识别</h1>
     </div>
 
     <div class="filter-bar">
@@ -245,7 +245,7 @@ import { Capacitor } from '@capacitor/core'
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { aiRecognize, getRecognitionHistory, batchCreateInventory } from '@/api/distribution'
 import { useToast } from '@/composables/useToast'
-import type { AiRecognizeResult, AiRecognitionHistory } from '@/types'
+import type { OcrRecognizeResult, OcrRecognitionHistory } from '@/types'
 import FilterPills from '@/components/FilterPills.vue'
 import AiHistoryItem from '@/components/AiHistoryItem.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
@@ -260,13 +260,13 @@ const timeFilters = [
   { label: '本周', value: 'week' },
 ]
 
-const historyList = ref<AiRecognitionHistory[]>([])
+const historyList = ref<OcrRecognitionHistory[]>([])
 const historyTotal = ref(0)
 const historyLoading = ref(false)
 
 const showSheet = ref(false)
 const showDetailSheet = ref(false)
-const currentHistory = ref<AiRecognitionHistory | null>(null)
+const currentHistory = ref<OcrRecognitionHistory | null>(null)
 
 const showImageViewer = ref(false)
 const viewerImageUrl = ref('')
@@ -280,7 +280,7 @@ const openImageViewer = (url: string) => {
 const resolveImageUrl = (url: string) => {
   if (!url) return ''
   if (url.startsWith('http')) return url
-  const base = Capacitor.isNativePlatform() ? 'http://62.234.92.126' : ''
+  const base = Capacitor.isNativePlatform() ? (import.meta.env.VITE_PROD_SERVER_URL || '') : ''
   return base + url
 }
 
@@ -295,7 +295,7 @@ const previewUrl = ref('')
 const recognizing = ref(false)
 const importing = ref(false)
 const errorMessage = ref('')
-const recognizeResults = ref<AiRecognizeResult[]>([])
+const recognizeResults = ref<OcrRecognizeResult[]>([])
 const results = ref<{ label: string; value: string }[]>([])
 
 const importForm = reactive({
@@ -321,9 +321,10 @@ const locationOptions = [
 const fetchHistory = async () => {
   historyLoading.value = true
   try {
-    const res = await getRecognitionHistory({ limit: 50, status: undefined, timeRange: selectedTime.value || undefined }) as any
-    historyList.value = res.data || []
-    historyTotal.value = res.total || 0
+    const res = await getRecognitionHistory({ limit: 50, status: undefined, timeRange: selectedTime.value || undefined })
+    const data = res as { data?: OcrRecognitionHistory[]; total?: number }
+    historyList.value = data.data || []
+    historyTotal.value = data.total || 0
   } catch (e: any) {
     danger('加载历史失败')
   } finally {
@@ -334,7 +335,7 @@ const fetchHistory = async () => {
 // 监听时间筛选变化
 watch(selectedTime, () => fetchHistory())
 
-const viewHistoryDetail = (item: AiRecognitionHistory) => {
+const viewHistoryDetail = (item: OcrRecognitionHistory) => {
   currentHistory.value = item
   showDetailSheet.value = true
 }
@@ -366,10 +367,10 @@ const resultTotalPieces = computed(() =>
 )
 
 const detailTotalWeight = computed(() =>
-  detailResults.value.reduce((s, r: any) => s + (Number(r.netWeight) || 0), 0).toFixed(1)
+  detailResults.value.reduce((s, r: Record<string, unknown>) => s + (Number(r.netWeight) || 0), 0).toFixed(1)
 )
 const detailTotalPieces = computed(() =>
-  detailResults.value.reduce((s, r: any) => s + (Number(r.pieceCount) || 0), 0)
+  detailResults.value.reduce((s, r: Record<string, unknown>) => s + (Number(r.pieceCount) || 0), 0)
 )
 
 const closeSheet = () => {
@@ -486,12 +487,13 @@ const handleRecognize = async () => {
   errorMessage.value = ''
 
   try {
-    // 后端返回 { results: [...], historyId: N }
+    // 后端返回 { results: [...], historyId: N, warnings: [...] }
     const res = await aiRecognize(selectedFile.value)
-    const aiResults = (res as any)?.results || []
+    const typedRes = res as { results?: OcrRecognizeResult[]; historyId?: number; warnings?: string[] }
+    const aiResults = typedRes.results || []
     recognizeResults.value = Array.isArray(aiResults) ? aiResults : []
 
-    const warnings = (res as any)?.warnings || []
+    const warnings = typedRes.warnings || []
     if (warnings.length) {
       danger(`数据校验：${warnings.join('；')}`)
     }

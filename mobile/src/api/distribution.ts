@@ -11,8 +11,8 @@ import type {
   CreateOrderDto,
   UpdateOrderDto,
   OrderQuery,
-  AiRecognizeResult,
-  AiRecognitionHistory,
+  OcrRecognizeResult,
+  OcrRecognitionHistory,
   RecognitionHistoryQuery,
   Statistics,
   PaginatedResponse,
@@ -60,13 +60,13 @@ export const batchDeleteInventory = (ids: number[]) =>
 export const searchInventory = (keyword: string, limit?: number) =>
   request.get<InventoryStock[]>('/distribution/inventory/search', { params: { keyword, limit } })
 
-// AI 识别
+// OCR 识别
 export const aiRecognize = (file: File) => {
   const formData = new FormData()
   formData.append('file', file)
-  return request.post<{ results: AiRecognizeResult[]; historyId: number }>('/distribution/inventory/ai-recognize', formData, {
+  return request.post<{ results: OcrRecognizeResult[]; historyId: number; warnings?: string[] }>('/distribution/inventory/ai-recognize', formData, {
     timeout: 120000,
-  } as any)
+  })
 }
 
 // ==================== Customers ====================
@@ -110,9 +110,9 @@ export const shipOrder = (id: number) =>
 export const cancelOrder = (id: number) =>
   request.post<DistributionOrder>(`/distribution/orders/${id}/cancel`)
 
-// ==================== AI Recognition History ====================
+// ==================== OCR Recognition History ====================
 export const getRecognitionHistory = (params: RecognitionHistoryQuery) =>
-  request.get<PaginatedResponse<AiRecognitionHistory>>('/distribution/recognition-history', { params })
+  request.get<PaginatedResponse<OcrRecognitionHistory>>('/distribution/recognition-history', { params })
 
 export const deleteRecognitionHistory = (id: number) =>
   request.delete(`/distribution/recognition-history/${id}`)

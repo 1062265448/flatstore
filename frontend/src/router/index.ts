@@ -32,7 +32,7 @@ const baseRoutes = [
     path: '/ai',
     name: 'AI',
     component: () => import('@/views/AI.vue'),
-    meta: { title: 'AI 图像识别', requiresAuth: true },
+    meta: { title: '票据识别', requiresAuth: true },
   },
   {
     path: '/warehouse',

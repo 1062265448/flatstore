@@ -75,6 +75,8 @@ model InventoryStock {
   @@index([grade])
   @@index([status])
   @@index([status, grade])
+  @@index([createdAt])
+  @@index([location])
 }
 
 // 配货单
@@ -104,6 +106,7 @@ model DistributionOrder {
   @@index([status])
   @@index([customerId])
   @@index([customerId, deletedAt, status])
+  @@index([customerName])
 }
 
 // 配货单明细

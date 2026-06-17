@@ -38,7 +38,7 @@
           <div class="brand-features">
             <div class="feature-item"><span>智能库存管理</span></div>
             <div class="feature-item"><span>高效配货流程</span></div>
-            <div class="feature-item"><span>AI 图像识别</span></div>
+            <div class="feature-item"><span>OCR 票据识别</span></div>
             <div class="feature-item"><span>3D 仓库可视化</span></div>
           </div>
         </div>

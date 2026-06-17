@@ -79,9 +79,12 @@ class OCREngine:
 
     def _decode_image(self, image_base64: str) -> np.ndarray:
         """解码 base64 → numpy array (RGB)"""
-        img_bytes = base64.b64decode(image_base64)
-        img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
-        return np.array(img)
+        try:
+            img_bytes = base64.b64decode(image_base64)
+            img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+            return np.array(img)
+        except Exception as e:
+            raise ValueError(f"图片解码失败: {e}")
 
     def _parse_results(self, results) -> List[Dict[str, Any]]:
         """统一解析 OCR 返回结果"""
@@ -122,6 +125,26 @@ class OCREngine:
 
         return parsed
 
+    def _run_ocr(self, img_array: np.ndarray) -> List[Dict[str, Any]]:
+        """执行 OCR 识别（统一入口，消除 recognize/recognize_file 重复逻辑）"""
+        if self._engine == "rapidocr":
+            results, elapse = self._rapidocr(img_array)
+            parsed = self._parse_results(results)
+            if isinstance(elapse, list):
+                total_time = sum(elapse)
+            else:
+                total_time = elapse
+            logger.info(f"[RapidOCR] 识别到 {len(parsed)} 个文本块, 耗时 {total_time:.2f}s")
+        else:
+            results = self._paddleocr.ocr(img_array, cls=True)
+            if results and results[0]:
+                parsed = self._parse_results(results[0])
+            else:
+                parsed = []
+            logger.info(f"[PaddleOCR] 识别到 {len(parsed)} 个文本块")
+
+        return parsed
+
     def recognize(self, image_base64: str) -> List[Dict[str, Any]]:
         """
         接收 base64 图片，返回 OCR 结果列表。
@@ -129,48 +152,10 @@ class OCREngine:
         """
         self._init_model()
         img_array = self._decode_image(image_base64)
-
-        if self._engine == "rapidocr":
-            # RapidOCR 返回: (results, elapse)
-            results, elapse = self._rapidocr(img_array)
-            parsed = self._parse_results(results)
-            # elapse is a list of times for detection, classification, recognition
-            if isinstance(elapse, list):
-                total_time = sum(elapse)
-            else:
-                total_time = elapse
-            logger.info(f"[RapidOCR] 识别到 {len(parsed)} 个文本块, 耗时 {total_time:.2f}s")
-        else:
-            # PaddleOCR 返回: [[box, (text, confidence)], ...]
-            results = self._paddleocr.ocr(img_array, cls=True)
-            if results and results[0]:
-                parsed = self._parse_results(results[0])
-            else:
-                parsed = []
-            logger.info(f"[PaddleOCR] 识别到 {len(parsed)} 个文本块")
-
-        return parsed
+        return self._run_ocr(img_array)
 
     def recognize_file(self, file_path: str) -> List[Dict[str, Any]]:
         """从文件路径识别（用于测试）"""
         self._init_model()
         img_array = np.array(Image.open(file_path).convert('RGB'))
-
-        if self._engine == "rapidocr":
-            results, elapse = self._rapidocr(img_array)
-            parsed = self._parse_results(results)
-            # elapse is a list of times for detection, classification, recognition
-            if isinstance(elapse, list):
-                total_time = sum(elapse)
-            else:
-                total_time = elapse
-            logger.info(f"[RapidOCR] 识别到 {len(parsed)} 个文本块, 耗时 {total_time:.2f}s")
-        else:
-            results = self._paddleocr.ocr(img_array, cls=True)
-            if results and results[0]:
-                parsed = self._parse_results(results[0])
-            else:
-                parsed = []
-            logger.info(f"[PaddleOCR] 识别到 {len(parsed)} 个文本块")
-
-        return parsed
+        return self._run_ocr(img_array)

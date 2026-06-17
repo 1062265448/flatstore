@@ -1,8 +1,8 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import { Capacitor } from '@capacitor/core'
 
-// API 基础地址
-const PROD_API_URL = 'http://192.168.10.179/api'
+// API 基础地址 — 支持环境变量覆盖，默认直连生产服务器
+const PROD_API_URL = import.meta.env.VITE_PROD_API_URL || 'http://192.168.10.179/api'
 const DEV_API_URL = import.meta.env.VITE_DEV_SERVER_URL || 'http://localhost:3002'
 
 const BASE_URL = Capacitor.isNativePlatform()

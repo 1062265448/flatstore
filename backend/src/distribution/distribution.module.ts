@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { DistributionController } from './distribution.controller';
 import { DistributionService } from './distribution.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { QwenAIService } from '../common/services/qwen-ai.service';
+import { PrismaModule } from '../prisma/prisma.module';
 import { OcrService } from '../common/services/ocr.service';
 
 @Module({
+  imports: [PrismaModule],
   controllers: [DistributionController],
-  providers: [DistributionService, PrismaService, QwenAIService, OcrService],
+  providers: [DistributionService, OcrService],
 })
 export class DistributionModule {}

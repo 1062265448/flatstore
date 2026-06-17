@@ -263,7 +263,7 @@
     </el-dialog>
 
     <!-- AI 识别对话框 -->
-    <el-dialog v-model="showAiRecognize" title="AI 图像识别" width="600px" destroy-on-close>
+    <el-dialog v-model="showAiRecognize" title="OCR 票据识别" width="600px" destroy-on-close>
       <el-upload
         class="upload-area"
         drag

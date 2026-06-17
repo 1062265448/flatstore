@@ -163,8 +163,8 @@ export interface OrderQuery {
   keyword?: string
 }
 
-// AI 识别
-export interface AiRecognizeResult {
+// OCR 识别
+export interface OcrRecognizeResult {
   packageNo: string | number
   pieceCount: number
   netWeight?: number
@@ -175,7 +175,7 @@ export interface AiRecognizeResult {
   date?: string
 }
 
-export interface AiRecognitionHistory {
+export interface OcrRecognitionHistory {
   id: number
   imageUrl: string
   result?: string

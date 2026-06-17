@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,15 +10,11 @@ export interface UserPayload {
 }
 
 @Injectable()
-export class AuthService implements OnModuleInit {
+export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
   ) {}
-
-  async onModuleInit() {
-    await this.createDefaultAdmin();
-  }
 
   async validateUser(username: string, password: string): Promise<UserPayload | null> {
     const user = await this.prisma.user.findUnique({ where: { username } });
@@ -62,13 +58,5 @@ export class AuthService implements OnModuleInit {
       where: { id: userId },
       select: { id: true, username: true, role: true, createdAt: true },
     });
-  }
-
-  private async createDefaultAdmin() {
-    const admin = await this.prisma.user.findUnique({ where: { username: 'admin' } });
-    if (!admin) {
-      await this.register('admin', 'admin123');
-      console.log('[Auth] 默认管理员账户已创建');
-    }
   }
 }

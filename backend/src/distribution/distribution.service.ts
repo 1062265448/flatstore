@@ -1,14 +1,13 @@
 import { Injectable, BadRequestException, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInventoryDto, UpdateInventoryDto } from './dto/inventory.dto';
-import { CreateOrderDto, UpdateOrderDto, ShipOrderDto } from './dto/order.dto';
+import { CreateOrderDto, UpdateOrderDto } from './dto/order.dto';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
 import { StockStatus, OrderStatus } from '@prisma/client';
-import { QwenAIService, AiModelType } from '../common/services/qwen-ai.service';
-import { OcrService, OcrRecognizeResult } from '../common/services/ocr.service';
+import { OcrService, OcrRecognizeResult, OcrRecognizeOutput } from '../common/services/ocr.service';
 import { Prisma } from '@prisma/client';
 import * as fs from 'fs';
-import { customAlphabet } from 'nanoid';
+import * as path from 'path';
 
 /** 生成配货单号：PMK + 日期 + 当日序号 */
 
@@ -21,7 +20,6 @@ export class DistributionService implements OnModuleInit {
 
   constructor(
     private prisma: PrismaService,
-    private qwenAI: QwenAIService,
     private ocrService: OcrService,
   ) {}
 
@@ -137,7 +135,7 @@ export class DistributionService implements OnModuleInit {
       const from = new Date(params.dateFrom);
       const to = new Date(params.dateFrom);
       to.setHours(23, 59, 59, 999);
-      where.createdAt = { gte: from, lte: to } as any;
+      where.createdAt = { gte: from, lte: to } as Prisma.InventoryStockWhereInput['createdAt'];
     }
 
     const [data, total] = await Promise.all([
@@ -244,7 +242,7 @@ export class DistributionService implements OnModuleInit {
           const parsed = JSON.parse(history.result);
           const userSpec = items.find(i => i.specification)?.specification;
           if (userSpec && Array.isArray(parsed)) {
-            const updated = parsed.map((item: any) => ({
+            const updated = parsed.map((item: OcrRecognizeResult) => ({
               ...item,
               specification: userSpec,
             }));
@@ -254,7 +252,7 @@ export class DistributionService implements OnModuleInit {
             });
           }
         } catch (e) {
-          console.error('[batchCreateInventory] 更新识别历史失败:', e);
+          this.logger.error('[batchCreateInventory] 更新识别历史失败:', e);
         }
       }
     }
@@ -335,38 +333,18 @@ export class DistributionService implements OnModuleInit {
     });
   }
 
-  async aiRecognize(file: Express.Multer.File, modelType: AiModelType = 'zhipu') {
+  async aiRecognize(file: Express.Multer.File) {
     if (!file) {
-      throw new Error('请上传图片文件');
+      throw new BadRequestException('请上传图片文件');
     }
 
     const buffer = await fs.promises.readFile(file.path);
     const base64 = buffer.toString('base64');
 
-    let results: any[];
-    let warnings: string[] = [];
-    let source: 'ocr' | 'ai' = 'ai';
-    let confidence: number | undefined;
-
-    try {
-      // 优先走 OCR，失败自动降级到 AI Vision
-      const ocrResult: OcrRecognizeResult = await this.ocrService.recognizeImage(base64, modelType);
-      results = ocrResult.results;
-      warnings = ocrResult.warnings;
-      source = ocrResult.source;
-      confidence = ocrResult.confidence;
-    } catch (error: any) {
-      await this.prisma.aiRecognitionHistory.create({
-        data: {
-          imageUrl: `/uploads/inventory/${file.filename}`,
-          result: null,
-          itemCount: 0,
-          status: 'failed',
-          errorMessage: error.message,
-        },
-      });
-      throw error;
-    }
+    const ocrResult: OcrRecognizeOutput = await this.ocrService.recognizeImage(base64);
+    const results = ocrResult.results;
+    const warnings = ocrResult.warnings;
+    const confidence = ocrResult.confidence;
 
     const history = await this.prisma.aiRecognitionHistory.create({
       data: {
@@ -381,16 +359,29 @@ export class DistributionService implements OnModuleInit {
     });
 
     // 文件保留在 uploads/inventory/ 供缩略图显示
-    return { results, historyId: history.id, warnings, source };
+    return { results, historyId: history.id, warnings };
   }
 
   // ==================== 客户管理 ====================
 
-  async getCustomers() {
-    return this.prisma.customer.findMany({
-      where: { deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getCustomers(page?: number, limit?: number) {
+    const p = Math.max(1, Number(page) || 1);
+    const l = Math.min(100, Math.max(1, Number(limit) || 50));
+    const skip = (p - 1) * l;
+
+    const where = { deletedAt: null };
+
+    const [data, total] = await Promise.all([
+      this.prisma.customer.findMany({
+        where,
+        skip,
+        take: l,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.customer.count({ where }),
+    ]);
+
+    return { data, total, page: p, pageSize: l };
   }
 
   async getCustomerById(id: number) {
@@ -614,14 +605,15 @@ export class DistributionService implements OnModuleInit {
 
     // 如果传了 items，支持重新关联库存
     if (dto.items && dto.items.length > 0) {
-      const stockIds = dto.items.map((i) => i.stockId);
+      const items = dto.items;
+      const stockIds = items.map((i) => i.stockId);
       const uniqueStockIds = [...new Set(stockIds)];
       if (uniqueStockIds.length !== stockIds.length) {
         throw new BadRequestException('同一库存不可重复选择');
       }
 
-      const totalWeight = dto.items.reduce((sum, item) => sum + item.weight, 0);
-      const totalPieces = dto.items.reduce((sum, item) => sum + (item.pieceCount || 0), 0);
+      const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+      const totalPieces = items.reduce((sum, item) => sum + (item.pieceCount || 0), 0);
 
       const result = await this.prisma.$transaction(async (tx) => {
         // 释放旧库存
@@ -636,7 +628,7 @@ export class DistributionService implements OnModuleInit {
           where: { id: { in: uniqueStockIds }, status: 'available' },
         });
         const stockMap = new Map(stocks.map((s) => [s.id, s]));
-        for (const item of dto.items!) {
+        for (const item of items) {
           const stock = stockMap.get(item.stockId);
           if (!stock) {
             throw new BadRequestException(`库存 #${item.stockId} 不存在或不可用`);
@@ -666,7 +658,7 @@ export class DistributionService implements OnModuleInit {
             totalWeight,
             totalPieces,
             items: {
-              create: dto.items.map((item) => ({
+              create: items.map((item) => ({
                 stockId: item.stockId,
                 weight: item.weight,
                 pieceCount: item.pieceCount ?? null,
@@ -858,13 +850,13 @@ export class DistributionService implements OnModuleInit {
     // 默认只显示7天内的记录
     if (params.timeRange === 'today') {
       const start = new Date(); start.setHours(0, 0, 0, 0);
-      where.createdAt = { gte: start } as any;
+      where.createdAt = { gte: start } as Prisma.AiRecognitionHistoryWhereInput['createdAt'];
     } else if (params.timeRange === 'all') {
       // 不限时间
     } else {
       // 默认：最近7天
       const start = new Date(); start.setDate(start.getDate() - 7); start.setHours(0, 0, 0, 0);
-      where.createdAt = { gte: start } as any;
+      where.createdAt = { gte: start } as Prisma.AiRecognitionHistoryWhereInput['createdAt'];
     }
 
     const [data, total] = await Promise.all([
@@ -883,8 +875,8 @@ export class DistributionService implements OnModuleInit {
   async deleteRecognitionHistory(id: number) {
     const record = await this.prisma.aiRecognitionHistory.findUnique({ where: { id } });
     if (record?.imageUrl) {
-      const filePath = require('path').join(process.cwd(), record.imageUrl);
-      try { fs.promises.unlink(filePath); } catch { /* 文件不存在则忽略 */ }
+      const filePath = path.join(process.cwd(), record.imageUrl);
+      try { await fs.promises.unlink(filePath); } catch { /* 文件不存在则忽略 */ }
     }
     return this.prisma.aiRecognitionHistory.delete({ where: { id } });
   }
@@ -892,11 +884,10 @@ export class DistributionService implements OnModuleInit {
   async batchDeleteRecognitionHistory(ids: number[]) {
     // 删除关联的图片文件
     const records = await this.prisma.aiRecognitionHistory.findMany({ where: { id: { in: ids } } });
-    const path = require('path');
     for (const r of records) {
       if (r.imageUrl) {
         const fp = path.join(process.cwd(), r.imageUrl);
-        try { fs.promises.unlink(fp); } catch { /* skip */ }
+        try { await fs.promises.unlink(fp); } catch { /* skip */ }
       }
     }
     return this.prisma.aiRecognitionHistory.deleteMany({ where: { id: { in: ids } } });
@@ -915,11 +906,11 @@ export class DistributionService implements OnModuleInit {
 
       if (oldRecords.length === 0) return;
 
-      const path = require('path');
+      const pathModule = path;
       for (const r of oldRecords) {
         if (r.imageUrl) {
-          const fp = path.join(process.cwd(), r.imageUrl);
-          try { fs.promises.unlink(fp); } catch { /* skip */ }
+          const fp = pathModule.join(process.cwd(), r.imageUrl);
+          try { await fs.promises.unlink(fp); } catch { /* skip */ }
         }
       }
 

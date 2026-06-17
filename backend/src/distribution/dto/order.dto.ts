@@ -123,6 +123,3 @@ export class UpdateOrderDto {
   @Type(() => OrderItemDto)
   items?: OrderItemDto[];
 }
-
-export class ShipOrderDto {
-}

@@ -39,13 +39,24 @@ Thumbs.db
 *.temp
 
 # Vite deps cache
+.vite/
 mobile/.vite/
-flatstore/
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
 
+# Android build artifacts
+mobile/android/app/build/
+*.apk
+*.aab
+
 # Inventory photos (large binary files)
 库存照片/
+
+# OCR service debug/test scripts
+ocr-service/debug_*.py
+ocr-service/test_*.py
+ocr-service/extract_all_samples.py
+ocr-service/all_samples_output.txt

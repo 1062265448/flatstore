@@ -1,14 +1,13 @@
 // 设置测试环境变量 - 必须在导入任何模块之前
 process.env.DATABASE_URL = 'mysql://flat_user:flat_pass@localhost:3306/flat_library_test';
 process.env.JWT_SECRET = 'test-secret';
-process.env.QWEN_API_KEY = 'test-key';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DistributionService } from '../../src/distribution/distribution.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
-import { QwenAIService } from '../../src/common/services/qwen-ai.service';
-import { PrismaServiceMock, QwenAIServiceMock } from '../../src/common/__mocks__/mock-services';
+import { OcrService } from '../../src/common/services/ocr.service';
+import { PrismaServiceMock, OcrServiceMock } from '../../src/common/__mocks__/mock-services';
 
 describe('DistributionService', () => {
   let service: DistributionService;
@@ -20,7 +19,7 @@ describe('DistributionService', () => {
       providers: [
         DistributionService,
         { provide: PrismaService, useValue: PrismaServiceMock },
-        { provide: QwenAIService, useValue: QwenAIServiceMock },
+        { provide: OcrService, useValue: OcrServiceMock },
       ],
     }).compile();
 
@@ -214,7 +213,7 @@ describe('DistributionService', () => {
       it('创建订单成功时应锁定库存为 reserved', async () => {
         PrismaServiceMock.customer.findUnique.mockResolvedValue({ id: 1, name: '测试客户' });
         PrismaServiceMock.inventoryStock.findMany.mockResolvedValue([{ id: 1, status: 'available', batchNo: 'BATCH001' }]);
-        PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
+        PrismaServiceMock.$transaction.mockImplementation(async (fn: any) => {
           const tx = {
             inventoryStock: {
               findMany: jest.fn().mockResolvedValue([{ id: 1, status: 'available', batchNo: 'BATCH001' }]),
@@ -240,7 +239,7 @@ describe('DistributionService', () => {
       it('库存不可用时拒绝创建', async () => {
         PrismaServiceMock.customer.findUnique.mockResolvedValue({ id: 1, name: '测试客户' });
         PrismaServiceMock.inventoryStock.findMany.mockResolvedValue([]);
-        PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
+        PrismaServiceMock.$transaction.mockImplementation(async (fn: any) => {
           const tx = {
             inventoryStock: {
               findMany: jest.fn().mockResolvedValue([]),
@@ -277,7 +276,7 @@ describe('DistributionService', () => {
     describe('shipOrder（draft → shipped）', () => {
       it('草稿状态订单可以发货', async () => {
         PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue({ id: 1, status: 'draft', items: [{ stockId: 1 }] });
-        PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
+        PrismaServiceMock.$transaction.mockImplementation(async (fn: any) => {
           const tx = {
             distributionOrder: {
               update: jest.fn().mockResolvedValue({ id: 1, status: 'shipped' }),
@@ -293,7 +292,7 @@ describe('DistributionService', () => {
 
         const result = await service.shipOrder(1);
 
-        expect(result.status).toBe('shipped');
+        expect(result!.status).toBe('shipped');
       });
 
       it('非草稿状态订单不能发货', async () => {
@@ -318,7 +317,7 @@ describe('DistributionService', () => {
         const order = { id: 1, status: 'draft', items: [{ stockId: 1 }] };
         PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue(order);
 
-        PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
+        PrismaServiceMock.$transaction.mockImplementation(async (fn: any) => {
           const tx = {
             distributionOrder: {
               update: jest.fn().mockResolvedValue({ ...order, status: 'cancelled' }),
@@ -333,7 +332,7 @@ describe('DistributionService', () => {
 
         const result = await service.cancelOrder(1);
 
-        expect(result.status).toBe('cancelled');
+        expect(result!.status).toBe('cancelled');
         // 验证库存释放
         expect(PrismaServiceMock.$transaction).toHaveBeenCalled();
       });
@@ -356,7 +355,7 @@ describe('DistributionService', () => {
         const order = { id: 1, status: 'shipped', items: [{ stockId: 1 }] };
         PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue(order);
 
-        PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
+        PrismaServiceMock.$transaction.mockImplementation(async (fn: any) => {
           const tx = {
             distributionOrder: {
               update: jest.fn().mockResolvedValue({ ...order, deletedAt: new Date() }),
@@ -390,7 +389,7 @@ describe('DistributionService', () => {
       it('已取消订单可以删除', async () => {
         PrismaServiceMock.distributionOrder.findUnique.mockResolvedValue({ id: 1, status: 'cancelled', items: [] });
 
-        PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
+        PrismaServiceMock.$transaction.mockImplementation(async (fn: any) => {
           const tx = {
             distributionOrder: {
               update: jest.fn().mockResolvedValue({ id: 1, deletedAt: new Date() }),
@@ -427,7 +426,7 @@ describe('DistributionService', () => {
         ];
         PrismaServiceMock.distributionOrder.findMany.mockResolvedValue(orders);
 
-        PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
+        PrismaServiceMock.$transaction.mockImplementation(async (fn: any) => {
           const tx = {
             distributionOrder: { updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
             inventoryStock: { updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
@@ -457,18 +456,23 @@ describe('DistributionService', () => {
   // ==================== 客户管理 ====================
   describe('客户管理', () => {
     describe('getCustomers', () => {
-      it('应返回所有未删除客户', async () => {
+      it('应返回分页客户列表', async () => {
         const customers = [
           { id: 1, name: '客户A' },
           { id: 2, name: '客户B' },
         ];
         PrismaServiceMock.customer.findMany.mockResolvedValue(customers);
+        PrismaServiceMock.customer.count.mockResolvedValue(2);
 
         const result = await service.getCustomers();
 
-        expect(result).toEqual(customers);
+        expect(result.data).toEqual(customers);
+        expect(result.total).toBe(2);
+        expect(result.page).toBe(1);
         expect(PrismaServiceMock.customer.findMany).toHaveBeenCalledWith({
           where: { deletedAt: null },
+          skip: 0,
+          take: 50,
           orderBy: { createdAt: 'desc' },
         });
       });
@@ -620,7 +624,7 @@ describe('DistributionService', () => {
         items: [{ stockId: 1 }],
       });
 
-      PrismaServiceMock.$transaction.mockImplementation(async (fn) => {
+      PrismaServiceMock.$transaction.mockImplementation(async (fn: any) => {
           const tx = {
             distributionOrder: {
               update: jest.fn().mockResolvedValue({ id: 1, items: [{ stock: { id: 2 } }] }),
@@ -647,22 +651,28 @@ describe('DistributionService', () => {
   // ==================== AI 识别 ====================
   describe('AI 识别', () => {
     describe('aiRecognize', () => {
-      it('AI识别成功时应创建识别历史', async () => {
-        QwenAIServiceMock.recognizeImage.mockResolvedValue([
-          { batchNo: '26-7-090', grade: '9996', netWeight: 1.234, pieceCount: 10, packageNo: 1 },
-        ]);
+      let readFileMock: jest.SpyInstance;
+
+      beforeEach(() => {
+        readFileMock = jest.spyOn(require('fs').promises, 'readFile').mockResolvedValue(Buffer.from('fake-image-data'));
+      });
+
+      afterEach(() => {
+        readFileMock.mockRestore();
+      });
+
+      it('OCR识别成功时应创建识别历史', async () => {
+        OcrServiceMock.recognizeImage.mockResolvedValue({
+          results: [{ batchNo: '26-7-090', grade: '9996', netWeight: 1234, pieceCount: 10, packageNo: 1, productType: '', date: '', specification: undefined }],
+          warnings: [],
+          confidence: 0.78,
+        });
 
         const mockFile = {
-          path: '/tmp/test.jpg',
+          path: 'D:\\tmp\\test.jpg',
           filename: 'test.jpg',
           mimetype: 'image/jpeg',
         } as any;
-
-        // Mock fs.promises.readFile
-        jest.mock('fs', () => ({
-          ...jest.requireActual('fs'),
-          promises: { readFile: jest.fn().mockResolvedValue(Buffer.from('fake-image-data')), unlink: jest.fn() },
-        }));
 
         PrismaServiceMock.aiRecognitionHistory.create.mockResolvedValue({
           id: 1,
@@ -672,24 +682,18 @@ describe('DistributionService', () => {
           status: 'success',
         });
 
-        // 验证服务被正确注入
-        expect(service).toBeDefined();
+        await service.aiRecognize(mockFile);
+
+        expect(OcrServiceMock.recognizeImage).toHaveBeenCalled();
+        expect(PrismaServiceMock.aiRecognitionHistory.create).toHaveBeenCalled();
       });
 
-      it('AI识别失败时应创建失败记录', async () => {
-        QwenAIServiceMock.recognizeImage.mockRejectedValue(new Error('API error'));
+      it('OCR识别失败时应抛出错误', async () => {
+        OcrServiceMock.recognizeImage.mockRejectedValue(new Error('OCR 服务不可用'));
 
-        PrismaServiceMock.aiRecognitionHistory.create.mockResolvedValue({
-          id: 2,
-          status: 'failed',
-          errorMessage: 'API error',
-        });
+        const mockFile = { path: 'D:\\tmp\\fail.jpg', filename: 'fail.jpg', mimetype: 'image/jpeg' } as any;
 
-        const mockFile = { path: '/tmp/fail.jpg', filename: 'fail.jpg', mimetype: 'image/jpeg' } as any;
-
-        // 注意：这里会抛出异常，需要在catch中验证
-        // 由于mock fs的限制，我们仅验证service存在
-        expect(service).toBeDefined();
+        await expect(service.aiRecognize(mockFile)).rejects.toThrow('OCR 服务不可用');
       });
     });
 

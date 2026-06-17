@@ -48,8 +48,8 @@ export class CreateInventoryDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
-  nickelContent?: string;
+  @IsNumber()
+  nickelContent?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -132,8 +132,8 @@ export class UpdateInventoryDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
-  nickelContent?: string;
+  @IsNumber()
+  nickelContent?: number;
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -12,8 +12,8 @@ import type {
   CreateOrderDto,
   UpdateOrderDto,
   OrderQuery,
-  AiRecognizeResult,
-  AiRecognitionHistory,
+  OcrRecognizeResult,
+  OcrRecognitionHistory,
   RecognitionHistoryQuery,
   Statistics,
   PaginatedResponse,
@@ -65,13 +65,12 @@ export const searchInventory = (keyword: string, limit?: number) => {
   } as AxiosRequestConfig)
 }
 
-// AI 识别
-export const aiRecognize = (file: File, model: string = 'zhipu', signal?: AbortSignal) => {
+// OCR 识别
+export const aiRecognize = (file: File, signal?: AbortSignal) => {
   const formData = new FormData()
   formData.append('file', file)
-  return request.post<{ results: AiRecognizeResult[]; historyId: number }>('/distribution/inventory/ai-recognize', formData, {
+  return request.post<{ results: OcrRecognizeResult[]; historyId: number }>('/distribution/inventory/ai-recognize', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
-    params: { model },
     timeout: 120000,
     signal,
   } as AxiosRequestConfig)
@@ -131,9 +130,9 @@ export const cancelOrder = (id: number) => {
   return request.post<DistributionOrder>(`/distribution/orders/${id}/cancel`)
 }
 
-// ==================== AI 识别历史 ====================
+// ==================== OCR 识别历史 ====================
 export const getRecognitionHistory = (params: RecognitionHistoryQuery) => {
-  return request.get<PaginatedResponse<AiRecognitionHistory>>('/distribution/recognition-history', { params } as AxiosRequestConfig)
+  return request.get<PaginatedResponse<OcrRecognitionHistory>>('/distribution/recognition-history', { params } as AxiosRequestConfig)
 }
 
 export const deleteRecognitionHistory = (id: number) => {

@@ -1,4 +1,11 @@
-export const PrismaServiceMock = {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/**
+ * Prisma 服务 Mock — 用于单元测试
+ * 使用 any 类型以绕过循环引用和复杂 Prisma 类型约束
+ */
+
+export const PrismaServiceMock: any = {
   inventoryStock: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
@@ -37,10 +44,10 @@ export const PrismaServiceMock = {
     deleteMany: jest.fn(),
     count: jest.fn(),
   },
-  $transaction: jest.fn((fn) => fn(PrismaServiceMock)),
+  $transaction: jest.fn((fn: any) => fn(PrismaServiceMock)),
 };
 
-export const QwenAIServiceMock = {
+export const OcrServiceMock = {
   recognizeImage: jest.fn(),
-  crossValidate: jest.fn((items) => ({ results: items, warnings: [] })),
+  isAvailable: jest.fn().mockResolvedValue(true),
 };

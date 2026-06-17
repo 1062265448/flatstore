@@ -16,12 +16,12 @@
 
 <script setup lang="ts">
 import { Capacitor } from '@capacitor/core'
-import type { AiRecognitionHistory } from '@/types'
+import type { OcrRecognitionHistory } from '@/types'
 
-defineProps<{ item: AiRecognitionHistory }>()
+defineProps<{ item: OcrRecognitionHistory }>()
 defineEmits<{ click: [] }>()
 
-const PROD_BASE = 'http://62.234.92.126'
+const PROD_BASE = import.meta.env.VITE_PROD_SERVER_URL || ''
 
 const resolveImageUrl = (url: string) => {
   if (!url) return ''

@@ -28,7 +28,7 @@ import { useToast, toasts } from '@/composables/useToast'
 const { show: showToast, success, warning, danger } = useToast()
 
 // Expose toast globally for components that don't import useToast
-;(window as any).__toast = { show: showToast, success, warning, danger }
+;(window as unknown as Record<string, unknown>).__toast = { show: showToast, success, warning, danger }
 
 const route = useRoute()
 

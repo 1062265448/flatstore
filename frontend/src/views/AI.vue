@@ -2,7 +2,7 @@
   <div class="page-container ai-page">
     <!-- 页面标题 -->
     <div class="page-header fade-in">
-      <h1 class="page-title">AI 图像识别</h1>
+      <h1 class="page-title">票据识别</h1>
       <p class="page-subtitle">上传图片自动识别库存信息</p>
     </div>
 
@@ -10,8 +10,8 @@
       <!-- 上传识别区 -->
       <div class="upload-section glass-card fade-in" :style="{ animationDelay: '0.1s' }">
         <div class="section-header">
-          <h3>图像识别</h3>
-          <div class="model-selector">
+          <h3>票据识别</h3>
+          <div class="ocr-indicator">
             <span class="ocr-badge">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M9 3H5A2 2 0 003 5V19A2 2 0 005 21H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -445,7 +445,7 @@
 import { ref, reactive, computed, inject, onMounted } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { aiRecognize, batchCreateInventory, getRecognitionHistory, deleteRecognitionHistory, batchDeleteRecognitionHistory } from '@/api/distribution'
-import type { AiRecognizeResult, AiRecognitionHistory, CreateInventoryDto } from '@/types'
+import type { OcrRecognizeResult, OcrRecognitionHistory, CreateInventoryDto } from '@/types'
 
 const showToast = inject('showToast') as (message: string, type?: string) => void
 
@@ -455,13 +455,13 @@ const previewUrl = ref<string>('')
 const uploading = ref(false)
 const abortController = ref<AbortController | null>(null)
 const isDragOver = ref(false)
-const recognizeResults = ref<AiRecognizeResult[]>([])
+const recognizeResults = ref<OcrRecognizeResult[]>([])
 const currentHistoryId = ref<number | null>(null)
 
-const historyList = ref<AiRecognitionHistory[]>([])
+const historyList = ref<OcrRecognitionHistory[]>([])
 const historyTotal = ref(0)
 const historyLoading = ref(false)
-const selectedHistory = ref<AiRecognitionHistory[]>([])
+const selectedHistory = ref<OcrRecognitionHistory[]>([])
 const historyQuery = reactive({
   page: 1,
   limit: 10,
@@ -493,7 +493,7 @@ const locationOptions = [
 const gradeOptions = ['9997', '9996', '9950', '9920']
 
 const historyDetailVisible = ref(false)
-const currentHistory = ref<AiRecognitionHistory | null>(null)
+const currentHistory = ref<OcrRecognitionHistory | null>(null)
 
 const parsedResults = computed(() => {
   if (!currentHistory.value?.result) return []
@@ -586,7 +586,7 @@ const handleReset = () => {
 
 const recognizeWarnings = ref<string[]>([])
 
-const isWeightAbnormal = (item: AiRecognizeResult): boolean => {
+const isWeightAbnormal = (item: OcrRecognizeResult): boolean => {
   const w = item.netWeight || 0
   const isRange = typeof item.packageNo === 'string' && /^\d+\s*[-–—]\s*\d+$/.test(item.packageNo)
   if (isRange) return w <= 0 || w > 5000
@@ -603,7 +603,7 @@ const handleRecognize = async () => {
   const ctrl = new AbortController()
   abortController.value = ctrl
   try {
-    const res = await aiRecognize(selectedFile.value, 'ocr', ctrl.signal)
+    const res = await aiRecognize(selectedFile.value, ctrl.signal)
     recognizeResults.value = (res as any).results || res as any
     currentHistoryId.value = (res as any).historyId || null
     recognizeWarnings.value = (res as any).warnings || []
@@ -630,7 +630,7 @@ const handleBatchCreate = () => {
   importForm.batchNo = ''
   importForm.grade = ''
   importForm.location = ''
-  // Auto-fill specification from AI results
+  // Auto-fill specification from OCR results
   const specs = [...new Set(recognizeResults.value.map(r => r.specification).filter(Boolean))]
   importForm.specification = specs.length === 1 ? specs[0]! : ''
   importVisible.value = true
@@ -653,7 +653,7 @@ const handleImportSubmit = async () => {
       weight: (r.netWeight || 0) as number,
       pieceCount: isSmallBlock ? undefined : (r.pieceCount || 0),
       location: importForm.location,
-      sourceType: 'ai_recognize',
+      sourceType: 'ocr_recognize',
       sourceImage: currentHistory.value?.imageUrl || historyList.value.find(h => h.id === currentHistoryId.value)?.imageUrl || '',
     }))
 
@@ -678,7 +678,7 @@ const fetchHistory = async () => {
     })
     // 拼接完整的图片 URL（uploads 不在 api 路径下，直接用根路径）
     const imageBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002').replace(/\/api$/, '')
-    historyList.value = (res as any).data.map((item: AiRecognitionHistory) => ({
+    historyList.value = (res as any).data.map((item: OcrRecognitionHistory) => ({
       ...item,
       imageUrl: item.imageUrl ? `${imageBase}${item.imageUrl}` : '',
     }))
@@ -695,7 +695,7 @@ const goToHistoryPage = (page: number) => {
 
 
 
-const handleViewHistory = (row: AiRecognitionHistory) => {
+const handleViewHistory = (row: OcrRecognitionHistory) => {
   currentHistory.value = row
   historyDetailVisible.value = true
 }
@@ -769,7 +769,7 @@ onMounted(() => {
   padding: var(--spacing-lg);
 }
 
-.model-selector {
+.ocr-indicator {
   display: flex;
   align-items: center;
 }
