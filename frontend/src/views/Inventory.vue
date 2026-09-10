@@ -74,10 +74,7 @@
 
         <select v-model="queryForm.productType" class="filter-select" @change="handleFilterChange">
           <option value="">全部类型</option>
-          <option value="电解镍">电解镍</option>
-          <option value="电积镍">电积镍</option>
-          <option value="不锈钢专用镍">不锈钢专用镍</option>
-          <option value="电镀专用镍">电镀专用镍</option>
+          <option v-for="t in PRODUCT_TYPE_OPTIONS" :key="t" :value="t">{{ t }}</option>
         </select>
 
         <select v-model="queryForm.specification" class="filter-select" @change="handleFilterChange">
@@ -183,8 +180,8 @@
             <td>{{ row.pieceCount ?? '-' }}</td>
             <td>{{ row.location || '-' }}</td>
             <td>
-              <span :class="['tag', statusTagClass[row.status]]">
-                {{ statusLabel[row.status] }}
+              <span :class="['tag', INVENTORY_STATUS_TAG_CLASS[row.status]]">
+                {{ INVENTORY_STATUS_LABEL[row.status] }}
               </span>
             </td>
             <td class="time">{{ formatDate(row.createdAt) }}</td>
@@ -248,175 +245,14 @@
     </div>
 
     <!-- 库存详情弹窗 -->
-    <Teleport to="body">
-      <transition name="modal">
-        <div v-if="detailVisible" class="modal-overlay" @click.self="detailVisible = false">
-          <div class="modal-content modal-lg glass-card">
-            <div class="modal-header">
-              <h3 class="modal-title">库存详情</h3>
-              <button class="modal-close" @click="detailVisible = false">✕</button>
-            </div>
-
-            <div class="modal-body" v-if="detailStock">
-              <div class="detail-grid">
-                <div class="detail-item">
-                  <span class="detail-label">批号</span>
-                  <span class="detail-value batch-no">{{ detailStock.batchNo }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">包号</span>
-                  <span class="detail-value">{{ detailStock.packageNo || '-' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">品级</span>
-                  <span class="tag tag-info">{{ detailStock.grade }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">状态</span>
-                  <span :class="['tag', statusTagClass[detailStock.status]]">{{ statusLabel[detailStock.status] }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">产品类型</span>
-                  <span class="detail-value">{{ detailStock.productType || '-' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">规格</span>
-                  <span class="detail-value">{{ detailStock.specification || '-' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">重量(kg)</span>
-                  <span class="detail-value weight">{{ Number(detailStock.weight).toFixed(3) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">片数</span>
-                  <span class="detail-value">{{ detailStock.pieceCount ?? '-' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">存放位置</span>
-                  <span class="detail-value">{{ detailStock.location || '-' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">镍含量</span>
-                  <span class="detail-value">{{ detailStock.nickelContent ? Number(detailStock.nickelContent).toFixed(2) + '%' : '-' }}</span>
-                </div>
-                <div class="detail-item full-width">
-                  <span class="detail-label">备注</span>
-                  <span class="detail-value">{{ detailStock.remark || '-' }}</span>
-                </div>
-              </div>
-
-              <!-- 关联订单 -->
-              <div v-if="detailStock.linkedOrders && detailStock.linkedOrders.length" class="linked-section">
-                <h4>关联配货单 ({{ detailStock.linkedOrders.length }})</h4>
-                <div class="linked-list">
-                  <div v-for="order in detailStock.linkedOrders" :key="order.id" class="linked-card" @click="goToOrder(order.id)">
-                    <div class="linked-info">
-                      <span class="linked-order-no">{{ order.orderNo || `#${order.id}` }}</span>
-                      <span :class="['tag', orderStatusTagClass[order.status]]">{{ orderStatusLabel[order.status] || order.status }}</span>
-                    </div>
-                    <div class="linked-meta">
-                      <span v-if="order.customerName">{{ order.customerName }}</span>
-                      <span v-if="order.totalWeight">{{ Number(order.totalWeight).toFixed(3) }}kg</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button class="btn-pill btn-ghost" @click="detailVisible = false">关闭</button>
-            </div>
-          </div>
-        </div>
-      </transition>
-    </Teleport>
+    <InventoryDetailDialog v-model="detailVisible" :stock="detailStock" />
 
     <!-- 新增/编辑弹窗 -->
-    <Teleport to="body">
-      <transition name="modal">
-        <div v-if="dialogVisible" class="modal-overlay" @click.self="dialogVisible = false">
-          <div class="modal-content glass-card">
-            <div class="modal-header">
-              <h3 class="modal-title">{{ dialogTitle }}</h3>
-              <button class="modal-close" @click="dialogVisible = false">✕</button>
-            </div>
-
-            <div class="modal-body">
-              <div class="form-grid">
-                <div class="form-item">
-                  <label>批号 *</label>
-                  <input v-model="form.batchNo" type="text" placeholder="请输入批号" />
-                </div>
-                <div class="form-item">
-                  <label>品级 *</label>
-                  <select v-model="form.grade" class="form-select">
-                    <option value="">请选择品级</option>
-                    <option value="9997">9997</option>
-                    <option value="9996">9996</option>
-                    <option value="9950">9950</option>
-                    <option value="9920">9920</option>
-                  </select>
-                </div>
-                <div class="form-item">
-                  <label>规格</label>
-                  <select v-model="form.specification" class="form-select">
-                    <option value="">请选择规格</option>
-                    <option value="整板">整板</option>
-                    <option value="镍条">镍条</option>
-                    <option value="100*100">100*100</option>
-                    <option value="50*50">50*50</option>
-                    <option value="25*25">25*25</option>
-                  </select>
-                </div>
-                <div class="form-item">
-                  <label>产品类型</label>
-                  <select v-model="form.productType" class="form-select">
-                    <option value="">请选择产品类型</option>
-                    <option value="电解镍">电解镍</option>
-                    <option value="电积镍">电积镍</option>
-                    <option value="不锈钢专用镍">不锈钢专用镍</option>
-                    <option value="电镀专用镍">电镀专用镍</option>
-                  </select>
-                </div>
-                <div class="form-item">
-                  <label>重量(kg) *</label>
-                  <input v-model.number="form.weight" type="number" step="0.001" min="0" placeholder="0.000" />
-                </div>
-                <div class="form-item">
-                  <label>片数</label>
-                  <input v-model.number="form.pieceCount" type="number" min="0" placeholder="留空表示不适用" />
-                </div>
-                <div class="form-item full-width">
-                  <label>存放位置</label>
-                  <div class="location-select-wrap">
-                    <select v-model="locationPreset" class="form-select" @change="onLocationPresetChange">
-                      <option value="">自定义位置</option>
-                      <option value="三厂区">三厂区</option>
-                      <option value="二厂区">二厂区</option>
-                    </select>
-                    <input
-                      v-model="form.location"
-                      type="text"
-                      placeholder="输入或选择位置"
-                      class="location-input"
-                    />
-                  </div>
-                </div>
-                <div class="form-item full-width">
-                  <label>备注</label>
-                  <textarea v-model="form.remark" rows="3" placeholder="备注信息"></textarea>
-                </div>
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button class="btn-pill btn-ghost" @click="dialogVisible = false">取消</button>
-              <button class="btn-pill btn-primary" @click="handleSubmit">确定</button>
-            </div>
-          </div>
-        </div>
-      </transition>
-    </Teleport>
+    <InventoryFormDialog
+      v-model="dialogVisible"
+      :edit-stock="editingStock"
+      @saved="handleSearch"
+    />
   </div>
 </template>
 
@@ -427,7 +263,12 @@ import { useInventoryStore } from '@/stores/inventory'
 import { getInventoryById, searchInventory } from '@/api/distribution'
 import { ElMessageBox } from 'element-plus'
 import { getRecentSearches, addSearch, clearSearches } from '@/utils/searchHistory'
-import type { InventoryStock, CreateInventoryDto } from '@/types'
+import { isSmallBlockSpec } from '@/utils/stock'
+import { PRODUCT_TYPE_OPTIONS } from '@/constants/order'
+import { INVENTORY_STATUS_TAG_CLASS, INVENTORY_STATUS_LABEL } from '@/constants/inventory'
+import InventoryDetailDialog from '@/components/inventory/InventoryDetailDialog.vue'
+import InventoryFormDialog from '@/components/inventory/InventoryFormDialog.vue'
+import type { InventoryStock } from '@/types'
 
 const router = useRouter()
 const inventoryStore = useInventoryStore()
@@ -458,20 +299,6 @@ const queryForm = reactive({
 const detailVisible = ref(false)
 const detailStock = ref<InventoryStock | null>(null)
 
-// 订单状态映射
-const orderStatusTagClass: Record<string, string> = {
-  draft: 'tag-default',
-  shipping: 'tag-info',
-  shipped: 'tag-success',
-  cancelled: 'tag-danger',
-}
-const orderStatusLabel: Record<string, string> = {
-  draft: '草稿',
-  shipping: '发货中',
-  shipped: '已发货',
-  cancelled: '已取消',
-}
-
 const handleViewDetail = async (row: InventoryStock) => {
   try {
     const res = await getInventoryById(row.id) as InventoryStock
@@ -482,48 +309,9 @@ const handleViewDetail = async (row: InventoryStock) => {
   }
 }
 
-const goToOrder = (orderId: number) => {
-  detailVisible.value = false
-  router.push({ path: '/orders', query: { highlight: String(orderId) } })
-}
-
 const selectedRows = ref<InventoryStock[]>([])
 const dialogVisible = ref(false)
-const dialogTitle = ref('新增库存')
-const isEdit = ref(false)
-const currentId = ref<number>()
-
-const form = reactive<CreateInventoryDto>({
-  batchNo: '',
-  grade: '',
-  specification: '',
-  productType: '',
-  weight: 0,
-  pieceCount: undefined as number | undefined,
-  location: '',
-  remark: '',
-})
-
-const locationPreset = ref('')
-const onLocationPresetChange = () => {
-  if (locationPreset.value) {
-    form.location = locationPreset.value
-  }
-}
-
-const statusTagClass: Record<string, string> = {
-  available: 'tag-success',
-  reserved: 'tag-warning',
-  shipped: 'tag-default',
-  issued: 'tag-info',
-}
-
-const statusLabel: Record<string, string> = {
-  available: '可用',
-  reserved: '已预留',
-  shipped: '已发货',
-  issued: '已发出',
-}
+const editingStock = ref<InventoryStock | null>(null)
 
 const totalPages = computed(() => Math.ceil(inventoryStore.total / queryForm.limit))
 
@@ -532,7 +320,7 @@ const totalWeight = computed(() =>
 )
 const totalPieces = computed(() =>
   inventoryStore.inventoryList.reduce((sum, r) => {
-    if (r.specification && !['整板', '镍条'].includes(r.specification)) return sum
+    if (isSmallBlockSpec(r.specification)) return sum
     return sum + (r.pieceCount || 0)
   }, 0)
 )
@@ -667,60 +455,13 @@ const toggleSelectAll = () => {
 }
 
 const handleCreate = () => {
-  dialogTitle.value = '新增库存'
-  isEdit.value = false
-  currentId.value = undefined
-  Object.assign(form, {
-    batchNo: '',
-    grade: '',
-    specification: '',
-    productType: '',
-    weight: 0,
-    pieceCount: undefined as number | undefined,
-    location: '',
-    nickelContent: '',
-    remark: '',
-  })
-  locationPreset.value = ''
+  editingStock.value = null
   dialogVisible.value = true
 }
 
 const handleEdit = (row: InventoryStock) => {
-  dialogTitle.value = '编辑库存'
-  isEdit.value = true
-  currentId.value = row.id
-  Object.assign(form, {
-    batchNo: row.batchNo || '',
-    grade: row.grade || '',
-    specification: row.specification || '',
-    productType: row.productType || '',
-    weight: Number(row.weight) || 0,
-    pieceCount: row.pieceCount || undefined,
-    location: row.location || '',
-    remark: row.remark || '',
-  })
-  locationPreset.value = ['三厂区', '二厂区'].includes(row.location || '') ? row.location! : ''
+  editingStock.value = row
   dialogVisible.value = true
-}
-
-const handleSubmit = async () => {
-  if (!form.batchNo || !form.grade || !form.weight) {
-    showToast?.('请填写必填项', 'warning')
-    return
-  }
-  try {
-    if (isEdit.value && currentId.value) {
-      await inventoryStore.updateInventory(currentId.value, form)
-      showToast?.('更新成功', 'success')
-    } else {
-      await inventoryStore.createInventory(form)
-      showToast?.('创建成功', 'success')
-    }
-    dialogVisible.value = false
-    handleSearch()
-  } catch {
-    // 错误已在 API 层处理
-  }
 }
 
 const handleDelete = async (id: number) => {
@@ -1169,246 +910,6 @@ onMounted(() => {
   padding: 0 var(--spacing-sm);
 }
 
-// ==================== 弹窗 ====================
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal);
-  padding: var(--spacing-lg);
-}
-
-.modal-content {
-  width: 100%;
-  max-width: 640px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--color-divider);
-}
-
-.modal-title {
-  font-size: var(--font-size-xl);
-  font-weight: 600;
-}
-
-.modal-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-
-  &:hover {
-    background: var(--color-danger-bg);
-    color: var(--color-danger);
-    transform: rotate(90deg);
-  }
-}
-
-.modal-body {
-  padding: var(--spacing-lg);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-lg);
-  border-top: 1px solid var(--color-divider);
-}
-
-// 表单
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-md);
-}
-
-.form-item {
-  &.full-width {
-    grid-column: span 2;
-  }
-
-  label {
-    display: block;
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    margin-bottom: var(--spacing-xs);
-  }
-
-  input,
-  textarea,
-  select {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-base);
-    background: var(--color-bg);
-    color: var(--color-text-primary);
-    transition: all var(--transition-fast);
-
-    &:focus {
-      outline: none;
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px var(--color-primary-100);
-    }
-
-    &::placeholder {
-      color: var(--color-text-tertiary);
-    }
-  }
-
-  textarea {
-    resize: vertical;
-    min-height: 80px;
-  }
-}
-
-.location-select-wrap {
-  display: flex;
-  gap: var(--spacing-sm);
-
-  .form-select {
-    flex: 1;
-  }
-
-  .location-input {
-    flex: 1;
-  }
-}
-
-// 详情弹窗
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-
-  &.full-width {
-    grid-column: span 2;
-  }
-
-  .detail-label {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .detail-value {
-    font-size: var(--font-size-base);
-    color: var(--color-text-primary);
-
-    &.batch-no {
-      font-family: var(--font-mono);
-      font-weight: 500;
-    }
-
-    &.weight {
-      font-family: var(--font-mono);
-    }
-  }
-}
-
-// 关联订单
-.linked-section {
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-lg);
-  border-top: 1px solid var(--color-divider);
-
-  h4 {
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    margin-bottom: var(--spacing-md);
-  }
-}
-
-.linked-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.linked-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-md);
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
-
-  &:hover {
-    background: var(--color-bg-hover);
-  }
-}
-
-.linked-info {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.linked-order-no {
-  font-weight: 500;
-  font-family: var(--font-mono);
-  color: var(--color-primary);
-}
-
-.linked-meta {
-  display: flex;
-  gap: var(--spacing-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-// 弹窗动画
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity var(--transition-slow);
-
-  .modal-content {
-    transition: transform var(--transition-slow), opacity var(--transition-slow);
-  }
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-
-  .modal-content {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-}
-
 // ==================== 响应式 ====================
 @media (max-width: 1024px) {
   .toolbar {
@@ -1422,14 +923,6 @@ onMounted(() => {
 
   .search-input {
     width: 100%;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .form-item.full-width {
-    grid-column: span 1;
   }
 }
 

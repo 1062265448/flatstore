@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
+import { getToken, clearAuth } from '@/utils/token'
 
 // ⚠️ 注意：Axios 拦截器已解包 response.data
 // 响应拦截器会将 response.data 直接返回
@@ -24,7 +25,7 @@ const request: RequestInstance = axios.create({
 request.interceptors.request.use(
   (config) => {
     // 添加 JWT Token
-    const token = localStorage.getItem('token')
+    const token = getToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -51,8 +52,7 @@ request.interceptors.response.use(
   (error) => {
     // 401 未授权，跳转登录页
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      clearAuth()
       const currentPath = router.currentRoute.value.fullPath
       router.push(currentPath !== '/login' ? `/login?redirect=${encodeURIComponent(currentPath)}` : '/login')
       return Promise.reject(error)

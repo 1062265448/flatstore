@@ -1,10 +1,12 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import router from './router'
+
+// Element Plus 按需引入由 unplugin-vue-components 处理；
+// ElMessage / ElMessageBox 通过 API 调用，需手动引入样式
+import 'element-plus/es/components/message/style/css'
+import 'element-plus/es/components/message-box/style/css'
 
 // 全局样式（极简玻璃态设计系统）
 import './styles/global.scss'
@@ -12,13 +14,7 @@ import './styles/global.scss'
 const app = createApp(App)
 const pinia = createPinia()
 
-// 注册所有图标
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, component)
-}
-
 app.use(pinia)
 app.use(router)
-app.use(ElementPlus)
 
 app.mount('#app')

@@ -2,9 +2,10 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login as apiLogin, register as apiRegister, getProfile as apiGetProfile, type LoginRequest, type RegisterRequest, type LoginResponse, type UserProfile } from '@/api/auth'
 import router from '@/router'
+import { getToken, setToken, getSavedUser, setSavedUser, clearAuth as clearStoredAuth } from '@/utils/token'
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref<string | null>(localStorage.getItem('token'))
+  const token = ref<string | null>(getToken())
   const user = ref<LoginResponse['user'] | null>(null)
   const loading = ref(false)
 
@@ -13,15 +14,14 @@ export const useAuthStore = defineStore('auth', () => {
   const setAuth = (data: LoginResponse) => {
     token.value = data.access_token
     user.value = data.user
-    localStorage.setItem('token', data.access_token)
-    localStorage.setItem('user', JSON.stringify(data.user))
+    setToken(data.access_token)
+    setSavedUser(data.user)
   }
 
   const clearAuth = () => {
     token.value = null
     user.value = null
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    clearStoredAuth()
   }
 
   const login = async (credentials: LoginRequest) => {
@@ -68,13 +68,12 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 初始化时从 localStorage 恢复用户信息
   const initAuth = () => {
-    const savedUser = localStorage.getItem('user')
+    const savedUser = getSavedUser()
     if (savedUser) {
-      try {
-        user.value = JSON.parse(savedUser)
-      } catch {
-        clearAuth()
-      }
+      user.value = savedUser
+    } else if (localStorage.getItem('user')) {
+      // user 存在但 JSON 损坏，清除认证状态
+      clearAuth()
     }
   }
 

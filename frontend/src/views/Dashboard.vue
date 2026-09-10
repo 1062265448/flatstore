@@ -95,8 +95,13 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStatisticsStore } from '@/stores/statistics'
 import { useThemeStore } from '@/stores/theme'
-import * as echarts from 'echarts'
-import type { EChartsOption } from 'echarts'
+import * as echarts from 'echarts/core'
+import { BarChart, PieChart } from 'echarts/charts'
+import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+import type { EChartsCoreOption } from 'echarts/core'
+
+echarts.use([BarChart, PieChart, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer])
 
 const router = useRouter()
 const statisticsStore = useStatisticsStore()
@@ -105,8 +110,8 @@ const themeStore = useThemeStore()
 const stats = computed(() => statisticsStore.stats)
 const inventoryChartRef = ref<HTMLElement>()
 const orderChartRef = ref<HTMLElement>()
-let inventoryChart: echarts.ECharts | null = null
-let orderChart: echarts.ECharts | null = null
+let inventoryChart: echarts.EChartsType | null = null
+let orderChart: echarts.EChartsType | null = null
 
 // 统计卡片配置
 const statCards = computed(() => [
@@ -154,7 +159,7 @@ const initInventoryChart = () => {
   }
 
   const theme = getChartTheme()
-  const option: EChartsOption = {
+  const option: EChartsCoreOption = {
     tooltip: {
       trigger: 'item',
       backgroundColor: themeStore.isDark ? '#1d1d1f' : '#fff',
@@ -200,7 +205,7 @@ const initOrderChart = () => {
   }
 
   const theme = getChartTheme()
-  const option: EChartsOption = {
+  const option: EChartsCoreOption = {
     tooltip: {
       trigger: 'axis',
       backgroundColor: themeStore.isDark ? '#1d1d1f' : '#fff',

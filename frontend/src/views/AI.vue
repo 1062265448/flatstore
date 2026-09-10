@@ -143,7 +143,7 @@
             </div>
 
             <div class="result-actions">
-              <button class="btn-pill btn-primary" @click="handleBatchCreate">
+              <button class="btn-pill btn-primary" @click="openImportDialog">
                 <span class="btn-icon">+</span> 批量导入库存
               </button>
             </div>
@@ -234,218 +234,35 @@
     </div>
 
     <!-- 批量导入弹窗 -->
-    <Teleport to="body">
-      <transition name="modal">
-        <div v-if="importVisible" class="modal-overlay" @click.self="importVisible = false">
-          <div class="modal-content modal-lg glass-card">
-            <div class="modal-header">
-              <h3 class="modal-title">批量导入库存</h3>
-              <button class="modal-close" @click="importVisible = false">✕</button>
-            </div>
-
-            <div class="modal-body">
-              <div class="form-grid">
-                <div class="form-item">
-                  <label>统一批号</label>
-                  <input v-model="importForm.batchNo" type="text" placeholder="为空则使用识别结果中的批号" />
-                </div>
-                <div class="form-item">
-                  <label>统一品级</label>
-                  <select v-model="importForm.grade" class="grade-select">
-                    <option value="">使用识别结果中的品级</option>
-                    <option v-for="g in gradeOptions" :key="g" :value="g">{{ g }}</option>
-                  </select>
-                </div>
-                <div class="form-item">
-                  <label>规格</label>
-                  <div class="chip-select">
-                    <button
-                      v-for="opt in specOptions"
-                      :key="opt.value"
-                      :class="['chip', { active: importForm.specification === opt.value }]"
-                      @click="importForm.specification = importForm.specification === opt.value ? '' : opt.value"
-                    >
-                      <span class="chip-icon">{{ opt.icon }}</span>
-                      <span class="chip-label">{{ opt.label }}</span>
-                    </button>
-                  </div>
-                </div>
-                <div class="form-item">
-                  <label>存放位置</label>
-                  <div class="chip-select">
-                    <button
-                      v-for="opt in locationOptions"
-                      :key="opt.value"
-                      :class="['chip chip-location', { active: importForm.location === opt.value }]"
-                      @click="importForm.location = importForm.location === opt.value ? '' : opt.value"
-                    >
-                      <span class="chip-dot" :style="{ background: opt.color }"></span>
-                      <span class="chip-label">{{ opt.label }}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="preview-table">
-                <h4>导入预览</h4>
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>批号</th>
-                      <th>品级</th>
-                      <th>规格</th>
-                      <th>产品类型</th>
-                      <th>片数</th>
-                      <th>净重(kg)</th>
-                      <th>存放位置</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(item, index) in recognizeResults" :key="index">
-                      <td>{{ importForm.batchNo || item.batchNo || '-' }}</td>
-                      <td>{{ importForm.grade || item.grade || '-' }}</td>
-                      <td>{{ importForm.specification || '-' }}</td>
-                      <td>{{ item.productType || '-' }}</td>
-                      <td>{{ item.pieceCount || '-' }}</td>
-                      <td>{{ (item.netWeight || 0).toFixed(1) }}</td>
-                      <td>{{ importForm.location || '-' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button class="btn-pill btn-ghost" @click="importVisible = false">取消</button>
-              <button class="btn-pill btn-primary" :disabled="importing" @click="handleImportSubmit">
-                {{ importing ? '导入中...' : '确认导入' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </transition>
-    </Teleport>
+    <AiImportDialog
+      v-model="importVisible"
+      :results="recognizeResults"
+      :history-id="currentHistoryId"
+      :source-image="importSourceImage"
+      @imported="onImported"
+    />
 
     <!-- 历史详情弹窗 -->
-    <Teleport to="body">
-      <transition name="modal">
-        <div v-if="historyDetailVisible" class="modal-overlay" @click.self="historyDetailVisible = false">
-          <div class="modal-content modal-lg glass-card">
-            <div class="modal-header">
-              <h3 class="modal-title">识别详情</h3>
-              <button class="modal-close" @click="historyDetailVisible = false">✕</button>
-            </div>
-
-            <div class="modal-body" v-if="currentHistory">
-              <div class="detail-grid">
-                <div class="detail-item">
-                  <span class="detail-label">ID</span>
-                  <span class="detail-value">{{ currentHistory.id }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">状态</span>
-                  <span :class="['tag', currentHistory.status === 'success' ? 'tag-success' : 'tag-danger']">
-                    {{ currentHistory.status === 'success' ? '成功' : '失败' }}
-                  </span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">识别数量</span>
-                  <span class="detail-value">{{ currentHistory.itemCount }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">批号</span>
-                  <span class="detail-value">{{ currentHistory.batchNo || '-' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">品级</span>
-                  <span class="detail-value">{{ currentHistory.grade || '-' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">识别时间</span>
-                  <span class="detail-value">{{ formatDate(currentHistory.createdAt) }}</span>
-                </div>
-                <div v-if="currentHistory.errorMessage" class="detail-item full-width">
-                  <span class="detail-label">错误信息</span>
-                  <span class="detail-value text-danger">{{ currentHistory.errorMessage }}</span>
-                </div>
-              </div>
-
-              <div v-if="parsedResults.length" class="result-section">
-                <h4>识别结果</h4>
-                <div class="results-table-wrap">
-                  <table class="data-table">
-                    <thead>
-                      <tr>
-                        <th>包号</th>
-                        <th>批号</th>
-                        <th>品级</th>
-                        <th>规格</th>
-                        <th>产品类型</th>
-                        <th>片数</th>
-                        <th>净重(kg)</th>
-                        <th>日期</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="(item, i) in parsedResults" :key="i">
-                        <td>{{ item.packageNo || '-' }}</td>
-                        <td class="batch-no">{{ item.batchNo || '-' }}</td>
-                        <td><span class="tag tag-info">{{ item.grade || '-' }}</span></td>
-                        <td>{{ item.specification || '-' }}</td>
-                        <td>{{ item.productType || '-' }}</td>
-                        <td>{{ item.pieceCount || '-' }}</td>
-                        <td class="weight">{{ (item.netWeight || 0).toFixed(1) }}</td>
-                        <td>{{ item.date || '-' }}</td>
-                      </tr>
-                    </tbody>
-                    <tfoot v-if="parsedResults.length">
-                      <tr class="summary-row">
-                        <td colspan="6" class="summary-label">合计</td>
-                        <td class="weight">{{ parsedTotalWeight }} kg</td>
-                        <td v-if="parsedTotalPieces > 0">{{ parsedTotalPieces }}块</td>
-                        <td v-else>-</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-
-              <div v-if="currentHistory.imageUrl" class="image-section">
-                <h4>原始图片</h4>
-                <img :src="currentHistory.imageUrl" class="detail-image" />
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button class="btn-pill btn-ghost" @click="historyDetailVisible = false">关闭</button>
-              <button
-                v-if="parsedResults.length"
-                class="btn-pill btn-primary"
-                @click="handleImportFromHistory"
-              >导入库存</button>
-            </div>
-          </div>
-        </div>
-      </transition>
-    </Teleport>
+    <AiHistoryDetailDialog
+      v-model="historyDetailVisible"
+      :history="currentHistory"
+      @import="onImportFromHistory"
+    />
 
     <!-- 图片预览 -->
-    <Teleport to="body">
-      <transition name="modal">
-        <div v-if="imagePreviewVisible" class="image-preview-overlay" @click="imagePreviewVisible = false">
-          <img :src="previewImageUrl" class="image-preview" />
-          <button class="preview-close">✕</button>
-        </div>
-      </transition>
-    </Teleport>
+    <ImagePreviewDialog v-model="imagePreviewVisible" :url="previewImageUrl" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, inject, onMounted } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { aiRecognize, batchCreateInventory, getRecognitionHistory, deleteRecognitionHistory, batchDeleteRecognitionHistory } from '@/api/distribution'
-import type { OcrRecognizeResult, OcrRecognitionHistory, CreateInventoryDto } from '@/types'
+import { aiRecognize, getRecognitionHistory, deleteRecognitionHistory, batchDeleteRecognitionHistory } from '@/api/distribution'
+import { isRangePackageNo } from '@/utils/stock'
+import AiImportDialog from '@/components/ai/AiImportDialog.vue'
+import AiHistoryDetailDialog from '@/components/ai/AiHistoryDetailDialog.vue'
+import ImagePreviewDialog from '@/components/ai/ImagePreviewDialog.vue'
+import type { OcrRecognizeResult, OcrRecognitionHistory } from '@/types'
 
 const showToast = inject('showToast') as (message: string, type?: string) => void
 
@@ -469,70 +286,23 @@ const historyQuery = reactive({
 })
 
 const importVisible = ref(false)
-const importing = ref(false)
-const importForm = reactive({
-  batchNo: '',
-  grade: '',
-  specification: '',
-  location: '',
-})
-
-const specOptions = [
-  { value: '整板', label: '整板', icon: '▣' },
-  { value: '镍条', label: '镍条', icon: '▬' },
-  { value: '100×100', label: '100×100', icon: '⊞' },
-  { value: '50×50', label: '50×50', icon: '⊟' },
-  { value: '25×25', label: '25×25', icon: '▪' },
-]
-
-const locationOptions = [
-  { value: '二厂区', label: '二厂区', color: '#3b82f6' },
-  { value: '三厂区', label: '三厂区', color: '#10b981' },
-]
-
-const gradeOptions = ['9997', '9996', '9950', '9920']
+const importSourceImage = ref('')
 
 const historyDetailVisible = ref(false)
 const currentHistory = ref<OcrRecognitionHistory | null>(null)
-
-const parsedResults = computed(() => {
-  if (!currentHistory.value?.result) return []
-  try {
-    const raw = typeof currentHistory.value.result === 'string'
-      ? JSON.parse(currentHistory.value.result)
-      : currentHistory.value.result
-    // 统一产品类型名称
-    return (Array.isArray(raw) ? raw : []).map((item: any) => ({
-      ...item,
-      productType: item.productType === '电积镍板' ? '电积镍' : (item.productType || ''),
-    }))
-  } catch {
-    return []
-  }
-})
-
-const recognizeTotalWeight = computed(() =>
-  recognizeResults.value.reduce((sum, r) => sum + (r.netWeight || 0), 0).toFixed(1)
-)
-const recognizeTotalPieces = computed(() => {
-  const isSmallBlock = recognizeResults.value.some(r => typeof r.packageNo === 'string' && /^\d+\s*[-–—]\s*\d+$/.test(r.packageNo))
-  if (isSmallBlock) return 0
-  return recognizeResults.value.reduce((sum, r) => sum + (r.pieceCount || 0), 0)
-})
-const parsedTotalWeight = computed(() =>
-  parsedResults.value.reduce((sum, r: any) => sum + (r.netWeight || 0), 0).toFixed(1)
-)
-const parsedTotalPieces = computed(() => {
-  const isSmallBlock = parsedResults.value.some((r: any) => typeof r.packageNo === 'string' && /^\d+\s*[-–—]\s*\d+$/.test(r.packageNo))
-  if (isSmallBlock) return 0
-  return parsedResults.value.reduce((sum, r: any) => sum + (r.pieceCount || 0), 0)
-})
 
 const imagePreviewVisible = ref(false)
 const previewImageUrl = ref('')
 
 const totalHistoryPages = computed(() => Math.ceil(historyTotal.value / historyQuery.limit))
 
+const recognizeTotalWeight = computed(() =>
+  recognizeResults.value.reduce((sum, r) => sum + (r.netWeight || 0), 0).toFixed(1)
+)
+const recognizeTotalPieces = computed(() => {
+  if (recognizeResults.value.some(r => isRangePackageNo(r.packageNo))) return 0
+  return recognizeResults.value.reduce((sum, r) => sum + (r.pieceCount || 0), 0)
+})
 
 const triggerUpload = () => {
   uploadRef.value?.click()
@@ -588,8 +358,7 @@ const recognizeWarnings = ref<string[]>([])
 
 const isWeightAbnormal = (item: OcrRecognizeResult): boolean => {
   const w = item.netWeight || 0
-  const isRange = typeof item.packageNo === 'string' && /^\d+\s*[-–—]\s*\d+$/.test(item.packageNo)
-  if (isRange) return w <= 0 || w > 5000
+  if (isRangePackageNo(item.packageNo)) return w <= 0 || w > 5000
   return w < 1000 || w > 2500
 }
 
@@ -626,46 +395,24 @@ const handleRecognize = async () => {
   }
 }
 
-const handleBatchCreate = () => {
-  importForm.batchNo = ''
-  importForm.grade = ''
-  importForm.location = ''
-  // Auto-fill specification from OCR results
-  const specs = [...new Set(recognizeResults.value.map(r => r.specification).filter(Boolean))]
-  importForm.specification = specs.length === 1 ? specs[0]! : ''
+// 打开导入弹窗（来自新识别结果）
+const openImportDialog = () => {
+  importSourceImage.value = historyList.value.find(h => h.id === currentHistoryId.value)?.imageUrl || ''
   importVisible.value = true
 }
 
-const handleImportSubmit = async () => {
-  if (!recognizeResults.value.length) return
+// 从历史详情导入
+const onImportFromHistory = (results: OcrRecognizeResult[], history: OcrRecognitionHistory) => {
+  recognizeResults.value = results
+  currentHistoryId.value = history.id
+  importSourceImage.value = history.imageUrl || ''
+  importVisible.value = true
+}
 
-  importing.value = true
-  try {
-    const rangePattern = /^\d+\s*[-–—]\s*\d+$/
-    const isSmallBlock = recognizeResults.value.some(r => typeof r.packageNo === 'string' && rangePattern.test(r.packageNo))
-
-    const items: CreateInventoryDto[] = recognizeResults.value.map((r) => ({
-      packageNo: String(r.packageNo || ''),
-      batchNo: importForm.batchNo || String(r.batchNo || ''),
-      grade: importForm.grade || r.grade || '',
-      specification: importForm.specification || r.specification || '',
-      productType: r.productType || '',
-      weight: (r.netWeight || 0) as number,
-      pieceCount: isSmallBlock ? undefined : (r.pieceCount || 0),
-      location: importForm.location,
-      sourceType: 'ocr_recognize',
-      sourceImage: currentHistory.value?.imageUrl || historyList.value.find(h => h.id === currentHistoryId.value)?.imageUrl || '',
-    }))
-
-    await batchCreateInventory({ items, recognitionHistoryId: currentHistoryId.value || undefined })
-    showToast?.(`成功导入 ${items.length} 条库存记录，即将跳转至库存页`, 'success')
-    importVisible.value = false
-    handleReset()
-  } catch {
-    // 错误已在 API 层处理
-  } finally {
-    importing.value = false
-  }
+// 导入成功
+const onImported = (count: number) => {
+  showToast?.(`成功导入 ${count} 条库存记录，即将跳转至库存页`, 'success')
+  handleReset()
 }
 
 const fetchHistory = async () => {
@@ -693,22 +440,9 @@ const goToHistoryPage = (page: number) => {
   fetchHistory()
 }
 
-
-
 const handleViewHistory = (row: OcrRecognitionHistory) => {
   currentHistory.value = row
   historyDetailVisible.value = true
-}
-
-const handleImportFromHistory = () => {
-  if (!parsedResults.value.length) {
-    showToast?.('该记录无可导入的识别结果', 'warning')
-    return
-  }
-  recognizeResults.value = [...parsedResults.value]
-  currentHistoryId.value = currentHistory.value!.id
-  historyDetailVisible.value = false
-  handleBatchCreate()
 }
 
 const handleDeleteHistory = async (id: number) => {
@@ -800,10 +534,6 @@ onMounted(() => {
     align-items: center;
     gap: var(--spacing-sm);
   }
-}
-
-.section-icon {
-  font-size: 20px;
 }
 
 .upload-area {
@@ -1247,10 +977,6 @@ tr.weight-warning td {
   }
 }
 
-.empty-cell {
-  padding: 40px !important;
-}
-
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -1309,309 +1035,6 @@ tr.weight-warning td {
   padding: 0 var(--spacing-sm);
 }
 
-// ==================== 弹窗 ====================
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal);
-  padding: var(--spacing-lg);
-}
-
-.modal-content {
-  width: 100%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-
-  &.modal-lg {
-    max-width: 700px;
-  }
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--color-divider);
-}
-
-.modal-title {
-  font-size: var(--font-size-xl);
-  font-weight: 600;
-}
-
-.modal-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: var(--color-bg-tertiary);
-  font-size: 14px;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-
-  &:hover {
-    background: var(--color-danger-bg);
-    color: var(--color-danger);
-    transform: rotate(90deg);
-  }
-}
-
-.modal-body {
-  padding: var(--spacing-lg);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-lg);
-  border-top: 1px solid var(--color-divider);
-}
-
-// 表单
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-}
-
-.form-item {
-  &.full-width {
-    grid-column: span 2;
-  }
-
-  label {
-    display: block;
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    margin-bottom: var(--spacing-xs);
-  }
-
-  input, select {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-base);
-    background: var(--color-bg);
-    color: var(--color-text-primary);
-    transition: all var(--transition-fast);
-
-    &:focus {
-      outline: none;
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
-    }
-
-    &::placeholder {
-      color: var(--color-text-tertiary);
-    }
-  }
-}
-
-/* Chip selector（规格/存放位置） */
-.chip-select {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  font-family: inherit;
-  transition: all var(--transition-fast);
-  user-select: none;
-
-  &:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-    background: rgba(0, 113, 227, 0.04);
-  }
-
-  &.active {
-    border-color: var(--color-primary);
-    background: rgba(0, 113, 227, 0.08);
-    color: var(--color-primary);
-    font-weight: 600;
-    box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.12);
-  }
-
-  .chip-icon {
-    font-size: 16px;
-    line-height: 1;
-  }
-
-  .chip-label {
-    line-height: 1;
-  }
-}
-
-.chip-location {
-  &.active .chip-dot {
-    box-shadow: 0 0 0 3px currentColor;
-  }
-}
-
-.chip-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  transition: box-shadow var(--transition-fast);
-}
-
-.preview-table {
-  h4 {
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    margin-bottom: var(--spacing-sm);
-  }
-}
-
-// 详情
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-md);
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-
-  &.full-width {
-    grid-column: span 2;
-  }
-
-  .detail-label {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .detail-value {
-    font-size: var(--font-size-base);
-    color: var(--color-text-primary);
-
-    &.text-danger {
-      color: var(--color-danger);
-    }
-  }
-}
-
-.result-section,
-.image-section {
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-lg);
-  border-top: 1px solid var(--color-divider);
-
-  h4 {
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    margin-bottom: var(--spacing-sm);
-  }
-}
-
-.json-preview {
-  background: var(--color-bg-tertiary);
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  overflow-x: auto;
-  max-height: 200px;
-  font-family: monospace;
-}
-
-.detail-image {
-  max-width: 100%;
-  max-height: 300px;
-  border-radius: var(--radius-md);
-}
-
-// 图片预览
-.image-preview-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  cursor: pointer;
-}
-
-.image-preview {
-  max-width: 90%;
-  max-height: 90%;
-  object-fit: contain;
-  border-radius: var(--radius-md);
-}
-
-.preview-close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  font-size: 18px;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
-  }
-}
-
-// 弹窗动画
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.3s ease;
-
-  .modal-content {
-    transition: transform 0.3s ease, opacity 0.3s ease;
-  }
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-
-  .modal-content {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-}
-
 // fadeIn 动画
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -1626,22 +1049,6 @@ tr.weight-warning td {
 }
 
 @media (max-width: 640px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .form-item.full-width {
-    grid-column: span 1;
-  }
-
-  .detail-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .detail-item.full-width {
-    grid-column: span 1;
-  }
-
   .history-item {
     flex-wrap: wrap;
   }
